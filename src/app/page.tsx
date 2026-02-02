@@ -1,10 +1,125 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import Image from 'next/image';
 import { useLanguage, LanguageToggle } from '@/lib/i18n';
+
+// Typewriter Effect Hook
+function useTypewriter(texts: string[], typingSpeed = 80, deletingSpeed = 40, pauseTime = 2000) {
+  const [displayText, setDisplayText] = useState('');
+  const [textIndex, setTextIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const currentText = texts[textIndex];
+
+    const timeout = setTimeout(() => {
+      if (!isDeleting) {
+        if (displayText.length < currentText.length) {
+          setDisplayText(currentText.slice(0, displayText.length + 1));
+        } else {
+          setTimeout(() => setIsDeleting(true), pauseTime);
+        }
+      } else {
+        if (displayText.length > 0) {
+          setDisplayText(displayText.slice(0, -1));
+        } else {
+          setIsDeleting(false);
+          setTextIndex((prev) => (prev + 1) % texts.length);
+        }
+      }
+    }, isDeleting ? deletingSpeed : typingSpeed);
+
+    return () => clearTimeout(timeout);
+  }, [displayText, isDeleting, textIndex, texts, typingSpeed, deletingSpeed, pauseTime]);
+
+  return displayText;
+}
+
+// Circular Progress Component
+function CircularProgress({ value, max, size = 80, strokeWidth = 6, color = 'purple' }: {
+  value: number;
+  max: number;
+  size?: number;
+  strokeWidth?: number;
+  color?: 'purple' | 'amber' | 'green' | 'blue';
+}) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const progress = Math.min(value / max, 1);
+  const strokeDashoffset = circumference - progress * circumference;
+
+  const colors = {
+    purple: 'stroke-purple-500',
+    amber: 'stroke-amber-500',
+    green: 'stroke-green-500',
+    blue: 'stroke-blue-500',
+  };
+
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg className="transform -rotate-90" width={size} height={size}>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          className="text-white/10"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          className={`${colors[color]} transition-all duration-1000 ease-out`}
+          style={{
+            strokeDasharray: circumference,
+            strokeDashoffset: strokeDashoffset,
+          }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-lg font-bold text-white">{value}</span>
+      </div>
+    </div>
+  );
+}
+
+// Animated Counter Component
+function AnimatedCounter({ target, duration = 1500 }: { target: number; duration?: number }) {
+  const [count, setCount] = useState(0);
+  const [hasAnimated, setHasAnimated] = useState(false);
+
+  useEffect(() => {
+    if (hasAnimated) return;
+    setHasAnimated(true);
+
+    const steps = 30;
+    const increment = target / steps;
+    const stepDuration = duration / steps;
+    let current = 0;
+
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= target) {
+        setCount(target);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(current));
+      }
+    }, stepDuration);
+
+    return () => clearInterval(timer);
+  }, [target, duration, hasAnimated]);
+
+  return <span>{count}</span>;
+}
 
 interface Persona {
   id: string;
@@ -87,6 +202,26 @@ export default function HomePage() {
 
   // Animation states
   const [mounted, setMounted] = useState(false);
+
+  // Typewriter texts
+  const typewriterTextsKo = [
+    '매일 10분으로 습관을 만든다',
+    'AI 튜터와 실시간 영어 대화',
+    '부담 없이, 어디서든, 지금 바로',
+    '발음부터 문법까지 즉시 피드백',
+  ];
+  const typewriterTextsEn = [
+    'Build habits in just 10 minutes a day',
+    'Real-time English conversation with AI',
+    'No pressure, anywhere, anytime',
+    'Instant feedback on pronunciation & grammar',
+  ];
+  const typingText = useTypewriter(
+    language === 'ko' ? typewriterTextsKo : typewriterTextsEn,
+    60,
+    30,
+    2500
+  );
 
   useEffect(() => {
     setMounted(true);
@@ -283,13 +418,35 @@ export default function HomePage() {
     <div className="min-h-screen bg-[#0a0a0f] text-white overflow-hidden">
       {/* Animated Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {/* Gradient Orbs */}
-        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-purple-500/20 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-blue-500/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-[40%] right-[20%] w-[300px] h-[300px] bg-pink-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
+        {/* Morphing Gradient Blobs */}
+        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-gradient-to-br from-purple-600/30 to-pink-600/20 rounded-full blur-[100px] animate-morph" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-gradient-to-br from-blue-600/25 to-cyan-600/15 rounded-full blur-[100px] animate-morph" style={{ animationDelay: '-2s' }} />
+        <div className="absolute top-[40%] right-[20%] w-[350px] h-[350px] bg-gradient-to-br from-pink-500/15 to-orange-500/10 rounded-full blur-[80px] animate-morph" style={{ animationDelay: '-4s' }} />
+        <div className="absolute top-[60%] left-[10%] w-[250px] h-[250px] bg-gradient-to-br from-indigo-500/20 to-purple-500/10 rounded-full blur-[60px] animate-float" />
+
+        {/* Floating Particles */}
+        {mounted && (
+          <div className="absolute inset-0">
+            {[...Array(20)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute w-1 h-1 bg-white/20 rounded-full"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animation: `particle-float ${5 + Math.random() * 10}s ease-in-out infinite`,
+                  animationDelay: `${Math.random() * 5}s`,
+                }}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Grid Pattern */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]" />
+
+        {/* Radial Gradient Overlay */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,#0a0a0f_70%)]" />
       </div>
 
       {/* Header */}
@@ -364,39 +521,115 @@ export default function HomePage() {
         <section className={`pt-12 sm:pt-20 pb-8 sm:pb-12 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <div className="text-center max-w-3xl mx-auto">
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6 sm:mb-8">
-                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              {/* Badge with live indicator */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6 sm:mb-8 backdrop-blur-sm">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
                 <span className="text-sm text-white/70">AI-Powered English Practice</span>
+                <span className="text-xs text-white/40 hidden sm:inline">|</span>
+                <span className="text-xs text-purple-400 hidden sm:inline">Live</span>
               </div>
 
               {/* Main Heading */}
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-4">
                 <span className="bg-gradient-to-r from-white via-white to-white/50 bg-clip-text text-transparent">
                   {t.heroTitle}
                 </span>
                 <br />
-                <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
                   {t.heroSubtitle}
                 </span>
               </h1>
 
-              {/* Description */}
-              <p className="text-lg sm:text-xl text-white/50 max-w-xl mx-auto mb-8 sm:mb-10">
-                {t.heroDescription}
-              </p>
+              {/* Typewriter Effect */}
+              <div className="h-8 sm:h-10 flex items-center justify-center mb-6 sm:mb-8">
+                <p className="text-lg sm:text-xl text-white/70 font-medium">
+                  {typingText}
+                  <span className="animate-blink text-purple-400 ml-0.5">|</span>
+                </p>
+              </div>
 
-              {/* Stats */}
-              {session && isSubscribed && (
-                <div className="flex items-center justify-center gap-6 sm:gap-10 mb-8">
-                  <div className="text-center">
-                    <div className="text-3xl sm:text-4xl font-bold text-white">{sessionCount}</div>
-                    <div className="text-sm text-white/40">{language === 'ko' ? '완료한 세션' : 'Sessions'}</div>
+              {/* Feature Pills */}
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-8 sm:mb-10">
+                {[
+                  { icon: '🎯', text: language === 'ko' ? '실시간 피드백' : 'Real-time Feedback' },
+                  { icon: '🎙️', text: language === 'ko' ? '음성 인식' : 'Voice Recognition' },
+                  { icon: '🤖', text: language === 'ko' ? 'AI 튜터' : 'AI Tutors' },
+                  { icon: '📊', text: language === 'ko' ? '진행 추적' : 'Progress Tracking' },
+                ].map((feature, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-sm text-white/60 hover:bg-white/10 hover:text-white/80 transition-all cursor-default"
+                    style={{ animationDelay: `${i * 100}ms` }}
+                  >
+                    <span>{feature.icon}</span>
+                    <span>{feature.text}</span>
                   </div>
-                  <div className="w-px h-12 bg-white/10" />
-                  <div className="text-center">
-                    <div className="text-3xl sm:text-4xl font-bold text-white">{canAccessDebate ? '✓' : `${5 - sessionCount}`}</div>
-                    <div className="text-sm text-white/40">{canAccessDebate ? (language === 'ko' ? '디베이트 해제' : 'Debate Unlocked') : (language === 'ko' ? '디베이트까지' : 'To Debate')}</div>
+                ))}
+              </div>
+
+              {/* Dashboard Stats - For logged in users */}
+              {session && isSubscribed && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-2xl mx-auto mb-8">
+                  {/* Sessions Completed */}
+                  <div className="relative group p-4 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 hover:border-purple-500/40 transition-all">
+                    <div className="absolute inset-0 rounded-2xl bg-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <CircularProgress value={sessionCount} max={10} color="purple" />
+                    <div className="mt-2 text-xs text-white/50">{language === 'ko' ? '완료 세션' : 'Sessions'}</div>
+                  </div>
+
+                  {/* Debate Progress */}
+                  <div className="relative group p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 hover:border-amber-500/40 transition-all">
+                    <div className="absolute inset-0 rounded-2xl bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <CircularProgress value={Math.min(sessionCount, 5)} max={5} color="amber" />
+                    <div className="mt-2 text-xs text-white/50">{language === 'ko' ? '디베이트' : 'Debate'}</div>
+                  </div>
+
+                  {/* Streak (placeholder) */}
+                  <div className="relative group p-4 rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 hover:border-green-500/40 transition-all">
+                    <div className="absolute inset-0 rounded-2xl bg-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="w-20 h-20 flex items-center justify-center mx-auto">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-white flex items-center justify-center gap-1">
+                          <span className="text-green-400">🔥</span>
+                          <AnimatedCounter target={sessionCount > 0 ? Math.min(sessionCount, 7) : 0} />
+                        </div>
+                        <div className="text-xs text-white/40">{language === 'ko' ? '일' : 'days'}</div>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-white/50">{language === 'ko' ? '연속 학습' : 'Streak'}</div>
+                  </div>
+
+                  {/* Level (placeholder) */}
+                  <div className="relative group p-4 rounded-2xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20 hover:border-blue-500/40 transition-all">
+                    <div className="absolute inset-0 rounded-2xl bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="w-20 h-20 flex items-center justify-center mx-auto">
+                      <div className="text-center">
+                        <div className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                          {sessionCount < 3 ? 'B1' : sessionCount < 7 ? 'B2' : 'C1'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-white/50">{language === 'ko' ? '현재 레벨' : 'Level'}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Progress Bar for debate unlock */}
+              {session && isSubscribed && !canAccessDebate && (
+                <div className="max-w-md mx-auto mb-6">
+                  <div className="flex items-center justify-between text-xs text-white/40 mb-2">
+                    <span>{language === 'ko' ? '디베이트 모드 잠금 해제' : 'Unlock Debate Mode'}</span>
+                    <span>{sessionCount}/5</span>
+                  </div>
+                  <div className="relative h-2 rounded-full bg-white/10 overflow-hidden">
+                    <div
+                      className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-amber-500 transition-all duration-1000"
+                      style={{ width: `${(sessionCount / 5) * 100}%` }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
                   </div>
                 </div>
               )}
@@ -781,29 +1014,255 @@ export default function HomePage() {
 
         {/* How It Works - Only for non-logged in users */}
         {!session && (
-          <section className={`py-16 sm:py-24 transition-all duration-1000 delay-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-            <div className="max-w-6xl mx-auto px-4 sm:px-6">
-              <h2 className="text-center text-white/40 text-sm font-medium uppercase tracking-wider mb-12">
-                {t.howItWorks}
-              </h2>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
-                {[
-                  { num: '01', title: t.step1Title, desc: t.step1Desc, gradient: 'from-purple-500 to-pink-500' },
-                  { num: '02', title: t.step2Title, desc: t.step2Desc, gradient: 'from-blue-500 to-cyan-500' },
-                  { num: '03', title: t.step3Title, desc: t.step3Desc, gradient: 'from-amber-500 to-orange-500' },
-                ].map((step, i) => (
-                  <div key={i} className="relative p-6 rounded-2xl bg-white/5 border border-white/10 group hover:bg-white/10 transition-all">
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${step.gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                      <span className="text-white font-bold">{step.num}</span>
-                    </div>
-                    <h3 className="text-lg font-semibold text-white mb-2">{step.title}</h3>
-                    <p className="text-white/50 text-sm leading-relaxed">{step.desc}</p>
+          <>
+            {/* Feature Showcase */}
+            <section className={`py-12 sm:py-20 transition-all duration-1000 delay-300 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+              <div className="max-w-6xl mx-auto px-4 sm:px-6">
+                {/* Section Header */}
+                <div className="text-center mb-12">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-medium mb-4">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                    </svg>
+                    {language === 'ko' ? '핵심 기능' : 'Key Features'}
                   </div>
-                ))}
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4">
+                    {language === 'ko' ? '왜 LangTalk인가?' : 'Why LangTalk?'}
+                  </h2>
+                  <p className="text-white/50 max-w-lg mx-auto">
+                    {language === 'ko'
+                      ? 'AI 기술로 실제 원어민과 대화하는 것처럼 자연스러운 영어 회화를 연습하세요'
+                      : 'Practice natural English conversations as if talking to a native speaker, powered by AI'}
+                  </p>
+                </div>
+
+                {/* Feature Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                  {/* Real-time Feedback */}
+                  <div className="group relative p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/5 border border-purple-500/20 hover:border-purple-500/40 transition-all overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-all" />
+                    <div className="relative">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-purple-500/20">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-xl font-bold text-white mb-2">{language === 'ko' ? '실시간 피드백' : 'Real-time Feedback'}</h3>
+                      <p className="text-white/50 leading-relaxed">
+                        {language === 'ko'
+                          ? '문법, 발음, 표현을 즉시 교정받고 자연스러운 영어를 배우세요'
+                          : 'Get instant corrections on grammar, pronunciation, and expressions'}
+                      </p>
+                      {/* Mini Dashboard Preview */}
+                      <div className="mt-6 p-4 rounded-xl bg-white/5 border border-white/10">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+                            <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-xs text-white/40 mb-1">Accuracy</div>
+                            <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                              <div className="h-full w-[85%] rounded-full bg-gradient-to-r from-green-400 to-emerald-400" />
+                            </div>
+                          </div>
+                          <span className="text-sm font-bold text-green-400">85%</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                            <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-xs text-white/40 mb-1">Fluency</div>
+                            <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                              <div className="h-full w-[72%] rounded-full bg-gradient-to-r from-blue-400 to-cyan-400" />
+                            </div>
+                          </div>
+                          <span className="text-sm font-bold text-blue-400">72%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* AI Tutors */}
+                  <div className="group relative p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-blue-500/10 to-cyan-500/5 border border-blue-500/20 hover:border-blue-500/40 transition-all overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all" />
+                    <div className="relative">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/20">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-xl font-bold text-white mb-2">{language === 'ko' ? '다양한 AI 튜터' : 'Multiple AI Tutors'}</h3>
+                      <p className="text-white/50 leading-relaxed">
+                        {language === 'ko'
+                          ? '미국/영국 발음의 4명의 AI 튜터 중 선택하세요'
+                          : 'Choose from 4 AI tutors with American or British accents'}
+                      </p>
+                      {/* Tutor Preview */}
+                      <div className="mt-6 flex items-center gap-3">
+                        {[
+                          { name: 'E', gradient: 'from-rose-400 to-pink-500', flag: '🇺🇸' },
+                          { name: 'J', gradient: 'from-blue-400 to-indigo-500', flag: '🇺🇸' },
+                          { name: 'C', gradient: 'from-violet-400 to-purple-500', flag: '🇬🇧' },
+                          { name: 'O', gradient: 'from-emerald-400 to-teal-500', flag: '🇬🇧' },
+                        ].map((tutor, i) => (
+                          <div
+                            key={i}
+                            className="relative group/tutor"
+                            style={{ animationDelay: `${i * 100}ms` }}
+                          >
+                            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tutor.gradient} flex items-center justify-center text-white font-bold shadow-lg group-hover/tutor:scale-110 transition-transform cursor-pointer`}>
+                              {tutor.name}
+                            </div>
+                            <span className="absolute -top-1 -right-1 text-xs">{tutor.flag}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Voice Recognition */}
+                  <div className="group relative p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20 hover:border-amber-500/40 transition-all overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl group-hover:bg-amber-500/20 transition-all" />
+                    <div className="relative">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-amber-500/20">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-xl font-bold text-white mb-2">{language === 'ko' ? '음성 인식' : 'Voice Recognition'}</h3>
+                      <p className="text-white/50 leading-relaxed">
+                        {language === 'ko'
+                          ? '말하기만 하면 AI가 자동으로 인식하고 응답합니다'
+                          : 'Just speak and AI automatically recognizes and responds'}
+                      </p>
+                      {/* Voice Animation Preview */}
+                      <div className="mt-6 flex items-center justify-center gap-1 h-12">
+                        {[...Array(12)].map((_, i) => (
+                          <div
+                            key={i}
+                            className="w-1 bg-gradient-to-t from-amber-500 to-orange-400 rounded-full voice-bar"
+                            style={{
+                              height: `${12 + Math.sin(i * 0.8) * 20}px`,
+                              animationDelay: `${i * 0.1}s`,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Debate Mode */}
+                  <div className="group relative p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/20 hover:border-green-500/40 transition-all overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-3xl group-hover:bg-green-500/20 transition-all" />
+                    <div className="relative">
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-green-500/20">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+                          </svg>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-xs font-medium">NEW</span>
+                      </div>
+                      <h3 className="text-xl font-bold text-white mb-2">{language === 'ko' ? '디베이트 모드' : 'Debate Mode'}</h3>
+                      <p className="text-white/50 leading-relaxed">
+                        {language === 'ko'
+                          ? 'AI 토론자들과 함께 영어 토론 실력을 키우세요'
+                          : 'Improve your debate skills with AI debaters'}
+                      </p>
+                      {/* Debate Preview */}
+                      <div className="mt-6 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="flex -space-x-2">
+                            <div className="w-8 h-8 rounded-full bg-green-500 border-2 border-[#0a0a0f] flex items-center justify-center text-xs text-white font-bold">P</div>
+                            <div className="w-8 h-8 rounded-full bg-green-600 border-2 border-[#0a0a0f] flex items-center justify-center text-xs text-white font-bold">U</div>
+                          </div>
+                          <span className="text-xs text-green-400 font-medium">Pro Team</span>
+                        </div>
+                        <span className="text-white/30 font-bold">VS</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-red-400 font-medium">Con Team</span>
+                          <div className="flex -space-x-2">
+                            <div className="w-8 h-8 rounded-full bg-red-500 border-2 border-[#0a0a0f] flex items-center justify-center text-xs text-white font-bold">A</div>
+                            <div className="w-8 h-8 rounded-full bg-red-600 border-2 border-[#0a0a0f] flex items-center justify-center text-xs text-white font-bold">B</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+
+            {/* How It Works Steps */}
+            <section className={`py-12 sm:py-20 transition-all duration-1000 delay-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+              <div className="max-w-6xl mx-auto px-4 sm:px-6">
+                <div className="text-center mb-12">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
+                    {t.howItWorks}
+                  </h2>
+                </div>
+
+                <div className="relative">
+                  {/* Connection Line */}
+                  <div className="hidden sm:block absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-y-1/2" />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
+                    {[
+                      { num: '01', title: t.step1Title, desc: t.step1Desc, gradient: 'from-purple-500 to-pink-500', icon: '🔑' },
+                      { num: '02', title: t.step2Title, desc: t.step2Desc, gradient: 'from-blue-500 to-cyan-500', icon: '🎯' },
+                      { num: '03', title: t.step3Title, desc: t.step3Desc, gradient: 'from-amber-500 to-orange-500', icon: '🚀' },
+                    ].map((step, i) => (
+                      <div
+                        key={i}
+                        className="relative group"
+                        style={{ animationDelay: `${i * 150}ms` }}
+                      >
+                        <div className="relative p-6 rounded-2xl bg-white/5 border border-white/10 group-hover:bg-white/10 group-hover:border-white/20 transition-all">
+                          {/* Step Number Circle */}
+                          <div className="absolute -top-4 left-1/2 -translate-x-1/2 sm:relative sm:top-0 sm:left-0 sm:translate-x-0 sm:mb-4">
+                            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${step.gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
+                              <span className="text-2xl">{step.icon}</span>
+                            </div>
+                          </div>
+                          <div className="pt-6 sm:pt-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs text-white/30 font-mono">STEP {step.num}</span>
+                            </div>
+                            <h3 className="text-lg font-bold text-white mb-2">{step.title}</h3>
+                            <p className="text-white/50 text-sm leading-relaxed">{step.desc}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* CTA Button */}
+                <div className="text-center mt-12">
+                  <button
+                    onClick={() => signIn('google')}
+                    className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-semibold text-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/40 hover:scale-105 transition-all animate-breathe"
+                  >
+                    <svg className="w-6 h-6" viewBox="0 0 24 24">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="currentColor" fillOpacity="0.8"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="currentColor" fillOpacity="0.6"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="currentColor" fillOpacity="0.4"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="currentColor" fillOpacity="0.7"/>
+                    </svg>
+                    {language === 'ko' ? '무료로 시작하기' : 'Start for Free'}
+                  </button>
+                  <p className="text-white/30 text-sm mt-4">
+                    {language === 'ko' ? '신용카드 없이 바로 시작' : 'No credit card required'}
+                  </p>
+                </div>
+              </div>
+            </section>
+          </>
         )}
       </main>
 
