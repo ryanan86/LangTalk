@@ -74,7 +74,10 @@ export default function HomePage() {
   const { data: session, status } = useSession();
   const [selectedPersona, setSelectedPersona] = useState<string | null>(null);
   const [isSubscribed, setIsSubscribed] = useState<boolean | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const [, setCheckingSubscription] = useState(false);
+  const [isSigningUp, setIsSigningUp] = useState(false);
+  const [signupMessage, setSignupMessage] = useState<string | null>(null);
 
   // Mic test states
   const [isTesting, setIsTesting] = useState(false);
@@ -177,10 +180,31 @@ export default function HomePage() {
       const res = await fetch('/api/check-subscription');
       const data = await res.json();
       setIsSubscribed(data.subscribed);
+      setSubscriptionStatus(data.status || null);
     } catch {
       setIsSubscribed(true); // Fail-open for development
+      setSubscriptionStatus('active');
     } finally {
       setCheckingSubscription(false);
+    }
+  };
+
+  const handleBetaSignup = async () => {
+    setIsSigningUp(true);
+    setSignupMessage(null);
+    try {
+      const res = await fetch('/api/beta-signup', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setSignupMessage(data.message);
+        setSubscriptionStatus('pending');
+      } else {
+        setSignupMessage(data.message || data.error);
+      }
+    } catch {
+      setSignupMessage('신청 중 오류가 발생했습니다.');
+    } finally {
+      setIsSigningUp(false);
     }
   };
 
@@ -465,17 +489,64 @@ export default function HomePage() {
 
         {/* Start Button */}
         <div className="text-center">
-          {session && isSubscribed === false && (
+          {/* Beta Signup Message */}
+          {signupMessage && (
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-sm">
+              {signupMessage}
+            </div>
+          )}
+
+          {/* Not logged in - show sign in prompt */}
+          {!session && (
+            <div className="mb-4 p-4 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-600 text-sm">
+              로그인 후 베타 서비스를 이용할 수 있습니다.
+            </div>
+          )}
+
+          {/* Logged in but not signed up for beta */}
+          {session && subscriptionStatus === 'not_found' && (
+            <div className="mb-4">
+              <div className="p-4 bg-primary-50 border border-primary-200 rounded-xl mb-4">
+                <p className="text-primary-800 text-sm mb-3">
+                  베타 서비스 신청 후 승인되면 이용 가능합니다.
+                </p>
+                <button
+                  onClick={handleBetaSignup}
+                  disabled={isSigningUp}
+                  className="px-6 py-2 bg-primary-500 text-white rounded-lg font-medium hover:bg-primary-600 transition-colors disabled:bg-primary-300"
+                >
+                  {isSigningUp ? '신청 중...' : '베타 서비스 신청하기'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Pending approval */}
+          {session && subscriptionStatus === 'pending' && (
             <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
-              Your subscription is not active. Please contact support to continue.
+              베타 신청이 검토 중입니다. 승인 후 이용 가능합니다.
+            </div>
+          )}
+
+          {/* Expired */}
+          {session && subscriptionStatus === 'expired' && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-800 text-sm">
+              이용 기간이 만료되었습니다. 관리자에게 문의해주세요.
+            </div>
+          )}
+
+          {/* Inactive */}
+          {session && subscriptionStatus === 'inactive' && (
+            <div className="mb-4 p-4 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-600 text-sm">
+              계정이 비활성화되었습니다. 관리자에게 문의해주세요.
             </div>
           )}
 
           <button
             onClick={handleStart}
-            disabled={!selectedPersona || Boolean(session && isSubscribed === false)}
+            disabled={!selectedPersona || !session || isSubscribed !== true}
             className={`inline-flex items-center gap-3 px-8 py-4 rounded-2xl text-lg font-semibold transition-all duration-300 ${
-              selectedPersona && (!session || isSubscribed !== false)
+              selectedPersona && session && isSubscribed === true
                 ? 'btn-primary'
                 : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
             }`}
@@ -486,9 +557,9 @@ export default function HomePage() {
             Start Conversation
           </button>
 
-          {!selectedPersona && (
+          {!selectedPersona && session && isSubscribed === true && (
             <p className="text-neutral-400 text-sm mt-4">
-              Please select a tutor to continue
+              튜터를 선택해주세요
             </p>
           )}
         </div>

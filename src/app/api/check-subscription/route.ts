@@ -50,11 +50,24 @@ export async function GET(_request: NextRequest) {
       const [rowEmail, expiryDate, status] = row;
 
       if (rowEmail?.toLowerCase() === email.toLowerCase()) {
-        // Check if status is active
-        if (status?.toLowerCase() !== 'active') {
+        const statusLower = status?.toLowerCase() || '';
+
+        // Check if status is pending (waiting for approval)
+        if (statusLower === 'pending') {
           return NextResponse.json({
             subscribed: false,
-            reason: 'Subscription is not active',
+            status: 'pending',
+            reason: '베타 신청이 검토 중입니다.',
+            email
+          });
+        }
+
+        // Check if status is active
+        if (statusLower !== 'active') {
+          return NextResponse.json({
+            subscribed: false,
+            status: statusLower || 'inactive',
+            reason: '구독이 활성화되지 않았습니다.',
             email
           });
         }
@@ -65,7 +78,8 @@ export async function GET(_request: NextRequest) {
           if (expiry < today) {
             return NextResponse.json({
               subscribed: false,
-              reason: 'Subscription has expired',
+              status: 'expired',
+              reason: '구독 기간이 만료되었습니다.',
               expiryDate,
               email
             });
@@ -74,6 +88,7 @@ export async function GET(_request: NextRequest) {
 
         return NextResponse.json({
           subscribed: true,
+          status: 'active',
           expiryDate,
           email
         });
@@ -82,7 +97,8 @@ export async function GET(_request: NextRequest) {
 
     return NextResponse.json({
       subscribed: false,
-      reason: 'Email not found in subscription list',
+      status: 'not_found',
+      reason: '베타 신청이 필요합니다.',
       email
     });
   } catch (error) {
