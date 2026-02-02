@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import Image from 'next/image';
@@ -199,6 +199,7 @@ export default function HomePage() {
   const [signupMessage, setSignupMessage] = useState<string | null>(null);
   const [sessionCount, setSessionCount] = useState<number>(0);
   const [evaluatedGrade, setEvaluatedGrade] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [levelDetails, setLevelDetails] = useState<{ grammar: number; vocabulary: number; fluency: number; comprehension: number } | null>(null);
   const [activeTab, setActiveTab] = useState<'talk' | 'debate'>('talk');
 
