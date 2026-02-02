@@ -89,6 +89,8 @@ export default function HomePage() {
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [signupMessage, setSignupMessage] = useState<string | null>(null);
   const [sessionCount, setSessionCount] = useState<number>(0);
+  const [evaluatedGrade, setEvaluatedGrade] = useState<string | null>(null);
+  const [levelDetails, setLevelDetails] = useState<{ grammar: number; vocabulary: number; fluency: number; comprehension: number } | null>(null);
   const [activeTab, setActiveTab] = useState<'talk' | 'debate'>('talk');
   const [playingVoice, setPlayingVoice] = useState<string | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -110,6 +112,8 @@ export default function HomePage() {
       setIsSubscribed(data.subscribed);
       setSubscriptionStatus(data.status || null);
       setSessionCount(data.sessionCount || 0);
+      setEvaluatedGrade(data.evaluatedGrade || null);
+      setLevelDetails(data.levelDetails || null);
     } catch {
       setIsSubscribed(true);
       setSessionCount(5);
@@ -157,9 +161,24 @@ export default function HomePage() {
     }
   };
 
-  const level = gradeLevel.getLevel(sessionCount);
+  // Use AI-evaluated grade if available, otherwise fall back to session-count-based level
+  const gradeMapping: Record<string, { grade: string; name: string; nameKo: string; color: string }> = {
+    'K': { grade: 'K', name: 'Kindergarten', nameKo: '유치원', color: 'from-pink-400 to-rose-500' },
+    '1-2': { grade: '1-2', name: 'Grade 1-2', nameKo: '초등 1-2학년', color: 'from-orange-400 to-amber-500' },
+    '3-4': { grade: '3-4', name: 'Grade 3-4', nameKo: '초등 3-4학년', color: 'from-yellow-400 to-orange-500' },
+    '5-6': { grade: '5-6', name: 'Grade 5-6', nameKo: '초등 5-6학년', color: 'from-lime-400 to-green-500' },
+    '7-8': { grade: '7-8', name: 'Middle School', nameKo: '중학교', color: 'from-emerald-400 to-teal-500' },
+    '9-10': { grade: '9-10', name: 'High School', nameKo: '고등학교', color: 'from-cyan-400 to-blue-500' },
+    '11-12': { grade: '11-12', name: 'Advanced', nameKo: '고급', color: 'from-blue-400 to-indigo-500' },
+    'College': { grade: 'College', name: 'College Level', nameKo: '대학 수준', color: 'from-violet-400 to-purple-500' },
+  };
+
+  const level = evaluatedGrade && gradeMapping[evaluatedGrade]
+    ? gradeMapping[evaluatedGrade]
+    : gradeLevel.getLevel(sessionCount);
   const progress = gradeLevel.getProgress(sessionCount);
   const canAccessDebate = sessionCount >= 5;
+  const hasEvaluatedLevel = !!evaluatedGrade;
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -220,7 +239,14 @@ export default function HomePage() {
                     <span className="text-white font-bold text-lg">{level.grade}</span>
                   </div>
                   <div>
-                    <p className="text-sm text-neutral-500">{language === 'ko' ? '현재 레벨' : 'Current Level'}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-neutral-500">{language === 'ko' ? '현재 레벨' : 'Current Level'}</p>
+                      {hasEvaluatedLevel && (
+                        <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-600 text-xs rounded-full font-medium">
+                          AI
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xl font-bold text-neutral-900">{language === 'ko' ? level.nameKo : level.name}</p>
                   </div>
                 </div>
@@ -231,23 +257,53 @@ export default function HomePage() {
                     <p className="text-2xl font-bold text-neutral-900">{sessionCount}</p>
                     <p className="text-xs text-neutral-500">{language === 'ko' ? '세션' : 'Sessions'}</p>
                   </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-neutral-900">{progress.needed - progress.current}</p>
-                    <p className="text-xs text-neutral-500">{language === 'ko' ? '다음 레벨까지' : 'To Next'}</p>
-                  </div>
+                  {!hasEvaluatedLevel && (
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-neutral-900">{progress.needed - progress.current}</p>
+                      <p className="text-xs text-neutral-500">{language === 'ko' ? '다음 레벨까지' : 'To Next'}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Progress Bar */}
-              <div className="mt-4">
-                <div className="flex justify-between text-xs text-neutral-400 mb-1">
-                  <span>{language === 'ko' ? '레벨 진행도' : 'Level Progress'}</span>
-                  <span>{Math.round(progress.percent)}%</span>
+              {/* Level Details (AI Evaluated) */}
+              {hasEvaluatedLevel && levelDetails && (
+                <div className="mt-4 grid grid-cols-4 gap-2">
+                  {[
+                    { label: language === 'ko' ? '문법' : 'Grammar', value: levelDetails.grammar, color: 'bg-blue-500' },
+                    { label: language === 'ko' ? '어휘' : 'Vocab', value: levelDetails.vocabulary, color: 'bg-green-500' },
+                    { label: language === 'ko' ? '유창성' : 'Fluency', value: levelDetails.fluency, color: 'bg-purple-500' },
+                    { label: language === 'ko' ? '이해력' : 'Comp.', value: levelDetails.comprehension, color: 'bg-amber-500' },
+                  ].map((item) => (
+                    <div key={item.label} className="text-center">
+                      <div className="flex justify-center mb-1">
+                        <div className="w-10 h-10 rounded-full border-4 border-neutral-100 flex items-center justify-center relative">
+                          <span className="text-xs font-bold text-neutral-900">{item.value}</span>
+                          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 36 36">
+                            <circle cx="18" cy="18" r="16" fill="none" stroke="#f3f4f6" strokeWidth="3" />
+                            <circle cx="18" cy="18" r="16" fill="none" stroke={item.color === 'bg-blue-500' ? '#3b82f6' : item.color === 'bg-green-500' ? '#22c55e' : item.color === 'bg-purple-500' ? '#a855f7' : '#f59e0b'} strokeWidth="3" strokeDasharray={`${item.value} 100`} strokeLinecap="round" />
+                          </svg>
+                        </div>
+                      </div>
+                      <p className="text-xs text-neutral-500">{item.label}</p>
+                    </div>
+                  ))}
                 </div>
-                <div className="h-2 bg-neutral-100 rounded-full overflow-hidden">
-                  <div className={`h-full bg-gradient-to-r ${level.color} transition-all duration-500`} style={{ width: `${progress.percent}%` }} />
+              )}
+
+              {/* Progress Bar (Estimated level only) */}
+              {!hasEvaluatedLevel && (
+                <div className="mt-4">
+                  <div className="flex justify-between text-xs text-neutral-400 mb-1">
+                    <span>{language === 'ko' ? '레벨 진행도 (추정)' : 'Level Progress (Est.)'}</span>
+                    <span>{Math.round(progress.percent)}%</span>
+                  </div>
+                  <div className="h-2 bg-neutral-100 rounded-full overflow-hidden">
+                    <div className={`h-full bg-gradient-to-r ${level.color} transition-all duration-500`} style={{ width: `${progress.percent}%` }} />
+                  </div>
+                  <p className="text-xs text-neutral-400 mt-2">{language === 'ko' ? '세션 완료 후 AI가 실제 레벨을 평가합니다' : 'AI will evaluate your actual level after a session'}</p>
                 </div>
-              </div>
+              )}
             </div>
           </section>
         )}
@@ -410,12 +466,38 @@ export default function HomePage() {
         {!session && (
           <section className="mt-16 grid gap-4 sm:grid-cols-3">
             {[
-              { icon: '🎯', title: language === 'ko' ? '실시간 피드백' : 'Real-time Feedback', desc: language === 'ko' ? '문법과 발음을 즉시 교정' : 'Instant grammar & pronunciation correction' },
-              { icon: '🎙️', title: language === 'ko' ? '음성 인식' : 'Voice Recognition', desc: language === 'ko' ? '말하면 AI가 바로 인식' : 'Speak and AI responds' },
-              { icon: '📈', title: language === 'ko' ? '레벨 시스템' : 'Level System', desc: language === 'ko' ? '미국 학년 기준 레벨업' : 'US grade-based progression' },
+              {
+                icon: (
+                  <svg className="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                ),
+                title: language === 'ko' ? '실시간 피드백' : 'Real-time Feedback',
+                desc: language === 'ko' ? '문법과 발음을 즉시 교정' : 'Instant grammar & pronunciation correction'
+              },
+              {
+                icon: (
+                  <svg className="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                ),
+                title: language === 'ko' ? '음성 인식' : 'Voice Recognition',
+                desc: language === 'ko' ? '말하면 AI가 바로 인식' : 'Speak and AI responds'
+              },
+              {
+                icon: (
+                  <svg className="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                ),
+                title: language === 'ko' ? '레벨 시스템' : 'Level System',
+                desc: language === 'ko' ? '미국 학년 기준 레벨업' : 'US grade-based progression'
+              },
             ].map((f, i) => (
               <div key={i} className="p-6 bg-white rounded-xl border border-neutral-200">
-                <span className="text-2xl">{f.icon}</span>
+                <div className="w-12 h-12 rounded-xl bg-neutral-50 flex items-center justify-center">
+                  {f.icon}
+                </div>
                 <h3 className="font-semibold text-neutral-900 mt-3 mb-1">{f.title}</h3>
                 <p className="text-sm text-neutral-500">{f.desc}</p>
               </div>

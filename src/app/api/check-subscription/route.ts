@@ -37,10 +37,10 @@ export async function GET(_request: NextRequest) {
 
     // Read the subscription sheet
     // Expected format: Column A = Email, Column B = Expiry Date (YYYY-MM-DD), Column C = Status (active/inactive),
-    // Column D = Name, Column E = SignupDate, Column F = SessionCount
+    // Column D = Name, Column E = SignupDate, Column F = SessionCount, Column G = Level, Column H = LevelDetails
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'Subscriptions!A:F',
+      range: 'Subscriptions!A:H',
     });
 
     const rows = response.data.values || [];
@@ -48,11 +48,15 @@ export async function GET(_request: NextRequest) {
     today.setHours(0, 0, 0, 0);
 
     for (const row of rows) {
-      const [rowEmail, expiryDate, status, , , sessionCountStr] = row;
+      const [rowEmail, expiryDate, status, , , sessionCountStr, evaluatedGrade, levelDetailsStr] = row;
 
       if (rowEmail?.toLowerCase() === email.toLowerCase()) {
         const statusLower = status?.toLowerCase() || '';
         const sessionCount = parseInt(sessionCountStr || '0', 10);
+        let levelDetails = null;
+        try {
+          if (levelDetailsStr) levelDetails = JSON.parse(levelDetailsStr);
+        } catch { /* ignore parsing errors */ }
 
         // Check if status is pending (waiting for approval)
         if (statusLower === 'pending') {
@@ -61,6 +65,8 @@ export async function GET(_request: NextRequest) {
             status: 'pending',
             reason: '베타 신청이 검토 중입니다.',
             sessionCount,
+            evaluatedGrade: evaluatedGrade || null,
+            levelDetails,
             email
           });
         }
@@ -72,6 +78,8 @@ export async function GET(_request: NextRequest) {
             status: statusLower || 'inactive',
             reason: '구독이 활성화되지 않았습니다.',
             sessionCount,
+            evaluatedGrade: evaluatedGrade || null,
+            levelDetails,
             email
           });
         }
@@ -86,6 +94,8 @@ export async function GET(_request: NextRequest) {
               reason: '구독 기간이 만료되었습니다.',
               expiryDate,
               sessionCount,
+              evaluatedGrade: evaluatedGrade || null,
+              levelDetails,
               email
             });
           }
@@ -96,6 +106,8 @@ export async function GET(_request: NextRequest) {
           status: 'active',
           expiryDate,
           sessionCount,
+          evaluatedGrade: evaluatedGrade || null,
+          levelDetails,
           email
         });
       }

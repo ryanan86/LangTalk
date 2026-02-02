@@ -78,6 +78,23 @@ For EACH correction, provide:
 - A MUCH BETTER version that is longer, more natural, and uses connectors (that, which, who, because, so, and then, especially when, which means)
 - Clear explanation of WHY the improved version is better
 
+LEVEL EVALUATION (US Grade Equivalent):
+Based on the student's conversation, evaluate their English proficiency using US school grade levels:
+- K (Kindergarten): Very basic words, single words or 2-3 word phrases, many grammar errors
+- 1-2 (Grade 1-2): Simple sentences, basic vocabulary, frequent grammar mistakes
+- 3-4 (Grade 3-4): Can form sentences, limited vocabulary, some grammar errors
+- 5-6 (Grade 5-6): Good sentence structure, developing vocabulary, occasional errors
+- 7-8 (Middle School): Clear communication, varied vocabulary, minor errors
+- 9-10 (High School): Fluent conversation, good vocabulary range, rare errors
+- 11-12 (Advanced): Near-native fluency, rich vocabulary, very few errors
+- College: Native-like proficiency, sophisticated vocabulary and grammar
+
+Evaluate based on:
+1. Grammar accuracy (40%): Verb tenses, articles, prepositions, sentence structure
+2. Vocabulary range (25%): Word variety, appropriate word choice, idioms
+3. Fluency (20%): Sentence length, natural flow, conversation pace
+4. Comprehension (15%): Understanding context, appropriate responses
+
 RETURN THIS EXACT JSON FORMAT (no markdown, valid JSON only):
 {
   "corrections": [
@@ -98,6 +115,14 @@ RETURN THIS EXACT JSON FORMAT (no markdown, valid JSON only):
   ],
   "strengths": ${JSON.stringify(exampleStrengths)},
   "overallLevel": "beginner|intermediate|advanced",
+  "evaluatedGrade": "K|1-2|3-4|5-6|7-8|9-10|11-12|College",
+  "levelDetails": {
+    "grammar": 0-100,
+    "vocabulary": 0-100,
+    "fluency": 0-100,
+    "comprehension": 0-100,
+    "summary": "${isKorean ? '레벨 평가에 대한 한 문장 요약' : 'One sentence summary of level evaluation'}"
+  },
   "encouragement": "${exampleEncouragement}"
 }
 

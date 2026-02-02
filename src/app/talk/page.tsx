@@ -27,11 +27,21 @@ interface ErrorPattern {
   tip: string;
 }
 
+interface LevelDetails {
+  grammar: number;
+  vocabulary: number;
+  fluency: number;
+  comprehension: number;
+  summary: string;
+}
+
 interface Analysis {
   corrections: Correction[];
   patterns: ErrorPattern[];
   strengths: string[];
   overallLevel: string;
+  evaluatedGrade?: string;
+  levelDetails?: LevelDetails;
   encouragement: string;
 }
 
@@ -99,20 +109,33 @@ function TalkContent() {
     };
   }, [phase]);
 
-  // Increment session count when session is completed (summary phase)
+  // Increment session count and store evaluated level when session is completed (summary phase)
   useEffect(() => {
     if (phase === 'summary') {
-      // Increment session count for debate mode unlock
-      fetch('/api/session-count', { method: 'POST' })
+      // Increment session count and store AI-evaluated level
+      const body: { evaluatedGrade?: string; levelDetails?: LevelDetails } = {};
+
+      if (analysis?.evaluatedGrade) {
+        body.evaluatedGrade = analysis.evaluatedGrade;
+      }
+      if (analysis?.levelDetails) {
+        body.levelDetails = analysis.levelDetails;
+      }
+
+      fetch('/api/session-count', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
         .then(res => res.json())
         .then(data => {
           if (data.success) {
-            console.log('Session count incremented:', data.newCount);
+            console.log('Session count incremented:', data.newCount, 'Level:', data.evaluatedGrade);
           }
         })
         .catch(err => console.error('Failed to increment session count:', err));
     }
-  }, [phase]);
+  }, [phase, analysis]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -789,6 +812,63 @@ function TalkContent() {
 
             {analysis && (
               <>
+                {/* AI Evaluated Level */}
+                {analysis.evaluatedGrade && analysis.levelDetails && (
+                  <div className="card-premium p-4 sm:p-6 mb-4 bg-gradient-to-br from-indigo-50 to-purple-50">
+                    <h3 className="font-semibold text-neutral-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
+                      <span className="w-5 h-5 sm:w-6 sm:h-6 bg-indigo-100 rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 sm:w-4 sm:h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                      </span>
+                      {language === 'ko' ? '오늘의 레벨 평가' : "Today's Level Assessment"}
+                    </h3>
+
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                        <span className="text-white font-bold text-lg">{analysis.evaluatedGrade}</span>
+                      </div>
+                      <div>
+                        <p className="text-xs text-neutral-500">{language === 'ko' ? '평가 등급' : 'Evaluated Grade'}</p>
+                        <p className="text-lg font-bold text-neutral-900">
+                          {analysis.evaluatedGrade === 'K' && (language === 'ko' ? '유치원' : 'Kindergarten')}
+                          {analysis.evaluatedGrade === '1-2' && (language === 'ko' ? '초등 1-2학년' : 'Grade 1-2')}
+                          {analysis.evaluatedGrade === '3-4' && (language === 'ko' ? '초등 3-4학년' : 'Grade 3-4')}
+                          {analysis.evaluatedGrade === '5-6' && (language === 'ko' ? '초등 5-6학년' : 'Grade 5-6')}
+                          {analysis.evaluatedGrade === '7-8' && (language === 'ko' ? '중학교' : 'Middle School')}
+                          {analysis.evaluatedGrade === '9-10' && (language === 'ko' ? '고등학교' : 'High School')}
+                          {analysis.evaluatedGrade === '11-12' && (language === 'ko' ? '고급' : 'Advanced')}
+                          {analysis.evaluatedGrade === 'College' && (language === 'ko' ? '대학 수준' : 'College Level')}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Score Breakdown */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { label: language === 'ko' ? '문법' : 'Grammar', value: analysis.levelDetails.grammar, color: 'bg-blue-500' },
+                        { label: language === 'ko' ? '어휘' : 'Vocabulary', value: analysis.levelDetails.vocabulary, color: 'bg-green-500' },
+                        { label: language === 'ko' ? '유창성' : 'Fluency', value: analysis.levelDetails.fluency, color: 'bg-purple-500' },
+                        { label: language === 'ko' ? '이해력' : 'Comprehension', value: analysis.levelDetails.comprehension, color: 'bg-amber-500' },
+                      ].map((item) => (
+                        <div key={item.label} className="bg-white/60 rounded-lg p-2">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs text-neutral-600">{item.label}</span>
+                            <span className="text-xs font-bold text-neutral-900">{item.value}</span>
+                          </div>
+                          <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                            <div className={`h-full ${item.color} rounded-full`} style={{ width: `${item.value}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {analysis.levelDetails.summary && (
+                      <p className="mt-3 text-xs sm:text-sm text-neutral-600 italic">{analysis.levelDetails.summary}</p>
+                    )}
+                  </div>
+                )}
+
                 {/* Strengths */}
                 <div className="card-premium p-4 sm:p-6 mb-4">
                   <h3 className="font-semibold text-neutral-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
