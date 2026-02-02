@@ -81,17 +81,9 @@ export async function POST(request: NextRequest) {
 }
 
 // Helper function to determine debater's team
-function getDebaterTeam(debaterId: string, userTeam: DebateTeam): DebateTeam {
-  // The user's partner is on the same team
-  // The two opponents are on the opposite team
-  // This logic should match what's set up in the debate page
-  // For now, we'll use a simple mapping based on debater order
-  const debaterOrder = ['alex', 'maya', 'james', 'sofia'];
-  const debaterIndex = debaterOrder.indexOf(debaterId);
-
-  // First two debaters go with the user's team partner, others are opponents
-  // This is a simplified logic - the actual assignment happens on the frontend
-  // and is passed to this API
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function getDebaterTeam(_debaterId: string, userTeam: DebateTeam): DebateTeam {
+  // The actual team assignment happens on the frontend and is passed to this API
   return userTeam;
 }
 

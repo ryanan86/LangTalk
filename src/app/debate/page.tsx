@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n';
-import { moderator, debaters, getDebatePersona } from '@/lib/debatePersonas';
-import { getRandomTopic, getRandomCategory, getAllCategories } from '@/lib/debateTopics';
+import { moderator, debaters } from '@/lib/debatePersonas';
+import { getRandomTopic } from '@/lib/debateTopics';
 import {
   DebatePhase,
   DebateTeam,
@@ -33,7 +33,7 @@ function DebateContent() {
   // Messages and turns
   const [messages, setMessages] = useState<DebateMessage[]>([]);
   const [turnCount, setTurnCount] = useState(0);
-  const [userTurnCount, setUserTurnCount] = useState(0);
+  const [, setUserTurnCount] = useState(0);
   const [currentMessage, setCurrentMessage] = useState<string>('');
 
   // Analysis
@@ -54,6 +54,7 @@ function DebateContent() {
   const [speakingOrder, setSpeakingOrder] = useState<DebateParticipant[]>([]);
 
   // Initialize debate
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     initializeDebate();
   }, []);
@@ -127,6 +128,7 @@ function DebateContent() {
   };
 
   // Progress through phases automatically
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (phase === 'topic' && topic) {
       // Show topic for 3 seconds, then move to team assignment

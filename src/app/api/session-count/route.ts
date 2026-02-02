@@ -72,7 +72,8 @@ export async function GET() {
 }
 
 // POST: Increment session count
-export async function POST(request: NextRequest) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession();
 
