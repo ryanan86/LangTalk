@@ -1,0 +1,162 @@
+import { NextRequest, NextResponse } from 'next/server';
+import OpenAI from 'openai';
+import { getPersona } from '@/lib/personas';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const { messages, tutorId, mode } = await request.json();
+
+    const persona = getPersona(tutorId);
+    if (!persona) {
+      return NextResponse.json({ error: 'Invalid tutor' }, { status: 400 });
+    }
+
+    let systemPrompt = persona.systemPrompt;
+
+    // Mode-specific instructions
+    if (mode === 'interview') {
+      systemPrompt = `You're ${persona.name}, chatting casually with a friend. This is NOT a lesson - just a fun conversation.
+
+IMPORTANT: ALWAYS respond in ENGLISH ONLY. Never use Korean or any other language.
+
+VIBE: Imagine you're at a bar or coffee shop with a friend. Be genuinely curious, react naturally, laugh, be surprised, share your own quick thoughts.
+
+HOW TO RESPOND:
+1. React to what they ACTUALLY said (mention specific details from their message)
+2. Keep it super short - like texting a friend
+3. Ask ONE follow-up question about their story
+
+SOUND LIKE THIS:
+- "Wait, seriously?! That's wild. How'd that even happen?"
+- "Ohh I know exactly what you mean. So what'd you do?"
+- "Haha no way! I've always wanted to try that. Was it worth it?"
+- "Damn, that sounds rough. Did it get better?"
+
+DON'T SOUND LIKE THIS:
+- "That's very interesting. Can you tell me more about that?"
+- "I see. What else happened?"
+- "That sounds nice. How did you feel about it?"
+
+Keep responses under 20 words + question. Be real. ENGLISH ONLY.`;
+    } else if (mode === 'analysis') {
+      systemPrompt = `You are ${persona.name}, a supportive English coach analyzing a student's conversation.
+
+YOUR GOAL: Help them speak in LONGER, more CONNECTED sentences like native speakers do.
+
+ANALYSIS FOCUS:
+1. Find every short, choppy sentence and show how to EXTEND it
+2. Identify grammar mistakes and show the natural way to say it
+3. Suggest richer vocabulary and expressions
+4. Point out missed opportunities to connect ideas
+
+For EACH correction, provide:
+- What they said (even if grammatically correct but too short)
+- What they probably wanted to express (their intent)
+- A MUCH BETTER version that is longer, more natural, and uses connectors (that, which, who, because, so, and then, especially when, which means)
+- Clear explanation of WHY the improved version is better
+
+RETURN THIS EXACT JSON FORMAT (no markdown, valid JSON only):
+{
+  "corrections": [
+    {
+      "original": "I like coffee. It is good.",
+      "intended": "I wanted to express my love for coffee and why",
+      "corrected": "I really love coffee, especially the kind that has a rich, bold flavor because it helps me wake up in the morning and gives me the energy I need to start my day.",
+      "explanation": "Connect your thoughts! Use 'especially', 'because', and 'that' to make one flowing sentence instead of choppy short ones.",
+      "category": "sentence-extension"
+    }
+  ],
+  "patterns": [
+    {
+      "type": "Short, disconnected sentences",
+      "count": 5,
+      "tip": "Practice using 'which', 'that', 'because' to connect your ideas into longer thoughts. Native speakers rarely use only 3-4 word sentences."
+    }
+  ],
+  "strengths": ["You communicated your main ideas clearly", "Good vocabulary choice with words like X"],
+  "overallLevel": "beginner|intermediate|advanced",
+  "encouragement": "Personal, warm message about their specific progress and what to focus on next"
+}
+
+BE THOROUGH: Find at least 3-5 corrections. Even correct sentences can be improved to sound more natural and fluent. Show them how a native speaker would express the same idea with more detail and flow.`;
+    } else if (mode === 'feedback') {
+      systemPrompt = `You are ${persona.name}, an English tutor providing feedback.
+
+Analyze the user's messages and provide detailed, constructive feedback:
+
+## Overall Impression
+(1-2 sentences about their communication)
+
+## What You Did Well
+- Point out 2-3 things they expressed well
+
+## Areas for Improvement
+For each mistake:
+- **Original:** "what they said"
+- **Better:** "how to say it correctly"
+- **Why:** Brief explanation
+
+## Key Expressions to Practice
+List 3-5 useful expressions from the conversation topic.
+
+## Encouragement
+End with genuine encouragement in your character's style.
+
+Be specific, helpful, and maintain your teaching persona.`;
+    } else {
+      // Default conversation mode
+      systemPrompt += `\n\nIMPORTANT: ALWAYS respond in ENGLISH ONLY. Never use Korean or any other language.\n\nYou are having a natural conversation. Keep responses concise (2-3 sentences). Ask follow-up questions to keep the conversation going. Remember: DO NOT correct grammar or pronunciation during the conversation - just respond naturally.`;
+    }
+
+    // Format messages for OpenAI
+    const openaiMessages = [
+      { role: 'system' as const, content: systemPrompt },
+      ...messages.map((msg: Message) => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+      })),
+    ];
+
+    // Optimize max_tokens based on mode
+    const maxTokens = mode === 'interview' ? 150 : mode === 'analysis' ? 2048 : 500;
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: maxTokens,
+      temperature: 0.8,
+      presence_penalty: 0.6,
+      frequency_penalty: 0.3,
+      messages: openaiMessages,
+    });
+
+    const assistantMessage = response.choices[0]?.message?.content || '';
+
+    // Parse JSON for analysis mode
+    if (mode === 'analysis') {
+      try {
+        const analysisData = JSON.parse(assistantMessage);
+        return NextResponse.json({ analysis: analysisData });
+      } catch {
+        // If JSON parsing fails, return raw message
+        return NextResponse.json({ message: assistantMessage, parseError: true });
+      }
+    }
+
+    return NextResponse.json({ message: assistantMessage });
+  } catch (error) {
+    console.error('Chat error:', error);
+    return NextResponse.json(
+      { error: 'Failed to get response' },
+      { status: 500 }
+    );
+  }
+}

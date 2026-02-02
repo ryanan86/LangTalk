@@ -1,0 +1,878 @@
+'use client';
+
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { personas } from '@/lib/personas';
+
+type Phase = 'ready' | 'recording' | 'interview' | 'analysis' | 'review' | 'shadowing' | 'summary';
+
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+interface Correction {
+  original: string;
+  intended: string;
+  corrected: string;
+  explanation: string;
+  category: string;
+}
+
+interface ErrorPattern {
+  type: string;
+  count: number;
+  tip: string;
+}
+
+interface Analysis {
+  corrections: Correction[];
+  patterns: ErrorPattern[];
+  strengths: string[];
+  overallLevel: string;
+  encouragement: string;
+}
+
+function TalkContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const tutorId = searchParams.get('tutor') || 'emma';
+  const persona = personas[tutorId];
+
+  // Phase management
+  const [phase, setPhase] = useState<Phase>('ready');
+  const [timeLeft, setTimeLeft] = useState(30);
+
+  // Conversation state
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [conversationTime, setConversationTime] = useState(0); // in seconds
+  const maxConversationTime = 10 * 60; // 10 minutes in seconds
+
+  // Processing states
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isRecordingReply, setIsRecordingReply] = useState(false);
+
+  // Analysis & Review state
+  const [analysis, setAnalysis] = useState<Analysis | null>(null);
+  const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
+
+  // Shadowing state
+  const [shadowingIndex, setShadowingIndex] = useState(0);
+  const [shadowingAttempts, setShadowingAttempts] = useState<string[]>([]);
+
+  // Refs
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Auto-scroll messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Timer for initial recording (counts up, no auto-stop)
+  useEffect(() => {
+    if (phase === 'recording') {
+      timerRef.current = setTimeout(() => setTimeLeft(t => t + 1), 1000);
+    }
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [phase, timeLeft]);
+
+  // Timer for conversation (counts up)
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+    if (phase === 'interview') {
+      intervalId = setInterval(() => {
+        setConversationTime(t => t + 1);
+      }, 1000);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [phase]);
+
+  // Format time as MM:SS
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // ========== Recording Functions ==========
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // Check supported MIME types
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+          ? 'audio/webm'
+          : 'audio/mp4';
+
+      console.log('Using MIME type:', mimeType);
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        console.log('Data available, size:', event.data.size);
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        console.log('Recording stopped, chunks:', audioChunksRef.current.length);
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        console.log('Audio blob size:', audioBlob.size);
+        stream.getTracks().forEach(track => track.stop());
+        await processAudio(audioBlob, true);
+      };
+
+      mediaRecorder.start(1000); // Collect data every 1 second
+      setPhase('recording');
+      setTimeLeft(0);
+      console.log('Recording started, mimeType:', mimeType, 'state:', mediaRecorder.state);
+    } catch (error) {
+      console.error('Microphone error:', error);
+      alert('Please allow microphone access.');
+    }
+  };
+
+  const stopRecording = useCallback(() => {
+    console.log('stopRecording called');
+    console.log('mediaRecorder state:', mediaRecorderRef.current?.state);
+    if (mediaRecorderRef.current) {
+      if (mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+        console.log('Recording stopped');
+      } else {
+        console.log('MediaRecorder not in recording state, forcing stop');
+        try {
+          mediaRecorderRef.current.stop();
+        } catch (e) {
+          console.log('Error stopping:', e);
+        }
+      }
+    } else {
+      console.log('No mediaRecorder found');
+    }
+  }, []);
+
+  const recordReply = async () => {
+    if (isRecordingReply) {
+      stopRecording();
+      setIsRecordingReply(false);
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+          ? 'audio/webm'
+          : 'audio/mp4';
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+      setIsRecordingReply(true);
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        setIsRecordingReply(false);
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        console.log('Reply audio blob size:', audioBlob.size);
+        stream.getTracks().forEach(track => track.stop());
+        await processAudio(audioBlob, false);
+      };
+
+      mediaRecorder.start(1000);
+    } catch (error) {
+      console.error('Recording error:', error);
+      setIsRecordingReply(false);
+    }
+  };
+
+  // ========== Audio Processing ==========
+
+  const processAudio = async (audioBlob: Blob, isInitial: boolean) => {
+    setIsProcessing(true);
+    console.log('processAudio called, isInitial:', isInitial);
+
+    try {
+      const file = new File([audioBlob], 'audio.webm', { type: 'audio/webm' });
+      const formData = new FormData();
+      formData.append('audio', file);
+
+      console.log('Sending audio to STT...');
+      const sttResponse = await fetch('/api/speech-to-text', {
+        method: 'POST',
+        body: formData,
+      });
+      const sttData = await sttResponse.json();
+      console.log('STT response:', sttData);
+
+      if (sttData.text && sttData.text.trim()) {
+        const userMessage: Message = { role: 'user', content: sttData.text };
+        const newMessages = [...messages, userMessage];
+        setMessages(newMessages);
+
+        if (isInitial) {
+          console.log('Switching to interview phase');
+          setPhase('interview');
+        }
+
+        await getAIResponse(newMessages);
+      } else {
+        console.log('No text from STT, but continuing anyway');
+        // Still move to interview phase even if no text was recognized
+        if (isInitial) {
+          setPhase('interview');
+          // Send a default message so AI can start the conversation
+          const defaultMessage: Message = { role: 'user', content: "Hi, I'd like to practice English conversation." };
+          const newMessages = [defaultMessage];
+          setMessages(newMessages);
+          await getAIResponse(newMessages);
+        }
+      }
+    } catch (error) {
+      console.error('Audio processing error:', error);
+      // Even on error, move to interview phase so user isn't stuck
+      if (isInitial) {
+        setPhase('interview');
+      }
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // ========== AI Functions ==========
+
+  const getAIResponse = async (currentMessages: Message[]) => {
+    setIsProcessing(true);
+    try {
+      // Keep only the last 10 messages to prevent slow responses
+      // Always include the first message for context
+      const MAX_MESSAGES = 10;
+      let messagesToSend = currentMessages;
+
+      if (currentMessages.length > MAX_MESSAGES) {
+        const firstMessage = currentMessages[0];
+        const recentMessages = currentMessages.slice(-MAX_MESSAGES + 1);
+        messagesToSend = [firstMessage, ...recentMessages];
+      }
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: messagesToSend,
+          tutorId,
+          mode: 'interview',
+        }),
+      });
+      const data = await response.json();
+
+      if (data.message) {
+        const assistantMessage: Message = { role: 'assistant', content: data.message };
+        setMessages(prev => [...prev, assistantMessage]);
+        await playTTS(data.message);
+      }
+    } catch (error) {
+      console.error('AI response error:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const getAnalysis = async () => {
+    setPhase('analysis');
+    setIsProcessing(true);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: messages,
+          tutorId,
+          mode: 'analysis',
+        }),
+      });
+      const data = await response.json();
+
+      if (data.analysis) {
+        setAnalysis(data.analysis);
+        setPhase('review');
+      } else {
+        console.error('Analysis parsing failed');
+        setPhase('summary');
+      }
+    } catch (error) {
+      console.error('Analysis error:', error);
+      setPhase('summary');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // ========== TTS Function ==========
+
+  const playTTS = async (text: string) => {
+    setIsPlaying(true);
+    try {
+      const response = await fetch('/api/text-to-speech', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, voice: persona.voice }),
+      });
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+
+      if (audioRef.current) {
+        audioRef.current.src = audioUrl;
+        await audioRef.current.play();
+      }
+    } catch (error) {
+      console.error('TTS error:', error);
+    } finally {
+      setIsPlaying(false);
+    }
+  };
+
+  // ========== Navigation ==========
+
+  const nextReview = () => {
+    if (analysis && currentReviewIndex < analysis.corrections.length - 1) {
+      setCurrentReviewIndex(prev => prev + 1);
+    } else {
+      // Move to shadowing if there are corrections
+      if (analysis && analysis.corrections.length > 0) {
+        setShadowingIndex(0);
+        setPhase('shadowing');
+      } else {
+        setPhase('summary');
+      }
+    }
+  };
+
+  const startShadowing = () => {
+    if (analysis && analysis.corrections.length > 0) {
+      setShadowingIndex(0);
+      setPhase('shadowing');
+    } else {
+      setPhase('summary');
+    }
+  };
+
+  const nextShadowing = () => {
+    if (analysis && shadowingIndex < analysis.corrections.length - 1) {
+      setShadowingIndex(prev => prev + 1);
+    } else {
+      setPhase('summary');
+    }
+  };
+
+  const resetSession = () => {
+    setMessages([]);
+    setConversationTime(0);
+    setAnalysis(null);
+    setCurrentReviewIndex(0);
+    setShadowingIndex(0);
+    setShadowingAttempts([]);
+    setPhase('ready');
+  };
+
+  if (!persona) {
+    return <div className="min-h-screen flex items-center justify-center">Invalid tutor</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-neutral-50 flex flex-col">
+      <audio ref={audioRef} onEnded={() => setIsPlaying(false)} />
+
+      {/* Header */}
+      <header className="bg-white border-b border-neutral-200 px-6 py-4">
+        <div className="max-w-2xl mx-auto flex justify-between items-center">
+          <button onClick={() => router.push('/')} className="text-neutral-500 hover:text-neutral-700">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center`}>
+              <span className="text-white font-bold">{persona.name[0]}</span>
+            </div>
+            <div>
+              <h2 className="font-semibold text-neutral-900">{persona.name}</h2>
+              <p className="text-xs text-neutral-500">
+                {phase === 'ready' && 'Ready to start'}
+                {phase === 'recording' && 'Free Talk'}
+                {phase === 'interview' && `Conversation ${formatTime(conversationTime)} / ${formatTime(maxConversationTime)}`}
+                {phase === 'analysis' && 'Analyzing...'}
+                {phase === 'review' && 'Correction Review'}
+                {phase === 'shadowing' && 'Shadowing Practice'}
+                {phase === 'summary' && 'Session Complete'}
+              </p>
+            </div>
+          </div>
+
+          {phase === 'interview' && conversationTime >= 60 && (
+            <button onClick={getAnalysis} className="text-sm text-primary-600 font-medium hover:text-primary-700">
+              End Session
+            </button>
+          )}
+          {phase !== 'interview' && <div className="w-20" />}
+        </div>
+      </header>
+
+      {/* Progress Bar */}
+      <div className="bg-white border-b border-neutral-100 px-6 py-2">
+        <div className="max-w-2xl mx-auto">
+          <div className="flex gap-1">
+            {['recording', 'interview', 'review', 'shadowing', 'summary'].map((step, idx) => (
+              <div
+                key={step}
+                className={`h-1 flex-1 rounded-full transition-colors ${
+                  ['ready', 'recording', 'interview', 'analysis', 'review', 'shadowing', 'summary'].indexOf(phase) > idx
+                    ? 'bg-primary-500'
+                    : 'bg-neutral-200'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col max-w-2xl mx-auto w-full">
+
+        {/* ========== READY PHASE ========== */}
+        {phase === 'ready' && (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+            <div className={`w-24 h-24 rounded-3xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center mb-6 animate-bounce-soft`}>
+              <span className="text-white text-4xl font-display font-bold">{persona.name[0]}</span>
+            </div>
+
+            <h2 className="text-2xl font-bold text-neutral-900 mb-2">
+              Ready to practice with {persona.name}?
+            </h2>
+            <p className="text-neutral-600 mb-8 max-w-md">
+              You&apos;ll have 30 seconds to speak freely. Then {persona.name} will interview you about your topic.
+            </p>
+
+            <div className="bg-primary-50 rounded-2xl p-6 mb-8 max-w-md">
+              <h3 className="font-semibold text-primary-900 mb-3">Session Flow:</h3>
+              <div className="space-y-2 text-sm text-primary-700">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 bg-primary-200 rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                  <span>30-second free talk</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 bg-primary-200 rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                  <span>AI interview conversation</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 bg-primary-200 rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                  <span>Correction review with audio</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 bg-primary-200 rounded-full flex items-center justify-center text-xs font-bold">4</span>
+                  <span>Shadowing practice</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 bg-primary-200 rounded-full flex items-center justify-center text-xs font-bold">5</span>
+                  <span>Session summary</span>
+                </div>
+              </div>
+            </div>
+
+            <button onClick={startRecording} className="btn-primary flex items-center gap-3 text-lg px-8 py-4">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+              Start Free Talk
+            </button>
+          </div>
+        )}
+
+        {/* ========== RECORDING PHASE ========== */}
+        {phase === 'recording' && (
+          <div className="flex-1 flex flex-col items-center justify-center p-8">
+            <div className="relative mb-8">
+              <svg className="w-40 h-40 timer-circle" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" stroke="#E5E5E5" />
+                <circle
+                  cx="50" cy="50" r="45"
+                  stroke={timeLeft >= 30 ? '#22C55E' : '#4F46E5'}
+                  strokeDasharray={`${Math.min(timeLeft / 30, 1) * 283} 283`}
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className={`text-4xl font-bold ${timeLeft >= 30 ? 'text-green-600' : 'text-neutral-900'}`}>
+                  {formatTime(timeLeft)}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1 h-8 mb-6">
+              {[...Array(5)].map((_, i) => (<div key={i} className="voice-bar" />))}
+            </div>
+
+            {timeLeft < 30 ? (
+              <>
+                <p className="text-neutral-600 mb-2 text-lg">Speak freely about anything!</p>
+                <p className="text-neutral-400 text-sm mb-8">Keep going for at least 30 seconds</p>
+              </>
+            ) : (
+              <>
+                <p className="text-green-600 mb-2 text-lg font-medium">Great! Keep going if you want!</p>
+                <p className="text-neutral-400 text-sm mb-8">The more you share, the better the conversation</p>
+              </>
+            )}
+
+            <button
+              onClick={() => {
+                console.log('Done Speaking button clicked, timeLeft:', timeLeft);
+                stopRecording();
+              }}
+              className="px-8 py-3 rounded-2xl font-medium transition-colors bg-green-500 text-white hover:bg-green-600"
+            >
+              Done Speaking ({formatTime(timeLeft)})
+            </button>
+          </div>
+        )}
+
+        {/* ========== INTERVIEW PHASE ========== */}
+        {phase === 'interview' && (
+          <>
+            {/* Audio-only conversation - no text displayed */}
+            <div className="flex-1 flex flex-col items-center justify-center p-8">
+              {/* Tutor Avatar */}
+              <div className={`w-32 h-32 rounded-3xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center mb-6 ${isPlaying ? 'animate-pulse' : ''}`}>
+                <span className="text-white text-5xl font-display font-bold">{persona.name[0]}</span>
+              </div>
+
+              {/* Status Indicator */}
+              <div className="text-center mb-8">
+                {isPlaying && (
+                  <div className="flex flex-col items-center">
+                    <div className="flex items-center gap-1 h-8 mb-3">
+                      {[...Array(5)].map((_, i) => (<div key={i} className="voice-bar" />))}
+                    </div>
+                    <p className="text-neutral-600 font-medium">{persona.name} is speaking...</p>
+                  </div>
+                )}
+                {isProcessing && !isPlaying && (
+                  <div className="flex flex-col items-center">
+                    <div className="flex gap-2 mb-3">
+                      <div className="loading-dot" />
+                      <div className="loading-dot" />
+                      <div className="loading-dot" />
+                    </div>
+                    <p className="text-neutral-500">Thinking...</p>
+                  </div>
+                )}
+                {isRecordingReply && (
+                  <div className="flex flex-col items-center">
+                    <div className="flex items-center gap-1 h-8 mb-3">
+                      {[...Array(5)].map((_, i) => (<div key={i} className="voice-bar" style={{ backgroundColor: '#EF4444' }} />))}
+                    </div>
+                    <p className="text-red-500 font-medium">Recording your voice...</p>
+                  </div>
+                )}
+                {!isPlaying && !isProcessing && !isRecordingReply && (
+                  <p className="text-neutral-500">Tap the button below to speak</p>
+                )}
+              </div>
+
+              {/* Hidden messages container for scroll ref */}
+              <div ref={messagesEndRef} className="hidden" />
+            </div>
+
+            <div className="p-6 bg-white border-t border-neutral-200">
+              <div className="flex gap-3">
+                <button
+                  onClick={recordReply}
+                  disabled={isProcessing || isPlaying}
+                  className={`flex-1 py-4 rounded-2xl font-medium flex items-center justify-center gap-2 transition-all ${
+                    isRecordingReply
+                      ? 'bg-red-500 text-white recording-active'
+                      : isProcessing || isPlaying
+                        ? 'bg-neutral-100 text-neutral-400'
+                        : 'btn-primary'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                  {isRecordingReply ? 'Stop' : isPlaying ? 'Listening...' : isProcessing ? 'Processing...' : 'Reply'}
+                </button>
+
+                <button
+                  onClick={getAnalysis}
+                  disabled={isProcessing || isPlaying || isRecordingReply}
+                  className="px-6 py-4 rounded-2xl font-medium bg-neutral-800 text-white hover:bg-neutral-900 transition-all disabled:bg-neutral-300 disabled:text-neutral-500"
+                >
+                  Done
+                </button>
+              </div>
+
+              <p className="text-center text-neutral-400 text-sm mt-3">
+                {formatTime(conversationTime)} / {formatTime(maxConversationTime)}
+              </p>
+            </div>
+          </>
+        )}
+
+        {/* ========== ANALYSIS PHASE ========== */}
+        {phase === 'analysis' && (
+          <div className="flex-1 flex flex-col items-center justify-center p-8">
+            <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center mb-6`}>
+              <span className="text-white text-3xl font-bold">{persona.name[0]}</span>
+            </div>
+            <h2 className="text-xl font-bold text-neutral-900 mb-2">{persona.name} is reviewing your session...</h2>
+            <p className="text-neutral-500 mb-6">Analyzing your conversation for feedback</p>
+            <div className="flex gap-2">
+              <div className="loading-dot" />
+              <div className="loading-dot" />
+              <div className="loading-dot" />
+            </div>
+          </div>
+        )}
+
+        {/* ========== REVIEW PHASE ========== */}
+        {phase === 'review' && analysis && (
+          <div className="flex-1 flex flex-col p-6">
+            <div className="text-center mb-6">
+              <span className="text-sm text-neutral-500">Correction {currentReviewIndex + 1} of {analysis.corrections.length}</span>
+            </div>
+
+            {analysis.corrections.length > 0 ? (
+              <div className="flex-1 flex flex-col justify-center">
+                <div className="card-premium p-6 mb-6">
+                  {/* Original */}
+                  <div className="mb-6">
+                    <span className="text-xs font-medium text-red-500 uppercase tracking-wider">What you said</span>
+                    <p className="text-lg text-neutral-800 mt-2 line-through decoration-red-300">
+                      {analysis.corrections[currentReviewIndex].original}
+                    </p>
+                  </div>
+
+                  {/* Intended */}
+                  <div className="mb-6 p-4 bg-neutral-50 rounded-xl">
+                    <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider">What you meant</span>
+                    <p className="text-neutral-700 mt-2">
+                      {analysis.corrections[currentReviewIndex].intended}
+                    </p>
+                  </div>
+
+                  {/* Corrected */}
+                  <div className="mb-6">
+                    <span className="text-xs font-medium text-green-600 uppercase tracking-wider">Correct way to say it</span>
+                    <div className="flex items-center gap-3 mt-2">
+                      <p className="text-lg text-green-700 font-medium flex-1">
+                        {analysis.corrections[currentReviewIndex].corrected}
+                      </p>
+                      <button
+                        onClick={() => playTTS(analysis.corrections[currentReviewIndex].corrected)}
+                        disabled={isPlaying}
+                        className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center hover:bg-green-200 transition-colors"
+                      >
+                        {isPlaying ? (
+                          <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Explanation */}
+                  <div className="p-4 bg-primary-50 rounded-xl">
+                    <span className="text-xs font-medium text-primary-600 uppercase tracking-wider">Why?</span>
+                    <p className="text-primary-900 mt-2 text-sm">
+                      {analysis.corrections[currentReviewIndex].explanation}
+                    </p>
+                    <span className="inline-block mt-2 px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full">
+                      {analysis.corrections[currentReviewIndex].category}
+                    </span>
+                  </div>
+                </div>
+
+                <button onClick={nextReview} className="btn-primary w-full">
+                  {currentReviewIndex < analysis.corrections.length - 1 ? 'Next Correction' : 'Start Shadowing Practice'}
+                </button>
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-neutral-900 mb-2">Great job!</h3>
+                <p className="text-neutral-600 mb-6">No major corrections needed.</p>
+                <button onClick={() => setPhase('summary')} className="btn-primary">
+                  View Summary
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ========== SHADOWING PHASE ========== */}
+        {phase === 'shadowing' && analysis && analysis.corrections.length > 0 && (
+          <div className="flex-1 flex flex-col p-6">
+            <div className="text-center mb-6">
+              <span className="text-sm text-neutral-500">Shadowing {shadowingIndex + 1} of {analysis.corrections.length}</span>
+            </div>
+
+            <div className="flex-1 flex flex-col justify-center">
+              <div className="card-premium p-6 mb-6 text-center">
+                <p className="text-sm text-neutral-500 mb-4">Listen and repeat:</p>
+                <p className="text-2xl font-medium text-neutral-900 mb-6">
+                  {analysis.corrections[shadowingIndex].corrected}
+                </p>
+
+                <button
+                  onClick={() => playTTS(analysis.corrections[shadowingIndex].corrected)}
+                  disabled={isPlaying}
+                  className="w-20 h-20 mx-auto bg-primary-100 rounded-full flex items-center justify-center hover:bg-primary-200 transition-colors mb-6"
+                >
+                  {isPlaying ? (
+                    <div className="flex items-center gap-1 h-8">
+                      {[...Array(5)].map((_, i) => (<div key={i} className="voice-bar" />))}
+                    </div>
+                  ) : (
+                    <svg className="w-10 h-10 text-primary-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  )}
+                </button>
+
+                <p className="text-sm text-neutral-400">Tap to play, then practice saying it aloud</p>
+              </div>
+
+              <button onClick={nextShadowing} className="btn-primary w-full">
+                {shadowingIndex < analysis.corrections.length - 1 ? 'Next Sentence' : 'View Summary'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ========== SUMMARY PHASE ========== */}
+        {phase === 'summary' && (
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="text-center mb-8">
+              <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center mx-auto mb-4`}>
+                <span className="text-white text-3xl font-bold">{persona.name[0]}</span>
+              </div>
+              <h2 className="text-2xl font-bold text-neutral-900">Session Complete!</h2>
+            </div>
+
+            {analysis && (
+              <>
+                {/* Strengths */}
+                <div className="card-premium p-6 mb-4">
+                  <h3 className="font-semibold text-neutral-900 mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </span>
+                    What you did well
+                  </h3>
+                  <ul className="space-y-2">
+                    {analysis.strengths.map((strength, idx) => (
+                      <li key={idx} className="text-neutral-700 text-sm flex items-start gap-2">
+                        <span className="text-green-500 mt-0.5">•</span>
+                        {strength}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Error Patterns */}
+                {analysis.patterns.length > 0 && (
+                  <div className="card-premium p-6 mb-4">
+                    <h3 className="font-semibold text-neutral-900 mb-3 flex items-center gap-2">
+                      <span className="w-6 h-6 bg-amber-100 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      </span>
+                      Areas to focus on
+                    </h3>
+                    <div className="space-y-3">
+                      {analysis.patterns.map((pattern, idx) => (
+                        <div key={idx} className="p-3 bg-amber-50 rounded-xl">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-medium text-amber-900">{pattern.type}</span>
+                            <span className="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full">{pattern.count}x</span>
+                          </div>
+                          <p className="text-sm text-amber-700">{pattern.tip}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Encouragement */}
+                <div className="card-premium p-6 mb-6 bg-gradient-to-br from-primary-50 to-white">
+                  <p className="text-primary-900 italic">&ldquo;{analysis.encouragement}&rdquo;</p>
+                  <p className="text-sm text-primary-600 mt-2">— {persona.name}</p>
+                </div>
+              </>
+            )}
+
+            <div className="flex gap-4">
+              <button onClick={() => router.push('/')} className="flex-1 btn-secondary">
+                Back to Home
+              </button>
+              <button onClick={resetSession} className="flex-1 btn-primary">
+                Practice Again
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+export default function TalkPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex gap-2">
+          <div className="loading-dot" />
+          <div className="loading-dot" />
+          <div className="loading-dot" />
+        </div>
+      </div>
+    }>
+      <TalkContent />
+    </Suspense>
+  );
+}

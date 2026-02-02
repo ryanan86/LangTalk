@@ -1,100 +1,538 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession, signIn, signOut } from 'next-auth/react';
+
+interface Persona {
+  id: string;
+  name: string;
+  nationality: 'american' | 'british';
+  gender: 'female' | 'male';
+  description: string;
+  style: string;
+  voice: string; // OpenAI TTS voice
+  gradient: string;
+  flag: string;
+  sampleText: string;
+}
+
+const personas: Persona[] = [
+  {
+    id: 'emma',
+    name: 'Emma',
+    nationality: 'american',
+    gender: 'female',
+    description: 'Your American bestie',
+    style: 'Fun, expressive, the friend who hypes you up',
+    voice: 'shimmer',
+    gradient: 'from-rose-400 to-pink-500',
+    flag: '🇺🇸',
+    sampleText: "Oh my gosh, hi! I'm Emma. I'm so excited to chat with you today! Let's have some fun conversations together.",
+  },
+  {
+    id: 'james',
+    name: 'James',
+    nationality: 'american',
+    gender: 'male',
+    description: 'Chill American bro',
+    style: 'Relaxed, funny, great storyteller',
+    voice: 'echo',
+    gradient: 'from-blue-400 to-indigo-500',
+    flag: '🇺🇸',
+    sampleText: "Hey, what's up! I'm James. Super chill vibes here, no pressure at all. Let's just hang out and talk about whatever.",
+  },
+  {
+    id: 'charlotte',
+    name: 'Charlotte',
+    nationality: 'british',
+    gender: 'female',
+    description: 'Witty British friend',
+    style: 'Charming, clever, great banter',
+    voice: 'fable',
+    gradient: 'from-violet-400 to-purple-500',
+    flag: '🇬🇧',
+    sampleText: "Hello there! I'm Charlotte. Lovely to meet you. I do enjoy a good chat, so let's get started, shall we?",
+  },
+  {
+    id: 'oliver',
+    name: 'Oliver',
+    nationality: 'british',
+    gender: 'male',
+    description: 'Cool British guy',
+    style: 'Dry wit, genuine, easy to talk to',
+    voice: 'onyx',
+    gradient: 'from-emerald-400 to-teal-500',
+    flag: '🇬🇧',
+    sampleText: "Right then, hello! I'm Oliver. Looking forward to having a proper conversation with you. No formalities needed here.",
+  },
+];
+
+export default function HomePage() {
+  const router = useRouter();
+  const { data: session, status } = useSession();
+  const [selectedPersona, setSelectedPersona] = useState<string | null>(null);
+  const [isSubscribed, setIsSubscribed] = useState<boolean | null>(null);
+  const [checkingSubscription, setCheckingSubscription] = useState(false);
+
+  // Mic test states
+  const [isTesting, setIsTesting] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [testResult, setTestResult] = useState<string | null>(null);
+  const [testStatus, setTestStatus] = useState<'idle' | 'recording' | 'processing' | 'success' | 'error'>('idle');
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
+  // Voice preview states
+  const [playingVoice, setPlayingVoice] = useState<string | null>(null);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (session?.user?.email) {
+      checkSubscription();
+    }
+  }, [session]);
+
+  const startMicTest = async () => {
+    setIsTesting(true);
+    setTestResult(null);
+    setTestStatus('recording');
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+          ? 'audio/webm'
+          : 'audio/mp4';
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        setTestStatus('processing');
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        stream.getTracks().forEach(track => track.stop());
+
+        try {
+          const file = new File([audioBlob], 'test.webm', { type: mimeType });
+          const formData = new FormData();
+          formData.append('audio', file);
+
+          const response = await fetch('/api/speech-to-text', {
+            method: 'POST',
+            body: formData,
+          });
+          const data = await response.json();
+
+          if (data.text && data.text.trim()) {
+            setTestResult(data.text);
+            setTestStatus('success');
+          } else {
+            setTestResult('No speech detected. Please try again.');
+            setTestStatus('error');
+          }
+        } catch {
+          setTestResult('Error processing audio. Please try again.');
+          setTestStatus('error');
+        }
+      };
+
+      mediaRecorder.start(1000);
+      setIsRecording(true);
+
+      // Auto stop after 5 seconds
+      setTimeout(() => {
+        if (mediaRecorder.state === 'recording') {
+          mediaRecorder.stop();
+          setIsRecording(false);
+        }
+      }, 5000);
+
+    } catch {
+      setTestResult('Microphone access denied. Please allow microphone.');
+      setTestStatus('error');
+    }
+  };
+
+  const stopMicTest = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const checkSubscription = async () => {
+    setCheckingSubscription(true);
+    try {
+      const res = await fetch('/api/check-subscription');
+      const data = await res.json();
+      setIsSubscribed(data.subscribed);
+    } catch {
+      setIsSubscribed(true); // Fail-open for development
+    } finally {
+      setCheckingSubscription(false);
+    }
+  };
+
+  const playVoicePreview = async (persona: Persona, e: React.MouseEvent) => {
+    e.stopPropagation(); // Don't select the persona when clicking preview
+
+    // If already playing this voice, stop it
+    if (playingVoice === persona.id) {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+        previewAudioRef.current = null;
+      }
+      setPlayingVoice(null);
+      return;
+    }
+
+    // Stop any currently playing audio
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+    }
+
+    setPlayingVoice(persona.id);
+
+    try {
+      const response = await fetch('/api/text-to-speech', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: persona.sampleText,
+          voice: persona.voice,
+        }),
+      });
+
+      if (!response.ok) throw new Error('TTS failed');
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      previewAudioRef.current = audio;
+
+      audio.onended = () => {
+        setPlayingVoice(null);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      audio.onerror = () => {
+        setPlayingVoice(null);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      await audio.play();
+    } catch {
+      setPlayingVoice(null);
+    }
+  };
+
+  const handleStart = () => {
+    if (selectedPersona) {
+      router.push(`/talk?tutor=${selectedPersona}`);
+    }
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-primary-50">
+      {/* Header */}
+      <header className="px-6 py-6">
+        <div className="max-w-4xl mx-auto flex justify-between items-center">
+          <h1 className="font-display text-2xl font-bold gradient-text">LangTalk</h1>
+          {status === 'loading' ? (
+            <div className="w-8 h-8 rounded-full bg-neutral-200 animate-pulse" />
+          ) : session ? (
+            <div className="flex items-center gap-3">
+              {session.user?.image && (
+                <img
+                  src={session.user.image}
+                  alt={session.user.name || ''}
+                  className="w-8 h-8 rounded-full"
+                />
+              )}
+              <span className="text-sm text-neutral-600 hidden sm:block">
+                {session.user?.name}
+              </span>
+              <button
+                onClick={() => signOut()}
+                className="btn-secondary text-sm"
+              >
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => signIn('google')}
+              className="btn-secondary text-sm"
+            >
+              <span className="flex items-center gap-2">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                Sign in
+              </span>
+            </button>
+          )}
+        </div>
+      </header>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      {/* Main Content */}
+      <main className="max-w-4xl mx-auto px-6 py-12">
+        {/* Hero Section */}
+        <div className="text-center mb-16 animate-fade-in">
+          <h2 className="font-display text-4xl md:text-5xl font-bold text-neutral-900 mb-4">
+            Practice English with
+            <br />
+            <span className="gradient-text">AI Tutors</span>
+          </h2>
+          <p className="text-neutral-600 text-lg max-w-xl mx-auto">
+            Speak freely for 30 seconds, then have a natural conversation.
+            Get detailed feedback after your session.
+          </p>
+        </div>
+
+        {/* Microphone Test */}
+        <div className="mb-12 max-w-md mx-auto">
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-100">
+            <h3 className="text-neutral-900 font-semibold mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+              Test Your Microphone
+            </h3>
+
+            {!isTesting ? (
+              <button
+                onClick={startMicTest}
+                className="w-full py-3 px-4 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl transition-colors flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+                Click to Test
+              </button>
+            ) : (
+              <div className="space-y-4">
+                {testStatus === 'recording' && (
+                  <div className="flex items-center justify-center gap-3 py-4">
+                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                    <span className="text-neutral-600">Recording... Speak now!</span>
+                    <button
+                      onClick={stopMicTest}
+                      className="ml-2 px-3 py-1 bg-neutral-200 hover:bg-neutral-300 rounded-lg text-sm"
+                    >
+                      Stop
+                    </button>
+                  </div>
+                )}
+
+                {testStatus === 'processing' && (
+                  <div className="flex items-center justify-center gap-3 py-4">
+                    <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-neutral-600">Processing...</span>
+                  </div>
+                )}
+
+                {(testStatus === 'success' || testStatus === 'error') && (
+                  <div className={`p-4 rounded-xl ${testStatus === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                    <div className="flex items-start gap-2">
+                      {testStatus === 'success' ? (
+                        <svg className="w-5 h-5 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5 text-red-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      )}
+                      <div>
+                        <p className={`text-sm ${testStatus === 'success' ? 'text-green-800' : 'text-red-800'}`}>
+                          {testStatus === 'success' ? 'We heard:' : 'Error:'}
+                        </p>
+                        <p className={`font-medium ${testStatus === 'success' ? 'text-green-900' : 'text-red-900'}`}>
+                          "{testResult}"
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setIsTesting(false);
+                        setTestResult(null);
+                        setTestStatus('idle');
+                      }}
+                      className="mt-3 w-full py-2 bg-white hover:bg-neutral-50 border border-neutral-200 rounded-lg text-sm text-neutral-600"
+                    >
+                      Test Again
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <p className="text-neutral-400 text-xs mt-3 text-center">
+              Say something to verify your microphone works
+            </p>
+          </div>
+        </div>
+
+        {/* Persona Selection */}
+        <div className="mb-12">
+          <h3 className="text-center text-neutral-500 text-sm font-medium uppercase tracking-wider mb-8">
+            Choose Your Tutor
+          </h3>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            {personas.map((persona) => (
+              <button
+                key={persona.id}
+                onClick={() => setSelectedPersona(persona.id)}
+                className={`persona-card bg-white text-left ${
+                  selectedPersona === persona.id ? 'selected' : ''
+                }`}
+              >
+                {/* Avatar */}
+                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center mb-4`}>
+                  <span className="text-white text-2xl font-display font-bold">
+                    {persona.name[0]}
+                  </span>
+                </div>
+
+                {/* Info */}
+                <div className="flex items-center gap-2 mb-2">
+                  <h4 className="font-display text-xl font-semibold text-neutral-900">
+                    {persona.name}
+                  </h4>
+                  <span className="text-lg">{persona.flag}</span>
+                </div>
+
+                <p className="text-neutral-600 text-sm mb-2">{persona.description}</p>
+                <p className="text-neutral-400 text-xs mb-3">{persona.style}</p>
+
+                {/* Voice Preview Button */}
+                <div
+                  onClick={(e) => playVoicePreview(persona, e)}
+                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    playingVoice === persona.id
+                      ? 'bg-primary-100 text-primary-700'
+                      : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                  }`}
+                >
+                  {playingVoice === persona.id ? (
+                    <>
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                        <rect x="6" y="4" width="4" height="16" rx="1" />
+                        <rect x="14" y="4" width="4" height="16" rx="1" />
+                      </svg>
+                      Playing...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                      Preview Voice
+                    </>
+                  )}
+                </div>
+
+                {/* Selection Indicator */}
+                {selectedPersona === persona.id && (
+                  <div className="absolute top-4 right-4 w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Start Button */}
+        <div className="text-center">
+          {session && isSubscribed === false && (
+            <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
+              Your subscription is not active. Please contact support to continue.
+            </div>
+          )}
+
+          <button
+            onClick={handleStart}
+            disabled={!selectedPersona || (session && isSubscribed === false)}
+            className={`inline-flex items-center gap-3 px-8 py-4 rounded-2xl text-lg font-semibold transition-all duration-300 ${
+              selectedPersona && (!session || isSubscribed !== false)
+                ? 'btn-primary'
+                : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
+            }`}
           >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+            </svg>
+            Start Conversation
+          </button>
+
+          {!selectedPersona && (
+            <p className="text-neutral-400 text-sm mt-4">
+              Please select a tutor to continue
+            </p>
+          )}
+        </div>
+
+        {/* How it works */}
+        <div className="mt-20 pt-12 border-t border-neutral-200">
+          <h3 className="text-center text-neutral-500 text-sm font-medium uppercase tracking-wider mb-8">
+            How It Works
+          </h3>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <span className="text-primary-600 font-bold">1</span>
+              </div>
+              <h4 className="font-semibold text-neutral-900 mb-2">Speak Freely</h4>
+              <p className="text-neutral-500 text-sm">
+                Talk about anything for 30 seconds. No pressure, just speak naturally.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-12 h-12 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <span className="text-primary-600 font-bold">2</span>
+              </div>
+              <h4 className="font-semibold text-neutral-900 mb-2">Natural Conversation</h4>
+              <p className="text-neutral-500 text-sm">
+                Your AI tutor continues the conversation based on your topic.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-12 h-12 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <span className="text-primary-600 font-bold">3</span>
+              </div>
+              <h4 className="font-semibold text-neutral-900 mb-2">Detailed Feedback</h4>
+              <p className="text-neutral-500 text-sm">
+                Get comprehensive corrections and better ways to express yourself.
+              </p>
+            </div>
+          </div>
         </div>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+
+      {/* Footer */}
+      <footer className="py-8 text-center">
+        <p className="text-neutral-400 text-sm">LangTalk - AI English Conversation Practice</p>
       </footer>
     </div>
   );
