@@ -889,7 +889,7 @@ export default function HomePage() {
                                 : 'bg-gradient-to-b from-white/5 to-transparent hover:from-white/10'
                             }`}>
                               {/* Large Profile Image - No circular frame */}
-                              <div className="relative h-64 sm:h-80 lg:h-96 overflow-hidden">
+                              <div className="relative h-52 sm:h-60 lg:h-72 overflow-hidden">
                                 {/* Background Glow */}
                                 <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-2/3 bg-gradient-to-t ${persona.gradient} rounded-full blur-3xl opacity-30 group-hover:opacity-50 transition-opacity`} />
 
@@ -899,7 +899,7 @@ export default function HomePage() {
                                     src={`/tutors/${persona.id}.png`}
                                     alt={persona.name}
                                     fill
-                                    className="object-cover object-top scale-125 group-hover:scale-130 transition-transform duration-500"
+                                    className="object-cover object-top scale-110 group-hover:scale-115 transition-transform duration-500"
                                     onError={(e) => {
                                       const target = e.target as HTMLImageElement;
                                       target.src = `/tutors/${persona.id}.jpg`;
