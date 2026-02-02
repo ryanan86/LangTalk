@@ -889,24 +889,22 @@ export default function HomePage() {
                                 : 'bg-gradient-to-b from-white/5 to-transparent hover:from-white/10'
                             }`}>
                               {/* Large Profile Image - No circular frame */}
-                              <div className="relative h-48 sm:h-64 overflow-hidden">
+                              <div className="relative h-64 sm:h-80 lg:h-96 overflow-hidden">
                                 {/* Background Glow */}
-                                <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-gradient-to-t ${persona.gradient} rounded-full blur-3xl opacity-40 group-hover:opacity-60 transition-opacity`} />
+                                <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-2/3 bg-gradient-to-t ${persona.gradient} rounded-full blur-3xl opacity-30 group-hover:opacity-50 transition-opacity`} />
 
-                                {/* Tutor Image - Large cutout style */}
-                                <div className="absolute inset-0 flex items-end justify-center">
-                                  <div className="relative w-full h-full">
-                                    <Image
-                                      src={`/tutors/${persona.id}.png`}
-                                      alt={persona.name}
-                                      fill
-                                      className="object-contain object-bottom scale-110 group-hover:scale-115 transition-transform duration-500"
-                                      onError={(e) => {
-                                        const target = e.target as HTMLImageElement;
-                                        target.src = `/tutors/${persona.id}.jpg`;
-                                      }}
-                                    />
-                                  </div>
+                                {/* Tutor Image - Large cutout style filling the card */}
+                                <div className="absolute inset-0">
+                                  <Image
+                                    src={`/tutors/${persona.id}.png`}
+                                    alt={persona.name}
+                                    fill
+                                    className="object-cover object-top scale-125 group-hover:scale-130 transition-transform duration-500"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.src = `/tutors/${persona.id}.jpg`;
+                                    }}
+                                  />
                                 </div>
 
                                 {/* Selection Check */}
