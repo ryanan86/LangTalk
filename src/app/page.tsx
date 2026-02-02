@@ -473,7 +473,7 @@ export default function HomePage() {
 
           <button
             onClick={handleStart}
-            disabled={!selectedPersona || (session && isSubscribed === false)}
+            disabled={!selectedPersona || Boolean(session && isSubscribed === false)}
             className={`inline-flex items-center gap-3 px-8 py-4 rounded-2xl text-lg font-semibold transition-all duration-300 ${
               selectedPersona && (!session || isSubscribed !== false)
                 ? 'btn-primary'
