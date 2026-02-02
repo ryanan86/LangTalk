@@ -856,13 +856,18 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  {/* Tutor Selection */}
-                  <div className="mb-10">
-                    <h2 className="text-center text-white/40 text-sm font-medium uppercase tracking-wider mb-6">
-                      {t.chooseTutor}
-                    </h2>
+                  {/* Tutor Selection - Team Style */}
+                  <div className="mb-12">
+                    <div className="text-center mb-10">
+                      <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+                        {language === 'ko' ? 'AI 튜터를 선택하세요' : 'Meet Your AI Tutors'}
+                      </h2>
+                      <p className="text-white/50">
+                        {language === 'ko' ? '원어민 발음의 AI 튜터와 자유롭게 대화하세요' : 'Practice with native-speaking AI tutors'}
+                      </p>
+                    </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                       {personas.map((persona) => {
                         const { desc, style } = getPersonaDescription(persona.id);
                         const isSelected = selectedPersona === persona.id;
@@ -871,58 +876,89 @@ export default function HomePage() {
                           <button
                             key={persona.id}
                             onClick={() => setSelectedPersona(persona.id)}
-                            className={`group relative p-5 rounded-2xl text-left transition-all duration-300 ${
+                            className={`group relative rounded-3xl text-center transition-all duration-300 overflow-hidden ${
                               isSelected
-                                ? 'bg-white/10 border-2 border-purple-500 scale-[1.02]'
-                                : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20'
+                                ? 'ring-4 ring-purple-500 ring-offset-4 ring-offset-[#0a0a0f] scale-[1.02]'
+                                : 'hover:scale-[1.02]'
                             }`}
                           >
-                            {/* Selection Indicator */}
-                            {isSelected && (
-                              <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center">
-                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                              </div>
-                            )}
+                            {/* Card Background */}
+                            <div className={`absolute inset-0 bg-gradient-to-b ${persona.gradient} opacity-10`} />
 
-                            {/* Avatar */}
-                            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                              <span className="text-white text-2xl font-bold">{persona.name[0]}</span>
+                            {/* Profile Image Container */}
+                            <div className="relative pt-6 px-4">
+                              {/* Glow Effect */}
+                              <div className={`absolute top-8 left-1/2 -translate-x-1/2 w-32 h-32 bg-gradient-to-br ${persona.gradient} rounded-full blur-3xl opacity-30 group-hover:opacity-50 transition-opacity`} />
+
+                              {/* Profile Image */}
+                              <div className="relative mx-auto w-28 h-28 sm:w-36 sm:h-36 rounded-full overflow-hidden ring-4 ring-white/10 group-hover:ring-white/20 transition-all">
+                                <Image
+                                  src={`/tutors/${persona.id}.jpg`}
+                                  alt={persona.name}
+                                  fill
+                                  className="object-cover object-top"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    const fallback = target.nextElementSibling as HTMLElement;
+                                    if (fallback) fallback.style.display = 'flex';
+                                  }}
+                                />
+                                {/* Fallback */}
+                                <div className={`hidden w-full h-full bg-gradient-to-br ${persona.gradient} items-center justify-center`}>
+                                  <span className="text-white text-4xl sm:text-5xl font-bold">{persona.name[0]}</span>
+                                </div>
+                              </div>
+
+                              {/* Selection Check */}
+                              {isSelected && (
+                                <div className="absolute top-4 right-4 w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center shadow-lg shadow-purple-500/50">
+                                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                </div>
+                              )}
                             </div>
 
                             {/* Info */}
-                            <div className="flex items-center gap-2 mb-2">
-                              <h3 className="font-semibold text-white">{persona.name}</h3>
-                              <span>{persona.flag}</span>
-                            </div>
-                            <p className="text-white/60 text-sm mb-1">{desc}</p>
-                            <p className="text-white/40 text-xs">{style}</p>
+                            <div className="relative p-4 sm:p-6">
+                              <div className="flex items-center justify-center gap-2 mb-2">
+                                <h3 className="text-lg sm:text-xl font-bold text-white">{persona.name}</h3>
+                                <span className="text-lg">{persona.flag}</span>
+                              </div>
+                              <p className="text-white/60 text-sm mb-1">{desc}</p>
+                              <p className="text-white/40 text-xs mb-4">{style}</p>
 
-                            {/* Voice Preview */}
-                            <button
-                              onClick={(e) => playVoicePreview(persona, e)}
-                              className={`mt-4 flex items-center gap-2 text-xs font-medium transition-colors ${
-                                playingVoice === persona.id ? 'text-purple-400' : 'text-white/40 hover:text-white/60'
-                              }`}
-                            >
-                              {playingVoice === persona.id ? (
-                                <>
-                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                    <rect x="6" y="4" width="4" height="16" rx="1" />
-                                    <rect x="14" y="4" width="4" height="16" rx="1" />
-                                  </svg>
-                                  {t.playing}
-                                </>
-                              ) : (
-                                <>
-                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M8 5v14l11-7z" />
-                                  </svg>
-                                  {t.previewVoice}
-                                </>
-                              )}
-                            </button>
+                              {/* Voice Preview Button */}
+                              <button
+                                onClick={(e) => playVoicePreview(persona, e)}
+                                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                                  playingVoice === persona.id
+                                    ? 'bg-purple-500 text-white'
+                                    : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
+                                }`}
+                              >
+                                {playingVoice === persona.id ? (
+                                  <>
+                                    <svg className="w-4 h-4 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+                                      <rect x="6" y="4" width="4" height="16" rx="1" />
+                                      <rect x="14" y="4" width="4" height="16" rx="1" />
+                                    </svg>
+                                    {t.playing}
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M8 5v14l11-7z" />
+                                    </svg>
+                                    {t.previewVoice}
+                                  </>
+                                )}
+                              </button>
+                            </div>
+
+                            {/* Bottom Gradient */}
+                            <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${persona.gradient} opacity-50 group-hover:opacity-100 transition-opacity`} />
                           </button>
                         );
                       })}
