@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import Image from 'next/image';
 import { useLanguage, LanguageToggle } from '@/lib/i18n';
+import TutorAvatar, { tutorData } from '@/components/TutorAvatar';
 
 // Typewriter Effect Hook
 function useTypewriter(texts: string[], typingSpeed = 80, deletingSpeed = 40, pauseTime = 2000) {
@@ -837,6 +838,7 @@ export default function HomePage() {
                       {personas.map((persona) => {
                         const { desc, style } = getPersonaDescription(persona.id);
                         const isSelected = selectedPersona === persona.id;
+                        const tutorId = persona.id as 'emma' | 'james' | 'charlotte' | 'oliver';
 
                         return (
                           <button
@@ -850,31 +852,37 @@ export default function HomePage() {
                           >
                             {/* Selection Indicator */}
                             {isSelected && (
-                              <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center">
+                              <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center z-10">
                                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
                               </div>
                             )}
 
-                            {/* Avatar */}
-                            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                              <span className="text-white text-2xl font-bold">{persona.name[0]}</span>
+                            {/* Avatar with TutorAvatar component */}
+                            <div className="flex justify-center mb-4">
+                              <TutorAvatar
+                                tutorId={tutorId}
+                                size="lg"
+                                speaking={playingVoice === persona.id}
+                              />
                             </div>
 
                             {/* Info */}
-                            <div className="flex items-center gap-2 mb-2">
-                              <h3 className="font-semibold text-white">{persona.name}</h3>
-                              <span>{persona.flag}</span>
+                            <div className="text-center mb-2">
+                              <h3 className="font-semibold text-white text-lg">{persona.name}</h3>
+                              <span className="text-sm text-white/50">{tutorData[tutorId].nationality} {tutorData[tutorId].flag}</span>
                             </div>
-                            <p className="text-white/60 text-sm mb-1">{desc}</p>
-                            <p className="text-white/40 text-xs">{style}</p>
+                            <p className="text-white/60 text-sm text-center mb-1">{desc}</p>
+                            <p className="text-white/40 text-xs text-center">{style}</p>
 
                             {/* Voice Preview */}
                             <button
                               onClick={(e) => playVoicePreview(persona, e)}
-                              className={`mt-4 flex items-center gap-2 text-xs font-medium transition-colors ${
-                                playingVoice === persona.id ? 'text-purple-400' : 'text-white/40 hover:text-white/60'
+                              className={`mt-4 w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
+                                playingVoice === persona.id
+                                  ? 'bg-purple-500/20 text-purple-400'
+                                  : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/60'
                               }`}
                             >
                               {playingVoice === persona.id ? (

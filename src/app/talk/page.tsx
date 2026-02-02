@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { personas } from '@/lib/personas';
 import { useLanguage } from '@/lib/i18n';
+import TutorAvatar, { TutorAvatarLarge } from '@/components/TutorAvatar';
 
 type Phase = 'ready' | 'recording' | 'interview' | 'analysis' | 'review' | 'shadowing' | 'summary';
 
@@ -416,9 +417,11 @@ function TalkContent() {
           </button>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center`}>
-              <span className="text-white font-bold text-sm sm:text-base">{persona.name[0]}</span>
-            </div>
+            <TutorAvatar
+              tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
+              size="sm"
+              speaking={isPlaying}
+            />
             <div>
               <h2 className="font-semibold text-neutral-900 text-sm sm:text-base">{persona.name}</h2>
               <p className="text-xs text-neutral-500">{getPhaseText()}</p>
@@ -458,8 +461,12 @@ function TalkContent() {
         {/* ========== READY PHASE ========== */}
         {phase === 'ready' && (
           <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 text-center">
-            <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center mb-4 sm:mb-6 animate-bounce-soft`}>
-              <span className="text-white text-3xl sm:text-4xl font-display font-bold">{persona.name[0]}</span>
+            <div className="mb-4 sm:mb-6 animate-bounce-soft">
+              <TutorAvatar
+                tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
+                size="xl"
+                showName
+              />
             </div>
 
             <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-2">
@@ -552,18 +559,20 @@ function TalkContent() {
         {phase === 'interview' && (
           <>
             <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
-              <div className={`w-24 h-24 sm:w-32 sm:h-32 rounded-3xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center mb-4 sm:mb-6 ${isPlaying ? 'animate-pulse' : ''}`}>
-                <span className="text-white text-4xl sm:text-5xl font-display font-bold">{persona.name[0]}</span>
-              </div>
+              {/* Tutor Avatar with Status */}
+              <TutorAvatarLarge
+                tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
+                speaking={isPlaying}
+                status={
+                  isPlaying ? 'speaking' :
+                  isProcessing ? 'thinking' :
+                  isRecordingReply ? 'listening' : 'idle'
+                }
+              />
 
-              <div className="text-center mb-6 sm:mb-8">
+              <div className="text-center mt-4 mb-6 sm:mb-8">
                 {isPlaying && (
-                  <div className="flex flex-col items-center">
-                    <div className="flex items-center gap-1 h-8 mb-3">
-                      {[...Array(5)].map((_, i) => (<div key={i} className="voice-bar" />))}
-                    </div>
-                    <p className="text-neutral-600 font-medium text-sm sm:text-base">{persona.name}{t.speaking}</p>
-                  </div>
+                  <p className="text-neutral-600 font-medium text-sm sm:text-base">{persona.name}{t.speaking}</p>
                 )}
                 {isProcessing && !isPlaying && (
                   <div className="flex flex-col items-center">
@@ -629,10 +638,11 @@ function TalkContent() {
         {/* ========== ANALYSIS PHASE ========== */}
         {phase === 'analysis' && (
           <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
-            <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center mb-4 sm:mb-6`}>
-              <span className="text-white text-2xl sm:text-3xl font-bold">{persona.name[0]}</span>
-            </div>
-            <h2 className="text-lg sm:text-xl font-bold text-neutral-900 mb-2 text-center">{persona.name}{t.analyzing}</h2>
+            <TutorAvatar
+              tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
+              size="lg"
+            />
+            <h2 className="text-lg sm:text-xl font-bold text-neutral-900 mb-2 text-center mt-4">{persona.name}{t.analyzing}</h2>
             <p className="text-neutral-500 mb-6 text-sm sm:text-base text-center">{t.analyzingDesc}</p>
             <div className="flex gap-2">
               <div className="loading-dot" />
@@ -768,8 +778,11 @@ function TalkContent() {
         {phase === 'summary' && (
           <div className="flex-1 overflow-y-auto p-4 sm:p-6">
             <div className="text-center mb-6 sm:mb-8">
-              <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center mx-auto mb-4`}>
-                <span className="text-white text-2xl sm:text-3xl font-bold">{persona.name[0]}</span>
+              <div className="flex justify-center mb-4">
+                <TutorAvatar
+                  tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
+                  size="lg"
+                />
               </div>
               <h2 className="text-xl sm:text-2xl font-bold text-neutral-900">{t.sessionComplete}</h2>
             </div>
