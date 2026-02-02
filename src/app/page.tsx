@@ -140,7 +140,7 @@ const personas: Persona[] = [
     gender: 'female',
     voice: 'shimmer',
     gradient: 'from-rose-400 to-pink-500',
-    flag: '🇺🇸',
+    flag: 'US',
     sampleText: "Oh my gosh, hi! I'm Emma. I'm so excited to chat with you today! Let's have some fun conversations together.",
   },
   {
@@ -150,7 +150,7 @@ const personas: Persona[] = [
     gender: 'male',
     voice: 'echo',
     gradient: 'from-blue-400 to-indigo-500',
-    flag: '🇺🇸',
+    flag: 'US',
     sampleText: "Hey, what's up! I'm James. Super chill vibes here, no pressure at all. Let's just hang out and talk about whatever.",
   },
   {
@@ -160,7 +160,7 @@ const personas: Persona[] = [
     gender: 'female',
     voice: 'fable',
     gradient: 'from-violet-400 to-purple-500',
-    flag: '🇬🇧',
+    flag: 'UK',
     sampleText: "Hello there! I'm Charlotte. Lovely to meet you. I do enjoy a good chat, so let's get started, shall we?",
   },
   {
@@ -170,7 +170,7 @@ const personas: Persona[] = [
     gender: 'male',
     voice: 'onyx',
     gradient: 'from-emerald-400 to-teal-500',
-    flag: '🇬🇧',
+    flag: 'UK',
     sampleText: "Right then, hello! I'm Oliver. Looking forward to having a proper conversation with you. No formalities needed here.",
   },
 ];
@@ -571,21 +571,22 @@ export default function HomePage() {
 
               {/* Feature Pills */}
               <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-8 sm:mb-10">
-                {[
-                  { icon: '🎯', text: language === 'ko' ? '실시간 피드백' : 'Real-time Feedback' },
-                  { icon: '🎙️', text: language === 'ko' ? '음성 인식' : 'Voice Recognition' },
-                  { icon: '🤖', text: language === 'ko' ? 'AI 튜터' : 'AI Tutors' },
-                  { icon: '📊', text: language === 'ko' ? '진행 추적' : 'Progress Tracking' },
-                ].map((feature, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-sm text-white/60 hover:bg-white/10 hover:text-white/80 transition-all cursor-default"
-                    style={{ animationDelay: `${i * 100}ms` }}
-                  >
-                    <span>{feature.icon}</span>
-                    <span>{feature.text}</span>
-                  </div>
-                ))}
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-sm text-white/60 hover:bg-white/10 hover:text-white/80 transition-all cursor-default">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <span>{language === 'ko' ? '실시간 피드백' : 'Real-time Feedback'}</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-sm text-white/60 hover:bg-white/10 hover:text-white/80 transition-all cursor-default">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+                  <span>{language === 'ko' ? '음성 인식' : 'Voice Recognition'}</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-sm text-white/60 hover:bg-white/10 hover:text-white/80 transition-all cursor-default">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                  <span>{language === 'ko' ? 'AI 튜터' : 'AI Tutors'}</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-sm text-white/60 hover:bg-white/10 hover:text-white/80 transition-all cursor-default">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                  <span>{language === 'ko' ? '진행 추적' : 'Progress Tracking'}</span>
+                </div>
               </div>
 
               {/* Dashboard Stats - For logged in users with at least 1 session */}
@@ -611,7 +612,7 @@ export default function HomePage() {
                     <div className="w-20 h-20 flex items-center justify-center mx-auto">
                       <div className="text-center">
                         <div className="text-2xl font-bold text-white flex items-center justify-center gap-1">
-                          <span className="text-green-400">🔥</span>
+                          <svg className="w-6 h-6 text-orange-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 23c-3.866 0-7-3.134-7-7 0-2.55 1.61-4.948 3.12-6.7.35-.41.94-.42 1.3-.03.31.33.3.85-.03 1.17C8.2 11.69 7 13.51 7 16c0 2.757 2.243 5 5 5s5-2.243 5-5c0-2.49-1.2-4.31-2.39-5.56-.33-.32-.34-.84-.03-1.17.36-.39.95-.38 1.3.03C17.39 11.052 19 13.45 19 16c0 3.866-3.134 7-7 7zm0-11c-1.657 0-3-1.343-3-3 0-1.4 1.5-2.9 2.58-3.83.27-.23.67-.23.94 0C13.5 6.1 15 7.6 15 9c0 1.657-1.343 3-3 3z"/></svg>
                           <AnimatedCounter target={sessionCount > 0 ? Math.min(sessionCount, 7) : 0} />
                         </div>
                         <div className="text-xs text-white/40">{language === 'ko' ? '일' : 'days'}</div>
@@ -925,7 +926,7 @@ export default function HomePage() {
                             <div className="relative p-4 sm:p-6">
                               <div className="flex items-center justify-center gap-2 mb-2">
                                 <h3 className="text-lg sm:text-xl font-bold text-white">{persona.name}</h3>
-                                <span className="text-lg">{persona.flag}</span>
+                                <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${persona.flag === 'US' ? 'bg-blue-500/20 text-blue-400' : 'bg-red-500/20 text-red-400'}`}>{persona.flag}</span>
                               </div>
                               <p className="text-white/60 text-sm mb-1">{desc}</p>
                               <p className="text-white/40 text-xs mb-4">{style}</p>
@@ -1171,10 +1172,10 @@ export default function HomePage() {
                       {/* Tutor Preview */}
                       <div className="mt-6 flex items-center gap-3">
                         {[
-                          { name: 'E', gradient: 'from-rose-400 to-pink-500', flag: '🇺🇸' },
-                          { name: 'J', gradient: 'from-blue-400 to-indigo-500', flag: '🇺🇸' },
-                          { name: 'C', gradient: 'from-violet-400 to-purple-500', flag: '🇬🇧' },
-                          { name: 'O', gradient: 'from-emerald-400 to-teal-500', flag: '🇬🇧' },
+                          { name: 'E', gradient: 'from-rose-400 to-pink-500', flag: 'US' },
+                          { name: 'J', gradient: 'from-blue-400 to-indigo-500', flag: 'US' },
+                          { name: 'C', gradient: 'from-violet-400 to-purple-500', flag: 'UK' },
+                          { name: 'O', gradient: 'from-emerald-400 to-teal-500', flag: 'UK' },
                         ].map((tutor, i) => (
                           <div
                             key={i}
@@ -1184,7 +1185,7 @@ export default function HomePage() {
                             <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tutor.gradient} flex items-center justify-center text-white font-bold shadow-lg group-hover/tutor:scale-110 transition-transform cursor-pointer`}>
                               {tutor.name}
                             </div>
-                            <span className="absolute -top-1 -right-1 text-xs">{tutor.flag}</span>
+                            <span className={`absolute -top-1 -right-1 text-[10px] font-bold px-1 rounded ${tutor.flag === 'US' ? 'bg-blue-500 text-white' : 'bg-red-500 text-white'}`}>{tutor.flag}</span>
                           </div>
                         ))}
                       </div>
@@ -1279,9 +1280,9 @@ export default function HomePage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
                     {[
-                      { num: '01', title: t.step1Title, desc: t.step1Desc, gradient: 'from-purple-500 to-pink-500', icon: '🔑' },
-                      { num: '02', title: t.step2Title, desc: t.step2Desc, gradient: 'from-blue-500 to-cyan-500', icon: '🎯' },
-                      { num: '03', title: t.step3Title, desc: t.step3Desc, gradient: 'from-amber-500 to-orange-500', icon: '🚀' },
+                      { num: '01', title: t.step1Title, desc: t.step1Desc, gradient: 'from-purple-500 to-pink-500', iconPath: 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z' },
+                      { num: '02', title: t.step2Title, desc: t.step2Desc, gradient: 'from-blue-500 to-cyan-500', iconPath: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
+                      { num: '03', title: t.step3Title, desc: t.step3Desc, gradient: 'from-amber-500 to-orange-500', iconPath: 'M13 10V3L4 14h7v7l9-11h-7z' },
                     ].map((step, i) => (
                       <div
                         key={i}
@@ -1292,7 +1293,7 @@ export default function HomePage() {
                           {/* Step Number Circle */}
                           <div className="absolute -top-4 left-1/2 -translate-x-1/2 sm:relative sm:top-0 sm:left-0 sm:translate-x-0 sm:mb-4">
                             <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${step.gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
-                              <span className="text-2xl">{step.icon}</span>
+                              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={step.iconPath} /></svg>
                             </div>
                           </div>
                           <div className="pt-6 sm:pt-0">
