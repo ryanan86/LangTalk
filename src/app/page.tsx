@@ -70,6 +70,8 @@ export default function HomePage() {
   const [, setCheckingSubscription] = useState(false);
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [signupMessage, setSignupMessage] = useState<string | null>(null);
+  const [sessionCount, setSessionCount] = useState<number>(0);
+  const [activeTab, setActiveTab] = useState<'talk' | 'debate'>('talk');
 
   // Mic test states
   const [isTesting, setIsTesting] = useState(false);
@@ -82,6 +84,13 @@ export default function HomePage() {
   // Voice preview states
   const [playingVoice, setPlayingVoice] = useState<string | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Animation states
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (session?.user?.email) {
@@ -172,9 +181,11 @@ export default function HomePage() {
       const data = await res.json();
       setIsSubscribed(data.subscribed);
       setSubscriptionStatus(data.status || null);
+      setSessionCount(data.sessionCount || 0);
     } catch {
       setIsSubscribed(true);
       setSubscriptionStatus('active');
+      setSessionCount(5);
     } finally {
       setCheckingSubscription(false);
     }
@@ -266,354 +277,541 @@ export default function HomePage() {
     return descriptions[id] || { desc: '', style: '' };
   };
 
+  const canAccessDebate = sessionCount >= 5;
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-neutral-50 to-primary-50/30">
+    <div className="min-h-screen bg-[#0a0a0f] text-white overflow-hidden">
+      {/* Animated Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        {/* Gradient Orbs */}
+        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-purple-500/20 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-blue-500/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-[40%] right-[20%] w-[300px] h-[300px] bg-pink-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
+
+        {/* Grid Pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]" />
+      </div>
+
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-neutral-100">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
-          <h1 className="font-display text-xl sm:text-2xl font-bold gradient-text">{t.appName}</h1>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <LanguageToggle />
-            {status === 'loading' ? (
-              <div className="w-8 h-8 rounded-full bg-neutral-200 animate-pulse" />
-            ) : session ? (
-              <div className="flex items-center gap-2 sm:gap-3">
-                {session.user?.image && (
-                  <Image
-                    src={session.user.image}
-                    alt={session.user.name || ''}
-                    width={32}
-                    height={32}
-                    className="w-8 h-8 rounded-full"
-                  />
-                )}
-                <span className="text-sm text-neutral-600 hidden sm:block">
-                  {session.user?.name}
-                </span>
-                <button
-                  onClick={() => signOut()}
-                  className="text-xs sm:text-sm px-3 py-1.5 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-600 transition-colors"
-                >
-                  {t.signOut}
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => signIn('google')}
-                className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white transition-colors"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      <header className="relative z-50 border-b border-white/5">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-16 sm:h-20">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
-                {t.signIn}
-              </button>
-            )}
+              </div>
+              <span className="font-display text-xl font-bold bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
+                {t.appName}
+              </span>
+            </div>
+
+            {/* Right Side */}
+            <div className="flex items-center gap-3 sm:gap-4">
+              <LanguageToggle />
+
+              {status === 'loading' ? (
+                <div className="w-10 h-10 rounded-full bg-white/10 animate-pulse" />
+              ) : session ? (
+                <div className="flex items-center gap-3">
+                  <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+                    <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                    <span className="text-sm text-white/70">{session.user?.name?.split(' ')[0]}</span>
+                  </div>
+                  {session.user?.image && (
+                    <Image
+                      src={session.user.image}
+                      alt=""
+                      width={40}
+                      height={40}
+                      className="w-10 h-10 rounded-full ring-2 ring-white/10"
+                    />
+                  )}
+                  <button
+                    onClick={() => signOut()}
+                    className="p-2 rounded-lg hover:bg-white/5 transition-colors"
+                    title={t.signOut}
+                  >
+                    <svg className="w-5 h-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => signIn('google')}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-black font-medium hover:bg-white/90 transition-all hover:scale-105"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                  </svg>
+                  {t.signIn}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <main className="relative z-10">
         {/* Hero Section */}
-        <div className="text-center mb-12 sm:mb-16">
-          <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-neutral-900 mb-3 sm:mb-4 leading-tight">
-            {t.heroTitle}
-            <br />
-            <span className="gradient-text">{t.heroSubtitle}</span>
-          </h2>
-          <p className="text-neutral-600 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
-            {t.heroDescription}
-          </p>
-        </div>
-
-        {/* Microphone Test */}
-        <div className="mb-10 sm:mb-12 max-w-md mx-auto">
-          <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-sm border border-neutral-100">
-            <h3 className="text-neutral-900 font-semibold mb-4 flex items-center gap-2">
-              <svg className="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-              </svg>
-              {t.testMicrophone}
-            </h3>
-
-            {!isTesting ? (
-              <button
-                onClick={startMicTest}
-                className="w-full py-3 px-4 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl transition-colors flex items-center justify-center gap-2 font-medium"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                </svg>
-                {t.clickToTest}
-              </button>
-            ) : (
-              <div className="space-y-4">
-                {testStatus === 'recording' && (
-                  <div className="flex items-center justify-center gap-3 py-4">
-                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                    <span className="text-neutral-600">{t.recording} {t.speakNow}</span>
-                    <button
-                      onClick={stopMicTest}
-                      className="ml-2 px-3 py-1 bg-neutral-200 hover:bg-neutral-300 rounded-lg text-sm"
-                    >
-                      {t.stop}
-                    </button>
-                  </div>
-                )}
-
-                {testStatus === 'processing' && (
-                  <div className="flex items-center justify-center gap-3 py-4">
-                    <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-neutral-600">{t.processing}</span>
-                  </div>
-                )}
-
-                {(testStatus === 'success' || testStatus === 'error') && (
-                  <div className={`p-4 rounded-xl ${testStatus === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-                    <div className="flex items-start gap-2">
-                      {testStatus === 'success' ? (
-                        <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      )}
-                      <div className="min-w-0">
-                        <p className={`text-sm ${testStatus === 'success' ? 'text-green-800' : 'text-red-800'}`}>
-                          {testStatus === 'success' ? t.weHeard : t.error}
-                        </p>
-                        <p className={`font-medium break-words ${testStatus === 'success' ? 'text-green-900' : 'text-red-900'}`}>
-                          &ldquo;{testResult}&rdquo;
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setIsTesting(false);
-                        setTestResult(null);
-                        setTestStatus('idle');
-                      }}
-                      className="mt-3 w-full py-2 bg-white hover:bg-neutral-50 border border-neutral-200 rounded-lg text-sm text-neutral-600"
-                    >
-                      {t.testAgain}
-                    </button>
-                  </div>
-                )}
+        <section className={`pt-12 sm:pt-20 pb-8 sm:pb-12 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="text-center max-w-3xl mx-auto">
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6 sm:mb-8">
+                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                <span className="text-sm text-white/70">AI-Powered English Practice</span>
               </div>
-            )}
 
-            <p className="text-neutral-400 text-xs mt-3 text-center">
-              {t.micTestHint}
-            </p>
-          </div>
-        </div>
+              {/* Main Heading */}
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6">
+                <span className="bg-gradient-to-r from-white via-white to-white/50 bg-clip-text text-transparent">
+                  {t.heroTitle}
+                </span>
+                <br />
+                <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
+                  {t.heroSubtitle}
+                </span>
+              </h1>
 
-        {/* Persona Selection */}
-        <div className="mb-10 sm:mb-12">
-          <h3 className="text-center text-neutral-500 text-sm font-medium uppercase tracking-wider mb-6 sm:mb-8">
-            {t.chooseTutor}
-          </h3>
+              {/* Description */}
+              <p className="text-lg sm:text-xl text-white/50 max-w-xl mx-auto mb-8 sm:mb-10">
+                {t.heroDescription}
+              </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            {personas.map((persona) => {
-              const { desc, style } = getPersonaDescription(persona.id);
-              return (
-                <button
-                  key={persona.id}
-                  onClick={() => setSelectedPersona(persona.id)}
-                  className={`relative bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-left transition-all duration-200 border-2 ${
-                    selectedPersona === persona.id
-                      ? 'border-primary-500 shadow-lg shadow-primary-100'
-                      : 'border-transparent shadow-sm hover:shadow-md'
-                  }`}
-                >
-                  <div className="flex items-start gap-3 sm:gap-4">
-                    {/* Avatar */}
-                    <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center flex-shrink-0`}>
-                      <span className="text-white text-xl sm:text-2xl font-display font-bold">
-                        {persona.name[0]}
-                      </span>
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-display text-lg font-semibold text-neutral-900">
-                          {persona.name}
-                        </h4>
-                        <span className="text-base">{persona.flag}</span>
-                      </div>
-                      <p className="text-neutral-600 text-sm mb-1">{desc}</p>
-                      <p className="text-neutral-400 text-xs">{style}</p>
-                    </div>
+              {/* Stats */}
+              {session && isSubscribed && (
+                <div className="flex items-center justify-center gap-6 sm:gap-10 mb-8">
+                  <div className="text-center">
+                    <div className="text-3xl sm:text-4xl font-bold text-white">{sessionCount}</div>
+                    <div className="text-sm text-white/40">{language === 'ko' ? '완료한 세션' : 'Sessions'}</div>
                   </div>
+                  <div className="w-px h-12 bg-white/10" />
+                  <div className="text-center">
+                    <div className="text-3xl sm:text-4xl font-bold text-white">{canAccessDebate ? '✓' : `${5 - sessionCount}`}</div>
+                    <div className="text-sm text-white/40">{canAccessDebate ? (language === 'ko' ? '디베이트 해제' : 'Debate Unlocked') : (language === 'ko' ? '디베이트까지' : 'To Debate')}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
 
-                  {/* Voice Preview Button */}
-                  <div
-                    onClick={(e) => playVoicePreview(persona, e)}
-                    className={`mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                      playingVoice === persona.id
-                        ? 'bg-primary-100 text-primary-700'
-                        : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+        {/* Mode Tabs */}
+        {session && isSubscribed && (
+          <section className={`pb-6 transition-all duration-1000 delay-200 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <div className="max-w-6xl mx-auto px-4 sm:px-6">
+              <div className="flex justify-center">
+                <div className="inline-flex p-1.5 rounded-2xl bg-white/5 border border-white/10">
+                  <button
+                    onClick={() => setActiveTab('talk')}
+                    className={`px-6 sm:px-8 py-3 rounded-xl font-medium transition-all ${
+                      activeTab === 'talk'
+                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25'
+                        : 'text-white/50 hover:text-white'
                     }`}
                   >
-                    {playingVoice === persona.id ? (
-                      <>
-                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                          <rect x="6" y="4" width="4" height="16" rx="1" />
-                          <rect x="14" y="4" width="4" height="16" rx="1" />
-                        </svg>
-                        {t.playing}
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z" />
-                        </svg>
-                        {t.previewVoice}
-                      </>
-                    )}
-                  </div>
-
-                  {/* Selection Indicator */}
-                  {selectedPersona === persona.id && (
-                    <div className="absolute top-3 right-3 sm:top-4 sm:right-4 w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    <span className="flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                       </svg>
+                      Talk
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('debate')}
+                    className={`px-6 sm:px-8 py-3 rounded-xl font-medium transition-all relative ${
+                      activeTab === 'debate'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25'
+                        : 'text-white/50 hover:text-white'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+                      </svg>
+                      Debate
+                      {!canAccessDebate && (
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                      )}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Talk Mode Content */}
+        {(!session || !isSubscribed || activeTab === 'talk') && (
+          <section className={`py-8 sm:py-12 transition-all duration-1000 delay-300 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <div className="max-w-6xl mx-auto px-4 sm:px-6">
+
+              {/* Not Logged In State */}
+              {!session && (
+                <div className="max-w-md mx-auto text-center py-12">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-white/10 flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-10 h-10 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-3">{t.loginRequired}</h3>
+                  <p className="text-white/50 mb-6">{language === 'ko' ? 'Google 계정으로 간편하게 시작하세요' : 'Get started easily with your Google account'}</p>
+                  <button
+                    onClick={() => signIn('google')}
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-black font-medium hover:bg-white/90 transition-all hover:scale-105"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    {t.signIn}
+                  </button>
+                </div>
+              )}
+
+              {/* Beta Signup States */}
+              {session && subscriptionStatus === 'not_found' && (
+                <div className="max-w-md mx-auto text-center py-12">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-white/10 flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-10 h-10 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-3">{language === 'ko' ? '베타 서비스 신청' : 'Join Beta'}</h3>
+                  <p className="text-white/50 mb-6">{t.betaSignupPrompt}</p>
+                  {signupMessage && (
+                    <div className="mb-4 p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 text-sm">
+                      {signupMessage}
                     </div>
                   )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+                  <button
+                    onClick={handleBetaSignup}
+                    disabled={isSigningUp}
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium hover:opacity-90 transition-all disabled:opacity-50"
+                  >
+                    {isSigningUp ? t.signingUp : t.betaSignupButton}
+                  </button>
+                </div>
+              )}
 
-        {/* Start Button */}
-        <div className="text-center mb-16 sm:mb-20">
-          {/* Beta Signup Message */}
-          {signupMessage && (
-            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-sm max-w-md mx-auto">
-              {signupMessage}
+              {session && subscriptionStatus === 'pending' && (
+                <div className="max-w-md mx-auto text-center py-12">
+                  <div className="w-20 h-20 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-10 h-10 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-3">{language === 'ko' ? '검토 중' : 'Under Review'}</h3>
+                  <p className="text-white/50">{t.betaPending}</p>
+                </div>
+              )}
+
+              {session && (subscriptionStatus === 'expired' || subscriptionStatus === 'inactive') && (
+                <div className="max-w-md mx-auto text-center py-12">
+                  <div className="w-20 h-20 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-3">{subscriptionStatus === 'expired' ? (language === 'ko' ? '만료됨' : 'Expired') : (language === 'ko' ? '비활성화됨' : 'Inactive')}</h3>
+                  <p className="text-white/50">{subscriptionStatus === 'expired' ? t.betaExpired : t.betaInactive}</p>
+                </div>
+              )}
+
+              {/* Main Content - Subscribed User */}
+              {session && isSubscribed && (
+                <>
+                  {/* Microphone Test */}
+                  <div className="max-w-md mx-auto mb-10">
+                    <div className="p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-400/20 to-emerald-400/20 flex items-center justify-center">
+                          <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-white">{t.testMicrophone}</h3>
+                          <p className="text-sm text-white/40">{t.micTestHint}</p>
+                        </div>
+                      </div>
+
+                      {!isTesting ? (
+                        <button
+                          onClick={startMicTest}
+                          className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-all flex items-center justify-center gap-2"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                          </svg>
+                          {t.clickToTest}
+                        </button>
+                      ) : (
+                        <div className="space-y-3">
+                          {testStatus === 'recording' && (
+                            <div className="flex items-center justify-between py-3 px-4 rounded-xl bg-red-500/10 border border-red-500/20">
+                              <div className="flex items-center gap-3">
+                                <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+                                <span className="text-white/70">{t.recording}</span>
+                              </div>
+                              <button onClick={stopMicTest} className="text-sm text-white/50 hover:text-white">{t.stop}</button>
+                            </div>
+                          )}
+                          {testStatus === 'processing' && (
+                            <div className="flex items-center justify-center gap-3 py-4">
+                              <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                              <span className="text-white/70">{t.processing}</span>
+                            </div>
+                          )}
+                          {(testStatus === 'success' || testStatus === 'error') && (
+                            <div className={`p-4 rounded-xl ${testStatus === 'success' ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
+                              <p className={`text-sm ${testStatus === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                                {testStatus === 'success' ? t.weHeard : t.error}
+                              </p>
+                              <p className="text-white mt-1">&ldquo;{testResult}&rdquo;</p>
+                              <button
+                                onClick={() => { setIsTesting(false); setTestResult(null); setTestStatus('idle'); }}
+                                className="mt-3 text-sm text-white/50 hover:text-white"
+                              >
+                                {t.testAgain}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Tutor Selection */}
+                  <div className="mb-10">
+                    <h2 className="text-center text-white/40 text-sm font-medium uppercase tracking-wider mb-6">
+                      {t.chooseTutor}
+                    </h2>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {personas.map((persona) => {
+                        const { desc, style } = getPersonaDescription(persona.id);
+                        const isSelected = selectedPersona === persona.id;
+
+                        return (
+                          <button
+                            key={persona.id}
+                            onClick={() => setSelectedPersona(persona.id)}
+                            className={`group relative p-5 rounded-2xl text-left transition-all duration-300 ${
+                              isSelected
+                                ? 'bg-white/10 border-2 border-purple-500 scale-[1.02]'
+                                : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20'
+                            }`}
+                          >
+                            {/* Selection Indicator */}
+                            {isSelected && (
+                              <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center">
+                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </div>
+                            )}
+
+                            {/* Avatar */}
+                            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                              <span className="text-white text-2xl font-bold">{persona.name[0]}</span>
+                            </div>
+
+                            {/* Info */}
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="font-semibold text-white">{persona.name}</h3>
+                              <span>{persona.flag}</span>
+                            </div>
+                            <p className="text-white/60 text-sm mb-1">{desc}</p>
+                            <p className="text-white/40 text-xs">{style}</p>
+
+                            {/* Voice Preview */}
+                            <button
+                              onClick={(e) => playVoicePreview(persona, e)}
+                              className={`mt-4 flex items-center gap-2 text-xs font-medium transition-colors ${
+                                playingVoice === persona.id ? 'text-purple-400' : 'text-white/40 hover:text-white/60'
+                              }`}
+                            >
+                              {playingVoice === persona.id ? (
+                                <>
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <rect x="6" y="4" width="4" height="16" rx="1" />
+                                    <rect x="14" y="4" width="4" height="16" rx="1" />
+                                  </svg>
+                                  {t.playing}
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z" />
+                                  </svg>
+                                  {t.previewVoice}
+                                </>
+                              )}
+                            </button>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Start Button */}
+                  <div className="text-center">
+                    <button
+                      onClick={handleStart}
+                      disabled={!selectedPersona}
+                      className={`inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-300 ${
+                        selectedPersona
+                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-105'
+                          : 'bg-white/10 text-white/30 cursor-not-allowed'
+                      }`}
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      </svg>
+                      {t.startConversation}
+                    </button>
+                    {!selectedPersona && (
+                      <p className="text-white/30 text-sm mt-4">{t.selectTutorPrompt}</p>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
-          )}
+          </section>
+        )}
 
-          {/* Not logged in */}
-          {!session && (
-            <div className="mb-4 p-4 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-600 text-sm max-w-md mx-auto">
-              {t.loginRequired}
+        {/* Debate Mode Content */}
+        {session && isSubscribed && activeTab === 'debate' && (
+          <section className={`py-8 sm:py-12 transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <div className="max-w-2xl mx-auto px-4 sm:px-6">
+              {canAccessDebate ? (
+                /* Unlocked Debate */
+                <div className="text-center">
+                  <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-amber-500/25">
+                    <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+                    </svg>
+                  </div>
+
+                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">{t.debateMode}</h2>
+                  <p className="text-white/50 mb-8 max-w-md mx-auto">{t.debateDescription}</p>
+
+                  {/* Features */}
+                  <div className="grid grid-cols-3 gap-4 mb-8">
+                    <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                      <div className="text-2xl mb-2">5</div>
+                      <div className="text-xs text-white/40">{language === 'ko' ? '참가자' : 'Participants'}</div>
+                    </div>
+                    <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                      <div className="text-2xl mb-2">6</div>
+                      <div className="text-xs text-white/40">{language === 'ko' ? '카테고리' : 'Categories'}</div>
+                    </div>
+                    <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                      <div className="text-2xl mb-2">AI</div>
+                      <div className="text-xs text-white/40">{language === 'ko' ? '피드백' : 'Feedback'}</div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => router.push('/debate')}
+                    className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-semibold text-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/30 hover:scale-105 transition-all"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {t.startDebate}
+                  </button>
+                </div>
+              ) : (
+                /* Locked Debate */
+                <div className="text-center">
+                  <div className="w-24 h-24 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-12 h-12 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+
+                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">{t.debateLocked}</h2>
+                  <p className="text-white/50 mb-8">
+                    {t.sessionsToUnlock.replace('{n}', String(5 - sessionCount))}
+                  </p>
+
+                  {/* Progress */}
+                  <div className="max-w-xs mx-auto mb-8">
+                    <div className="flex justify-between text-sm text-white/40 mb-2">
+                      <span>{t.sessionsCompleted.replace('{n}', String(sessionCount))}</span>
+                      <span>5</span>
+                    </div>
+                    <div className="h-3 rounded-full bg-white/10 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500"
+                        style={{ width: `${(sessionCount / 5) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setActiveTab('talk')}
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                    {language === 'ko' ? 'Talk 모드로 연습하기' : 'Practice with Talk Mode'}
+                  </button>
+                </div>
+              )}
             </div>
-          )}
+          </section>
+        )}
 
-          {/* Not signed up for beta */}
-          {session && subscriptionStatus === 'not_found' && (
-            <div className="mb-4 max-w-md mx-auto">
-              <div className="p-4 bg-primary-50 border border-primary-200 rounded-xl">
-                <p className="text-primary-800 text-sm mb-3">
-                  {t.betaSignupPrompt}
-                </p>
-                <button
-                  onClick={handleBetaSignup}
-                  disabled={isSigningUp}
-                  className="px-6 py-2.5 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-colors disabled:bg-primary-300"
-                >
-                  {isSigningUp ? t.signingUp : t.betaSignupButton}
-                </button>
+        {/* How It Works - Only for non-logged in users */}
+        {!session && (
+          <section className={`py-16 sm:py-24 transition-all duration-1000 delay-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <div className="max-w-6xl mx-auto px-4 sm:px-6">
+              <h2 className="text-center text-white/40 text-sm font-medium uppercase tracking-wider mb-12">
+                {t.howItWorks}
+              </h2>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+                {[
+                  { num: '01', title: t.step1Title, desc: t.step1Desc, gradient: 'from-purple-500 to-pink-500' },
+                  { num: '02', title: t.step2Title, desc: t.step2Desc, gradient: 'from-blue-500 to-cyan-500' },
+                  { num: '03', title: t.step3Title, desc: t.step3Desc, gradient: 'from-amber-500 to-orange-500' },
+                ].map((step, i) => (
+                  <div key={i} className="relative p-6 rounded-2xl bg-white/5 border border-white/10 group hover:bg-white/10 transition-all">
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${step.gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                      <span className="text-white font-bold">{step.num}</span>
+                    </div>
+                    <h3 className="text-lg font-semibold text-white mb-2">{step.title}</h3>
+                    <p className="text-white/50 text-sm leading-relaxed">{step.desc}</p>
+                  </div>
+                ))}
               </div>
             </div>
-          )}
-
-          {/* Pending */}
-          {session && subscriptionStatus === 'pending' && (
-            <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm max-w-md mx-auto">
-              {t.betaPending}
-            </div>
-          )}
-
-          {/* Expired */}
-          {session && subscriptionStatus === 'expired' && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-800 text-sm max-w-md mx-auto">
-              {t.betaExpired}
-            </div>
-          )}
-
-          {/* Inactive */}
-          {session && subscriptionStatus === 'inactive' && (
-            <div className="mb-4 p-4 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-600 text-sm max-w-md mx-auto">
-              {t.betaInactive}
-            </div>
-          )}
-
-          <button
-            onClick={handleStart}
-            disabled={!selectedPersona || !session || isSubscribed !== true}
-            className={`inline-flex items-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl text-base sm:text-lg font-semibold transition-all duration-300 ${
-              selectedPersona && session && isSubscribed === true
-                ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-200 hover:shadow-xl hover:shadow-primary-300 hover:-translate-y-0.5'
-                : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
-            }`}
-          >
-            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-            </svg>
-            {t.startConversation}
-          </button>
-
-          {!selectedPersona && session && isSubscribed === true && (
-            <p className="text-neutral-400 text-sm mt-4">
-              {t.selectTutorPrompt}
-            </p>
-          )}
-        </div>
-
-        {/* How it works */}
-        <div className="pt-10 sm:pt-12 border-t border-neutral-200">
-          <h3 className="text-center text-neutral-500 text-sm font-medium uppercase tracking-wider mb-8 sm:mb-10">
-            {t.howItWorks}
-          </h3>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
-            <div className="text-center">
-              <div className="w-14 h-14 bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <span className="text-primary-600 font-bold text-lg">1</span>
-              </div>
-              <h4 className="font-semibold text-neutral-900 mb-2">{t.step1Title}</h4>
-              <p className="text-neutral-500 text-sm leading-relaxed">
-                {t.step1Desc}
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-14 h-14 bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <span className="text-primary-600 font-bold text-lg">2</span>
-              </div>
-              <h4 className="font-semibold text-neutral-900 mb-2">{t.step2Title}</h4>
-              <p className="text-neutral-500 text-sm leading-relaxed">
-                {t.step2Desc}
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-14 h-14 bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <span className="text-primary-600 font-bold text-lg">3</span>
-              </div>
-              <h4 className="font-semibold text-neutral-900 mb-2">{t.step3Title}</h4>
-              <p className="text-neutral-500 text-sm leading-relaxed">
-                {t.step3Desc}
-              </p>
-            </div>
-          </div>
-        </div>
+          </section>
+        )}
       </main>
 
       {/* Footer */}
-      <footer className="py-8 text-center border-t border-neutral-100 mt-12">
-        <p className="text-neutral-400 text-sm">{t.footer}</p>
+      <footer className="relative z-10 py-8 border-t border-white/5">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
+          <p className="text-white/30 text-sm">{t.footer}</p>
+        </div>
       </footer>
     </div>
   );

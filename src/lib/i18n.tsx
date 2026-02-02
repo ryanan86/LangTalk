@@ -110,6 +110,63 @@ interface Translations {
   charlotteStyle: string;
   oliverDesc: string;
   oliverStyle: string;
+
+  // Debate Mode
+  debateMode: string;
+  debateLocked: string;
+  sessionsToUnlock: string;
+  sessionsCompleted: string;
+  startDebate: string;
+  debateDescription: string;
+
+  // Debate Teams
+  proTeam: string;
+  conTeam: string;
+  yourTeam: string;
+  teamPartner: string;
+  opponents: string;
+  you: string;
+
+  // Debate Phases
+  topicReveal: string;
+  teamAssignment: string;
+  openingStatements: string;
+  mainDebate: string;
+  closingArguments: string;
+  debateAnalysis: string;
+  debateSummary: string;
+
+  // Debate Progress
+  yourTurn: string;
+  listeningTo: string;
+  speakNowDebate: string;
+  waitingForSpeaker: string;
+  moderatorSpeaking: string;
+
+  // Debate Categories
+  categorySocial: string;
+  categoryCulture: string;
+  categoryEnvironment: string;
+  categoryPolitics: string;
+  categoryInternational: string;
+  categorySports: string;
+
+  // Debate UI
+  vsText: string;
+  turnCount: string;
+  preparingDebate: string;
+  assigningTeams: string;
+  revealingTopic: string;
+  debateComplete: string;
+  yourPerformance: string;
+  grammarFeedback: string;
+  keyExpressions: string;
+  debateSummaryTitle: string;
+  proArguments: string;
+  conArguments: string;
+  tryAnotherDebate: string;
+  nextSpeaker: string;
+  skipIntro: string;
 }
 
 const translations: Record<Language, Translations> = {
@@ -219,6 +276,63 @@ const translations: Record<Language, Translations> = {
     charlotteStyle: '매력적이고 똑똑, 재치있는 대화',
     oliverDesc: '쿨한 영국인 친구',
     oliverStyle: '드라이한 유머, 진솔함, 편안한 대화',
+
+    // Debate Mode
+    debateMode: '디베이트 모드',
+    debateLocked: '잠금 해제 필요',
+    sessionsToUnlock: '잠금 해제까지 {n}회 남음',
+    sessionsCompleted: '{n}/5 세션 완료',
+    startDebate: '디베이트 시작',
+    debateDescription: 'AI 튜터들과 함께 영어 토론을 연습해보세요',
+
+    // Debate Teams
+    proTeam: '찬성팀',
+    conTeam: '반대팀',
+    yourTeam: '내 팀',
+    teamPartner: '팀 파트너',
+    opponents: '상대팀',
+    you: '나',
+
+    // Debate Phases
+    topicReveal: '주제 공개',
+    teamAssignment: '팀 배정',
+    openingStatements: '오프닝 발언',
+    mainDebate: '메인 토론',
+    closingArguments: '클로징 발언',
+    debateAnalysis: '피드백 분석',
+    debateSummary: '요약',
+
+    // Debate Progress
+    yourTurn: '내 차례입니다',
+    listeningTo: '{name}의 발언 중...',
+    speakNowDebate: '지금 말하세요',
+    waitingForSpeaker: '발언자 대기 중...',
+    moderatorSpeaking: '사회자 발언 중...',
+
+    // Debate Categories
+    categorySocial: '사회',
+    categoryCulture: '문화',
+    categoryEnvironment: '환경',
+    categoryPolitics: '정치',
+    categoryInternational: '국제',
+    categorySports: '스포츠',
+
+    // Debate UI
+    vsText: 'VS',
+    turnCount: '턴 {current}/{total}',
+    preparingDebate: '디베이트 준비 중...',
+    assigningTeams: '팀 배정 중...',
+    revealingTopic: '주제 공개 중...',
+    debateComplete: '디베이트 완료!',
+    yourPerformance: '나의 퍼포먼스',
+    grammarFeedback: '문법 피드백',
+    keyExpressions: '핵심 표현',
+    debateSummaryTitle: '토론 요약',
+    proArguments: '찬성 측 주요 논점',
+    conArguments: '반대 측 주요 논점',
+    tryAnotherDebate: '다른 토론하기',
+    nextSpeaker: '다음 발언자',
+    skipIntro: '건너뛰기',
   },
   en: {
     // Common
@@ -326,6 +440,63 @@ const translations: Record<Language, Translations> = {
     charlotteStyle: 'Charming, clever, great banter',
     oliverDesc: 'Cool British guy',
     oliverStyle: 'Dry wit, genuine, easy to talk to',
+
+    // Debate Mode
+    debateMode: 'Debate Mode',
+    debateLocked: 'Unlock Required',
+    sessionsToUnlock: '{n} sessions to unlock',
+    sessionsCompleted: '{n}/5 sessions completed',
+    startDebate: 'Start Debate',
+    debateDescription: 'Practice English debates with AI tutors',
+
+    // Debate Teams
+    proTeam: 'Pro Team',
+    conTeam: 'Con Team',
+    yourTeam: 'Your Team',
+    teamPartner: 'Team Partner',
+    opponents: 'Opponents',
+    you: 'You',
+
+    // Debate Phases
+    topicReveal: 'Topic Reveal',
+    teamAssignment: 'Team Assignment',
+    openingStatements: 'Opening Statements',
+    mainDebate: 'Main Debate',
+    closingArguments: 'Closing Arguments',
+    debateAnalysis: 'Feedback & Analysis',
+    debateSummary: 'Summary',
+
+    // Debate Progress
+    yourTurn: 'Your Turn',
+    listeningTo: 'Listening to {name}...',
+    speakNowDebate: 'Speak Now',
+    waitingForSpeaker: 'Waiting for speaker...',
+    moderatorSpeaking: 'Moderator speaking...',
+
+    // Debate Categories
+    categorySocial: 'Social',
+    categoryCulture: 'Culture',
+    categoryEnvironment: 'Environment',
+    categoryPolitics: 'Politics',
+    categoryInternational: 'International',
+    categorySports: 'Sports',
+
+    // Debate UI
+    vsText: 'VS',
+    turnCount: 'Turn {current}/{total}',
+    preparingDebate: 'Preparing debate...',
+    assigningTeams: 'Assigning teams...',
+    revealingTopic: 'Revealing topic...',
+    debateComplete: 'Debate Complete!',
+    yourPerformance: 'Your Performance',
+    grammarFeedback: 'Grammar Feedback',
+    keyExpressions: 'Key Expressions',
+    debateSummaryTitle: 'Debate Summary',
+    proArguments: 'Pro Arguments',
+    conArguments: 'Con Arguments',
+    tryAnotherDebate: 'Try Another Debate',
+    nextSpeaker: 'Next Speaker',
+    skipIntro: 'Skip',
   },
 };
 

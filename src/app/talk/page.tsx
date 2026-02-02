@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { personas } from '@/lib/personas';
+import { useLanguage } from '@/lib/i18n';
 
 type Phase = 'ready' | 'recording' | 'interview' | 'analysis' | 'review' | 'shadowing' | 'summary';
 
@@ -36,6 +37,7 @@ interface Analysis {
 function TalkContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { t, language } = useLanguage();
   const tutorId = searchParams.get('tutor') || 'emma';
   const persona = personas[tutorId];
 
@@ -45,8 +47,8 @@ function TalkContent() {
 
   // Conversation state
   const [messages, setMessages] = useState<Message[]>([]);
-  const [conversationTime, setConversationTime] = useState(0); // in seconds
-  const maxConversationTime = 10 * 60; // 10 minutes in seconds
+  const [conversationTime, setConversationTime] = useState(0);
+  const maxConversationTime = 10 * 60;
 
   // Processing states
   const [isProcessing, setIsProcessing] = useState(false);
@@ -96,11 +98,40 @@ function TalkContent() {
     };
   }, [phase]);
 
+  // Increment session count when session is completed (summary phase)
+  useEffect(() => {
+    if (phase === 'summary') {
+      // Increment session count for debate mode unlock
+      fetch('/api/session-count', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            console.log('Session count incremented:', data.newCount);
+          }
+        })
+        .catch(err => console.error('Failed to increment session count:', err));
+    }
+  }, [phase]);
+
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Get phase display text
+  const getPhaseText = () => {
+    switch (phase) {
+      case 'ready': return t.phaseReady;
+      case 'recording': return t.phaseFreeTalk;
+      case 'interview': return `${t.phaseConversation} ${formatTime(conversationTime)} / ${formatTime(maxConversationTime)}`;
+      case 'analysis': return t.phaseAnalyzing;
+      case 'review': return t.phaseReview;
+      case 'shadowing': return t.phaseShadowing;
+      case 'summary': return t.phaseComplete;
+      default: return '';
+    }
   };
 
   // ========== Recording Functions ==========
@@ -109,61 +140,48 @@ function TalkContent() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Check supported MIME types
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
         ? 'audio/webm;codecs=opus'
         : MediaRecorder.isTypeSupported('audio/webm')
           ? 'audio/webm'
           : 'audio/mp4';
 
-      console.log('Using MIME type:', mimeType);
-
       const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (event) => {
-        console.log('Data available, size:', event.data.size);
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
       };
 
       mediaRecorder.onstop = async () => {
-        console.log('Recording stopped, chunks:', audioChunksRef.current.length);
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-        console.log('Audio blob size:', audioBlob.size);
         stream.getTracks().forEach(track => track.stop());
         await processAudio(audioBlob, true);
       };
 
-      mediaRecorder.start(1000); // Collect data every 1 second
+      mediaRecorder.start(1000);
       setPhase('recording');
       setTimeLeft(0);
-      console.log('Recording started, mimeType:', mimeType, 'state:', mediaRecorder.state);
     } catch (error) {
       console.error('Microphone error:', error);
-      alert('Please allow microphone access.');
+      alert(language === 'ko' ? '마이크 접근을 허용해주세요.' : 'Please allow microphone access.');
     }
   };
 
   const stopRecording = useCallback(() => {
-    console.log('stopRecording called');
-    console.log('mediaRecorder state:', mediaRecorderRef.current?.state);
     if (mediaRecorderRef.current) {
       if (mediaRecorderRef.current.state === 'recording') {
         mediaRecorderRef.current.stop();
-        console.log('Recording stopped');
       } else {
-        console.log('MediaRecorder not in recording state, forcing stop');
         try {
           mediaRecorderRef.current.stop();
         } catch (e) {
           console.log('Error stopping:', e);
         }
       }
-    } else {
-      console.log('No mediaRecorder found');
     }
   }, []);
 
@@ -197,7 +215,6 @@ function TalkContent() {
       mediaRecorder.onstop = async () => {
         setIsRecordingReply(false);
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-        console.log('Reply audio blob size:', audioBlob.size);
         stream.getTracks().forEach(track => track.stop());
         await processAudio(audioBlob, false);
       };
@@ -213,20 +230,17 @@ function TalkContent() {
 
   const processAudio = async (audioBlob: Blob, isInitial: boolean) => {
     setIsProcessing(true);
-    console.log('processAudio called, isInitial:', isInitial);
 
     try {
       const file = new File([audioBlob], 'audio.webm', { type: 'audio/webm' });
       const formData = new FormData();
       formData.append('audio', file);
 
-      console.log('Sending audio to STT...');
       const sttResponse = await fetch('/api/speech-to-text', {
         method: 'POST',
         body: formData,
       });
       const sttData = await sttResponse.json();
-      console.log('STT response:', sttData);
 
       if (sttData.text && sttData.text.trim()) {
         const userMessage: Message = { role: 'user', content: sttData.text };
@@ -234,17 +248,13 @@ function TalkContent() {
         setMessages(newMessages);
 
         if (isInitial) {
-          console.log('Switching to interview phase');
           setPhase('interview');
         }
 
         await getAIResponse(newMessages);
       } else {
-        console.log('No text from STT, but continuing anyway');
-        // Still move to interview phase even if no text was recognized
         if (isInitial) {
           setPhase('interview');
-          // Send a default message so AI can start the conversation
           const defaultMessage: Message = { role: 'user', content: "Hi, I'd like to practice English conversation." };
           const newMessages = [defaultMessage];
           setMessages(newMessages);
@@ -253,7 +263,6 @@ function TalkContent() {
       }
     } catch (error) {
       console.error('Audio processing error:', error);
-      // Even on error, move to interview phase so user isn't stuck
       if (isInitial) {
         setPhase('interview');
       }
@@ -267,8 +276,6 @@ function TalkContent() {
   const getAIResponse = async (currentMessages: Message[]) => {
     setIsProcessing(true);
     try {
-      // Keep only the last 10 messages to prevent slow responses
-      // Always include the first message for context
       const MAX_MESSAGES = 10;
       let messagesToSend = currentMessages;
 
@@ -313,6 +320,7 @@ function TalkContent() {
           messages: messages,
           tutorId,
           mode: 'analysis',
+          language: language,
         }),
       });
       const data = await response.json();
@@ -363,23 +371,12 @@ function TalkContent() {
     if (analysis && currentReviewIndex < analysis.corrections.length - 1) {
       setCurrentReviewIndex(prev => prev + 1);
     } else {
-      // Move to shadowing if there are corrections
       if (analysis && analysis.corrections.length > 0) {
         setShadowingIndex(0);
         setPhase('shadowing');
       } else {
         setPhase('summary');
       }
-    }
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const startShadowing = () => {
-    if (analysis && analysis.corrections.length > 0) {
-      setShadowingIndex(0);
-      setPhase('shadowing');
-    } else {
-      setPhase('summary');
     }
   };
 
@@ -410,43 +407,35 @@ function TalkContent() {
       <audio ref={audioRef} onEnded={() => setIsPlaying(false)} />
 
       {/* Header */}
-      <header className="bg-white border-b border-neutral-200 px-6 py-4">
+      <header className="bg-white/80 backdrop-blur-md border-b border-neutral-200 px-4 sm:px-6 py-3 sm:py-4 sticky top-0 z-50">
         <div className="max-w-2xl mx-auto flex justify-between items-center">
-          <button onClick={() => router.push('/')} className="text-neutral-500 hover:text-neutral-700">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button onClick={() => router.push('/')} className="text-neutral-500 hover:text-neutral-700 p-1">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
 
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center`}>
-              <span className="text-white font-bold">{persona.name[0]}</span>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center`}>
+              <span className="text-white font-bold text-sm sm:text-base">{persona.name[0]}</span>
             </div>
             <div>
-              <h2 className="font-semibold text-neutral-900">{persona.name}</h2>
-              <p className="text-xs text-neutral-500">
-                {phase === 'ready' && 'Ready to start'}
-                {phase === 'recording' && 'Free Talk'}
-                {phase === 'interview' && `Conversation ${formatTime(conversationTime)} / ${formatTime(maxConversationTime)}`}
-                {phase === 'analysis' && 'Analyzing...'}
-                {phase === 'review' && 'Correction Review'}
-                {phase === 'shadowing' && 'Shadowing Practice'}
-                {phase === 'summary' && 'Session Complete'}
-              </p>
+              <h2 className="font-semibold text-neutral-900 text-sm sm:text-base">{persona.name}</h2>
+              <p className="text-xs text-neutral-500">{getPhaseText()}</p>
             </div>
           </div>
 
           {phase === 'interview' && conversationTime >= 60 && (
-            <button onClick={getAnalysis} className="text-sm text-primary-600 font-medium hover:text-primary-700">
-              End Session
+            <button onClick={getAnalysis} className="text-xs sm:text-sm text-primary-600 font-medium hover:text-primary-700">
+              {t.done}
             </button>
           )}
-          {phase !== 'interview' && <div className="w-20" />}
+          {phase !== 'interview' && <div className="w-12 sm:w-20" />}
         </div>
       </header>
 
       {/* Progress Bar */}
-      <div className="bg-white border-b border-neutral-100 px-6 py-2">
+      <div className="bg-white border-b border-neutral-100 px-4 sm:px-6 py-2">
         <div className="max-w-2xl mx-auto">
           <div className="flex gap-1">
             {['recording', 'interview', 'review', 'shadowing', 'summary'].map((step, idx) => (
@@ -468,58 +457,58 @@ function TalkContent() {
 
         {/* ========== READY PHASE ========== */}
         {phase === 'ready' && (
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-            <div className={`w-24 h-24 rounded-3xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center mb-6 animate-bounce-soft`}>
-              <span className="text-white text-4xl font-display font-bold">{persona.name[0]}</span>
+          <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 text-center">
+            <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center mb-4 sm:mb-6 animate-bounce-soft`}>
+              <span className="text-white text-3xl sm:text-4xl font-display font-bold">{persona.name[0]}</span>
             </div>
 
-            <h2 className="text-2xl font-bold text-neutral-900 mb-2">
-              Ready to practice with {persona.name}?
+            <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-2">
+              {persona.name}{t.readyToStart}
             </h2>
-            <p className="text-neutral-600 mb-8 max-w-md">
-              You&apos;ll have 30 seconds to speak freely. Then {persona.name} will interview you about your topic.
+            <p className="text-sm sm:text-base text-neutral-600 mb-6 sm:mb-8 max-w-md px-4">
+              {t.readyDescription}
             </p>
 
-            <div className="bg-primary-50 rounded-2xl p-6 mb-8 max-w-md">
-              <h3 className="font-semibold text-primary-900 mb-3">Session Flow:</h3>
-              <div className="space-y-2 text-sm text-primary-700">
+            <div className="bg-primary-50 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 max-w-md w-full mx-4">
+              <h3 className="font-semibold text-primary-900 mb-3 text-sm sm:text-base">{t.sessionFlow}</h3>
+              <div className="space-y-2 text-xs sm:text-sm text-primary-700">
                 <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 bg-primary-200 rounded-full flex items-center justify-center text-xs font-bold">1</span>
-                  <span>30-second free talk</span>
+                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-primary-200 rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                  <span>{t.flowStep1}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 bg-primary-200 rounded-full flex items-center justify-center text-xs font-bold">2</span>
-                  <span>AI interview conversation</span>
+                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-primary-200 rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                  <span>{t.flowStep2}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 bg-primary-200 rounded-full flex items-center justify-center text-xs font-bold">3</span>
-                  <span>Correction review with audio</span>
+                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-primary-200 rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                  <span>{t.flowStep3}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 bg-primary-200 rounded-full flex items-center justify-center text-xs font-bold">4</span>
-                  <span>Shadowing practice</span>
+                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-primary-200 rounded-full flex items-center justify-center text-xs font-bold">4</span>
+                  <span>{t.flowStep4}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 bg-primary-200 rounded-full flex items-center justify-center text-xs font-bold">5</span>
-                  <span>Session summary</span>
+                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-primary-200 rounded-full flex items-center justify-center text-xs font-bold">5</span>
+                  <span>{t.flowStep5}</span>
                 </div>
               </div>
             </div>
 
-            <button onClick={startRecording} className="btn-primary flex items-center gap-3 text-lg px-8 py-4">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button onClick={startRecording} className="btn-primary flex items-center gap-2 sm:gap-3 text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
               </svg>
-              Start Free Talk
+              {t.startFreeTalk}
             </button>
           </div>
         )}
 
         {/* ========== RECORDING PHASE ========== */}
         {phase === 'recording' && (
-          <div className="flex-1 flex flex-col items-center justify-center p-8">
-            <div className="relative mb-8">
-              <svg className="w-40 h-40 timer-circle" viewBox="0 0 100 100">
+          <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
+            <div className="relative mb-6 sm:mb-8">
+              <svg className="w-32 h-32 sm:w-40 sm:h-40 timer-circle" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="45" stroke="#E5E5E5" />
                 <circle
                   cx="50" cy="50" r="45"
@@ -528,36 +517,33 @@ function TalkContent() {
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className={`text-4xl font-bold ${timeLeft >= 30 ? 'text-green-600' : 'text-neutral-900'}`}>
+                <span className={`text-3xl sm:text-4xl font-bold ${timeLeft >= 30 ? 'text-green-600' : 'text-neutral-900'}`}>
                   {formatTime(timeLeft)}
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-1 h-8 mb-6">
+            <div className="flex items-center gap-1 h-8 mb-4 sm:mb-6">
               {[...Array(5)].map((_, i) => (<div key={i} className="voice-bar" />))}
             </div>
 
             {timeLeft < 30 ? (
               <>
-                <p className="text-neutral-600 mb-2 text-lg">Speak freely about anything!</p>
-                <p className="text-neutral-400 text-sm mb-8">Keep going for at least 30 seconds</p>
+                <p className="text-neutral-600 mb-2 text-base sm:text-lg">{t.speakFreely}</p>
+                <p className="text-neutral-400 text-xs sm:text-sm mb-6 sm:mb-8">{t.keepGoing30}</p>
               </>
             ) : (
               <>
-                <p className="text-green-600 mb-2 text-lg font-medium">Great! Keep going if you want!</p>
-                <p className="text-neutral-400 text-sm mb-8">The more you share, the better the conversation</p>
+                <p className="text-green-600 mb-2 text-base sm:text-lg font-medium">{t.greatKeepGoing}</p>
+                <p className="text-neutral-400 text-xs sm:text-sm mb-6 sm:mb-8">{t.moreYouShare}</p>
               </>
             )}
 
             <button
-              onClick={() => {
-                console.log('Done Speaking button clicked, timeLeft:', timeLeft);
-                stopRecording();
-              }}
-              className="px-8 py-3 rounded-2xl font-medium transition-colors bg-green-500 text-white hover:bg-green-600"
+              onClick={() => stopRecording()}
+              className="px-6 sm:px-8 py-3 rounded-2xl font-medium transition-colors bg-green-500 text-white hover:bg-green-600 text-sm sm:text-base"
             >
-              Done Speaking ({formatTime(timeLeft)})
+              {t.doneSpeaking} ({formatTime(timeLeft)})
             </button>
           </div>
         )}
@@ -565,21 +551,18 @@ function TalkContent() {
         {/* ========== INTERVIEW PHASE ========== */}
         {phase === 'interview' && (
           <>
-            {/* Audio-only conversation - no text displayed */}
-            <div className="flex-1 flex flex-col items-center justify-center p-8">
-              {/* Tutor Avatar */}
-              <div className={`w-32 h-32 rounded-3xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center mb-6 ${isPlaying ? 'animate-pulse' : ''}`}>
-                <span className="text-white text-5xl font-display font-bold">{persona.name[0]}</span>
+            <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
+              <div className={`w-24 h-24 sm:w-32 sm:h-32 rounded-3xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center mb-4 sm:mb-6 ${isPlaying ? 'animate-pulse' : ''}`}>
+                <span className="text-white text-4xl sm:text-5xl font-display font-bold">{persona.name[0]}</span>
               </div>
 
-              {/* Status Indicator */}
-              <div className="text-center mb-8">
+              <div className="text-center mb-6 sm:mb-8">
                 {isPlaying && (
                   <div className="flex flex-col items-center">
                     <div className="flex items-center gap-1 h-8 mb-3">
                       {[...Array(5)].map((_, i) => (<div key={i} className="voice-bar" />))}
                     </div>
-                    <p className="text-neutral-600 font-medium">{persona.name} is speaking...</p>
+                    <p className="text-neutral-600 font-medium text-sm sm:text-base">{persona.name}{t.speaking}</p>
                   </div>
                 )}
                 {isProcessing && !isPlaying && (
@@ -589,7 +572,7 @@ function TalkContent() {
                       <div className="loading-dot" />
                       <div className="loading-dot" />
                     </div>
-                    <p className="text-neutral-500">Thinking...</p>
+                    <p className="text-neutral-500 text-sm sm:text-base">{t.thinking}</p>
                   </div>
                 )}
                 {isRecordingReply && (
@@ -597,24 +580,23 @@ function TalkContent() {
                     <div className="flex items-center gap-1 h-8 mb-3">
                       {[...Array(5)].map((_, i) => (<div key={i} className="voice-bar" style={{ backgroundColor: '#EF4444' }} />))}
                     </div>
-                    <p className="text-red-500 font-medium">Recording your voice...</p>
+                    <p className="text-red-500 font-medium text-sm sm:text-base">{t.recordingVoice}</p>
                   </div>
                 )}
                 {!isPlaying && !isProcessing && !isRecordingReply && (
-                  <p className="text-neutral-500">Tap the button below to speak</p>
+                  <p className="text-neutral-500 text-sm sm:text-base">{t.tapToSpeak}</p>
                 )}
               </div>
 
-              {/* Hidden messages container for scroll ref */}
               <div ref={messagesEndRef} className="hidden" />
             </div>
 
-            <div className="p-6 bg-white border-t border-neutral-200">
-              <div className="flex gap-3">
+            <div className="p-4 sm:p-6 bg-white border-t border-neutral-200">
+              <div className="flex gap-2 sm:gap-3">
                 <button
                   onClick={recordReply}
                   disabled={isProcessing || isPlaying}
-                  className={`flex-1 py-4 rounded-2xl font-medium flex items-center justify-center gap-2 transition-all ${
+                  className={`flex-1 py-3 sm:py-4 rounded-2xl font-medium flex items-center justify-center gap-2 transition-all text-sm sm:text-base ${
                     isRecordingReply
                       ? 'bg-red-500 text-white recording-active'
                       : isProcessing || isPlaying
@@ -622,22 +604,22 @@ function TalkContent() {
                         : 'btn-primary'
                   }`}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                   </svg>
-                  {isRecordingReply ? 'Stop' : isPlaying ? 'Listening...' : isProcessing ? 'Processing...' : 'Reply'}
+                  {isRecordingReply ? t.stop : isPlaying ? t.listening : isProcessing ? t.processing : t.reply}
                 </button>
 
                 <button
                   onClick={getAnalysis}
                   disabled={isProcessing || isPlaying || isRecordingReply}
-                  className="px-6 py-4 rounded-2xl font-medium bg-neutral-800 text-white hover:bg-neutral-900 transition-all disabled:bg-neutral-300 disabled:text-neutral-500"
+                  className="px-4 sm:px-6 py-3 sm:py-4 rounded-2xl font-medium bg-neutral-800 text-white hover:bg-neutral-900 transition-all disabled:bg-neutral-300 disabled:text-neutral-500 text-sm sm:text-base"
                 >
-                  Done
+                  {t.done}
                 </button>
               </div>
 
-              <p className="text-center text-neutral-400 text-sm mt-3">
+              <p className="text-center text-neutral-400 text-xs sm:text-sm mt-3">
                 {formatTime(conversationTime)} / {formatTime(maxConversationTime)}
               </p>
             </div>
@@ -646,12 +628,12 @@ function TalkContent() {
 
         {/* ========== ANALYSIS PHASE ========== */}
         {phase === 'analysis' && (
-          <div className="flex-1 flex flex-col items-center justify-center p-8">
-            <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center mb-6`}>
-              <span className="text-white text-3xl font-bold">{persona.name[0]}</span>
+          <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
+            <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center mb-4 sm:mb-6`}>
+              <span className="text-white text-2xl sm:text-3xl font-bold">{persona.name[0]}</span>
             </div>
-            <h2 className="text-xl font-bold text-neutral-900 mb-2">{persona.name} is reviewing your session...</h2>
-            <p className="text-neutral-500 mb-6">Analyzing your conversation for feedback</p>
+            <h2 className="text-lg sm:text-xl font-bold text-neutral-900 mb-2 text-center">{persona.name}{t.analyzing}</h2>
+            <p className="text-neutral-500 mb-6 text-sm sm:text-base text-center">{t.analyzingDesc}</p>
             <div className="flex gap-2">
               <div className="loading-dot" />
               <div className="loading-dot" />
@@ -662,46 +644,46 @@ function TalkContent() {
 
         {/* ========== REVIEW PHASE ========== */}
         {phase === 'review' && analysis && (
-          <div className="flex-1 flex flex-col p-6">
-            <div className="text-center mb-6">
-              <span className="text-sm text-neutral-500">Correction {currentReviewIndex + 1} of {analysis.corrections.length}</span>
+          <div className="flex-1 flex flex-col p-4 sm:p-6">
+            <div className="text-center mb-4 sm:mb-6">
+              <span className="text-xs sm:text-sm text-neutral-500">{t.correction} {currentReviewIndex + 1} {t.of} {analysis.corrections.length}</span>
             </div>
 
             {analysis.corrections.length > 0 ? (
               <div className="flex-1 flex flex-col justify-center">
-                <div className="card-premium p-6 mb-6">
+                <div className="card-premium p-4 sm:p-6 mb-4 sm:mb-6">
                   {/* Original */}
-                  <div className="mb-6">
-                    <span className="text-xs font-medium text-red-500 uppercase tracking-wider">What you said</span>
-                    <p className="text-lg text-neutral-800 mt-2 line-through decoration-red-300">
+                  <div className="mb-4 sm:mb-6">
+                    <span className="text-xs font-medium text-red-500 uppercase tracking-wider">{t.whatYouSaid}</span>
+                    <p className="text-base sm:text-lg text-neutral-800 mt-2 line-through decoration-red-300">
                       {analysis.corrections[currentReviewIndex].original}
                     </p>
                   </div>
 
                   {/* Intended */}
-                  <div className="mb-6 p-4 bg-neutral-50 rounded-xl">
-                    <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider">What you meant</span>
-                    <p className="text-neutral-700 mt-2">
+                  <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-neutral-50 rounded-xl">
+                    <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider">{t.whatYouMeant}</span>
+                    <p className="text-neutral-700 mt-2 text-sm sm:text-base">
                       {analysis.corrections[currentReviewIndex].intended}
                     </p>
                   </div>
 
                   {/* Corrected */}
-                  <div className="mb-6">
-                    <span className="text-xs font-medium text-green-600 uppercase tracking-wider">Correct way to say it</span>
-                    <div className="flex items-center gap-3 mt-2">
-                      <p className="text-lg text-green-700 font-medium flex-1">
+                  <div className="mb-4 sm:mb-6">
+                    <span className="text-xs font-medium text-green-600 uppercase tracking-wider">{t.correctWay}</span>
+                    <div className="flex items-center gap-2 sm:gap-3 mt-2">
+                      <p className="text-base sm:text-lg text-green-700 font-medium flex-1">
                         {analysis.corrections[currentReviewIndex].corrected}
                       </p>
                       <button
                         onClick={() => playTTS(analysis.corrections[currentReviewIndex].corrected)}
                         disabled={isPlaying}
-                        className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center hover:bg-green-200 transition-colors"
+                        className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-xl flex items-center justify-center hover:bg-green-200 transition-colors flex-shrink-0"
                       >
                         {isPlaying ? (
                           <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
                         ) : (
-                          <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M8 5v14l11-7z" />
                           </svg>
                         )}
@@ -710,9 +692,9 @@ function TalkContent() {
                   </div>
 
                   {/* Explanation */}
-                  <div className="p-4 bg-primary-50 rounded-xl">
-                    <span className="text-xs font-medium text-primary-600 uppercase tracking-wider">Why?</span>
-                    <p className="text-primary-900 mt-2 text-sm">
+                  <div className="p-3 sm:p-4 bg-primary-50 rounded-xl">
+                    <span className="text-xs font-medium text-primary-600 uppercase tracking-wider">{t.why}</span>
+                    <p className="text-primary-900 mt-2 text-xs sm:text-sm">
                       {analysis.corrections[currentReviewIndex].explanation}
                     </p>
                     <span className="inline-block mt-2 px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full">
@@ -721,21 +703,21 @@ function TalkContent() {
                   </div>
                 </div>
 
-                <button onClick={nextReview} className="btn-primary w-full">
-                  {currentReviewIndex < analysis.corrections.length - 1 ? 'Next Correction' : 'Start Shadowing Practice'}
+                <button onClick={nextReview} className="btn-primary w-full text-sm sm:text-base py-3 sm:py-4">
+                  {currentReviewIndex < analysis.corrections.length - 1 ? t.nextCorrection : t.startShadowing}
                 </button>
               </div>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                  <svg className="w-7 h-7 sm:w-8 sm:h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-neutral-900 mb-2">Great job!</h3>
-                <p className="text-neutral-600 mb-6">No major corrections needed.</p>
-                <button onClick={() => setPhase('summary')} className="btn-primary">
-                  View Summary
+                <h3 className="text-lg sm:text-xl font-bold text-neutral-900 mb-2">{language === 'ko' ? '훌륭해요!' : 'Great job!'}</h3>
+                <p className="text-neutral-600 mb-6 text-sm sm:text-base">{language === 'ko' ? '주요 교정 사항이 없습니다.' : 'No major corrections needed.'}</p>
+                <button onClick={() => setPhase('summary')} className="btn-primary text-sm sm:text-base">
+                  {t.viewSummary}
                 </button>
               </div>
             )}
@@ -744,39 +726,39 @@ function TalkContent() {
 
         {/* ========== SHADOWING PHASE ========== */}
         {phase === 'shadowing' && analysis && analysis.corrections.length > 0 && (
-          <div className="flex-1 flex flex-col p-6">
-            <div className="text-center mb-6">
-              <span className="text-sm text-neutral-500">Shadowing {shadowingIndex + 1} of {analysis.corrections.length}</span>
+          <div className="flex-1 flex flex-col p-4 sm:p-6">
+            <div className="text-center mb-4 sm:mb-6">
+              <span className="text-xs sm:text-sm text-neutral-500">{t.shadowing} {shadowingIndex + 1} {t.of} {analysis.corrections.length}</span>
             </div>
 
             <div className="flex-1 flex flex-col justify-center">
-              <div className="card-premium p-6 mb-6 text-center">
-                <p className="text-sm text-neutral-500 mb-4">Listen and repeat:</p>
-                <p className="text-2xl font-medium text-neutral-900 mb-6">
+              <div className="card-premium p-4 sm:p-6 mb-4 sm:mb-6 text-center">
+                <p className="text-xs sm:text-sm text-neutral-500 mb-3 sm:mb-4">{t.listenAndRepeat}</p>
+                <p className="text-xl sm:text-2xl font-medium text-neutral-900 mb-4 sm:mb-6">
                   {analysis.corrections[shadowingIndex].corrected}
                 </p>
 
                 <button
                   onClick={() => playTTS(analysis.corrections[shadowingIndex].corrected)}
                   disabled={isPlaying}
-                  className="w-20 h-20 mx-auto bg-primary-100 rounded-full flex items-center justify-center hover:bg-primary-200 transition-colors mb-6"
+                  className="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-primary-100 rounded-full flex items-center justify-center hover:bg-primary-200 transition-colors mb-4 sm:mb-6"
                 >
                   {isPlaying ? (
                     <div className="flex items-center gap-1 h-8">
                       {[...Array(5)].map((_, i) => (<div key={i} className="voice-bar" />))}
                     </div>
                   ) : (
-                    <svg className="w-10 h-10 text-primary-600" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-8 h-8 sm:w-10 sm:h-10 text-primary-600" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M8 5v14l11-7z" />
                     </svg>
                   )}
                 </button>
 
-                <p className="text-sm text-neutral-400">Tap to play, then practice saying it aloud</p>
+                <p className="text-xs sm:text-sm text-neutral-400">{t.practiceAloud}</p>
               </div>
 
-              <button onClick={nextShadowing} className="btn-primary w-full">
-                {shadowingIndex < analysis.corrections.length - 1 ? 'Next Sentence' : 'View Summary'}
+              <button onClick={nextShadowing} className="btn-primary w-full text-sm sm:text-base py-3 sm:py-4">
+                {shadowingIndex < analysis.corrections.length - 1 ? t.nextSentence : t.viewSummary}
               </button>
             </div>
           </div>
@@ -784,29 +766,29 @@ function TalkContent() {
 
         {/* ========== SUMMARY PHASE ========== */}
         {phase === 'summary' && (
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="text-center mb-8">
-              <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center mx-auto mb-4`}>
-                <span className="text-white text-3xl font-bold">{persona.name[0]}</span>
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+            <div className="text-center mb-6 sm:mb-8">
+              <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br ${persona.gradient} flex items-center justify-center mx-auto mb-4`}>
+                <span className="text-white text-2xl sm:text-3xl font-bold">{persona.name[0]}</span>
               </div>
-              <h2 className="text-2xl font-bold text-neutral-900">Session Complete!</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-neutral-900">{t.sessionComplete}</h2>
             </div>
 
             {analysis && (
               <>
                 {/* Strengths */}
-                <div className="card-premium p-6 mb-4">
-                  <h3 className="font-semibold text-neutral-900 mb-3 flex items-center gap-2">
-                    <span className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                      <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="card-premium p-4 sm:p-6 mb-4">
+                  <h3 className="font-semibold text-neutral-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
+                    <span className="w-5 h-5 sm:w-6 sm:h-6 bg-green-100 rounded-full flex items-center justify-center">
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                     </span>
-                    What you did well
+                    {t.whatYouDidWell}
                   </h3>
                   <ul className="space-y-2">
                     {analysis.strengths.map((strength, idx) => (
-                      <li key={idx} className="text-neutral-700 text-sm flex items-start gap-2">
+                      <li key={idx} className="text-neutral-700 text-xs sm:text-sm flex items-start gap-2">
                         <span className="text-green-500 mt-0.5">•</span>
                         {strength}
                       </li>
@@ -816,23 +798,23 @@ function TalkContent() {
 
                 {/* Error Patterns */}
                 {analysis.patterns.length > 0 && (
-                  <div className="card-premium p-6 mb-4">
-                    <h3 className="font-semibold text-neutral-900 mb-3 flex items-center gap-2">
-                      <span className="w-6 h-6 bg-amber-100 rounded-full flex items-center justify-center">
-                        <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="card-premium p-4 sm:p-6 mb-4">
+                    <h3 className="font-semibold text-neutral-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
+                      <span className="w-5 h-5 sm:w-6 sm:h-6 bg-amber-100 rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 sm:w-4 sm:h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
                       </span>
-                      Areas to focus on
+                      {t.areasToFocus}
                     </h3>
                     <div className="space-y-3">
                       {analysis.patterns.map((pattern, idx) => (
                         <div key={idx} className="p-3 bg-amber-50 rounded-xl">
                           <div className="flex justify-between items-center mb-1">
-                            <span className="font-medium text-amber-900">{pattern.type}</span>
+                            <span className="font-medium text-amber-900 text-sm">{pattern.type}</span>
                             <span className="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full">{pattern.count}x</span>
                           </div>
-                          <p className="text-sm text-amber-700">{pattern.tip}</p>
+                          <p className="text-xs sm:text-sm text-amber-700">{pattern.tip}</p>
                         </div>
                       ))}
                     </div>
@@ -840,19 +822,19 @@ function TalkContent() {
                 )}
 
                 {/* Encouragement */}
-                <div className="card-premium p-6 mb-6 bg-gradient-to-br from-primary-50 to-white">
-                  <p className="text-primary-900 italic">&ldquo;{analysis.encouragement}&rdquo;</p>
-                  <p className="text-sm text-primary-600 mt-2">— {persona.name}</p>
+                <div className="card-premium p-4 sm:p-6 mb-6 bg-gradient-to-br from-primary-50 to-white">
+                  <p className="text-primary-900 italic text-sm sm:text-base">&ldquo;{analysis.encouragement}&rdquo;</p>
+                  <p className="text-xs sm:text-sm text-primary-600 mt-2">— {persona.name}</p>
                 </div>
               </>
             )}
 
-            <div className="flex gap-4">
-              <button onClick={() => router.push('/')} className="flex-1 btn-secondary">
-                Back to Home
+            <div className="flex gap-3 sm:gap-4">
+              <button onClick={() => router.push('/')} className="flex-1 btn-secondary text-sm sm:text-base py-3 sm:py-4">
+                {t.backToHome}
               </button>
-              <button onClick={resetSession} className="flex-1 btn-primary">
-                Practice Again
+              <button onClick={resetSession} className="flex-1 btn-primary text-sm sm:text-base py-3 sm:py-4">
+                {t.practiceAgain}
               </button>
             </div>
           </div>

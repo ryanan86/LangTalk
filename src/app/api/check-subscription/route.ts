@@ -36,10 +36,11 @@ export async function GET(_request: NextRequest) {
     }
 
     // Read the subscription sheet
-    // Expected format: Column A = Email, Column B = Expiry Date (YYYY-MM-DD), Column C = Status (active/inactive)
+    // Expected format: Column A = Email, Column B = Expiry Date (YYYY-MM-DD), Column C = Status (active/inactive),
+    // Column D = Name, Column E = SignupDate, Column F = SessionCount
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'Subscriptions!A:C',
+      range: 'Subscriptions!A:F',
     });
 
     const rows = response.data.values || [];
@@ -47,10 +48,11 @@ export async function GET(_request: NextRequest) {
     today.setHours(0, 0, 0, 0);
 
     for (const row of rows) {
-      const [rowEmail, expiryDate, status] = row;
+      const [rowEmail, expiryDate, status, , , sessionCountStr] = row;
 
       if (rowEmail?.toLowerCase() === email.toLowerCase()) {
         const statusLower = status?.toLowerCase() || '';
+        const sessionCount = parseInt(sessionCountStr || '0', 10);
 
         // Check if status is pending (waiting for approval)
         if (statusLower === 'pending') {
@@ -58,6 +60,7 @@ export async function GET(_request: NextRequest) {
             subscribed: false,
             status: 'pending',
             reason: '베타 신청이 검토 중입니다.',
+            sessionCount,
             email
           });
         }
@@ -68,6 +71,7 @@ export async function GET(_request: NextRequest) {
             subscribed: false,
             status: statusLower || 'inactive',
             reason: '구독이 활성화되지 않았습니다.',
+            sessionCount,
             email
           });
         }
@@ -81,6 +85,7 @@ export async function GET(_request: NextRequest) {
               status: 'expired',
               reason: '구독 기간이 만료되었습니다.',
               expiryDate,
+              sessionCount,
               email
             });
           }
@@ -90,6 +95,7 @@ export async function GET(_request: NextRequest) {
           subscribed: true,
           status: 'active',
           expiryDate,
+          sessionCount,
           email
         });
       }
@@ -99,6 +105,7 @@ export async function GET(_request: NextRequest) {
       subscribed: false,
       status: 'not_found',
       reason: '베타 신청이 필요합니다.',
+      sessionCount: 0,
       email
     });
   } catch (error) {

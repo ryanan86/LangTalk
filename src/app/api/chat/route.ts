@@ -13,7 +13,7 @@ interface Message {
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages, tutorId, mode } = await request.json();
+    const { messages, tutorId, mode, language = 'en' } = await request.json();
 
     const persona = getPersona(tutorId);
     if (!persona) {
@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     let systemPrompt = persona.systemPrompt;
+    const isKorean = language === 'ko';
 
     // Mode-specific instructions
     if (mode === 'interview') {
@@ -48,7 +49,20 @@ DON'T SOUND LIKE THIS:
 
 Keep responses under 20 words + question. Be real. ENGLISH ONLY.`;
     } else if (mode === 'analysis') {
+      const analysisLang = isKorean ? `
+IMPORTANT: Write ALL explanations, intended meanings, patterns, strengths, and encouragement in KOREAN.
+The "original" and "corrected" fields should remain in English (since they're English sentences).
+The "intended", "explanation", "type", "tip", "strengths", and "encouragement" fields should be in KOREAN.` : '';
+
+      const exampleIntended = isKorean ? '커피를 좋아하는 이유를 표현하고 싶었어요' : 'I wanted to express my love for coffee and why';
+      const exampleExplanation = isKorean ? '생각을 연결하세요! \'especially\', \'because\', \'that\'을 사용해서 짧은 문장들을 하나의 매끄러운 문장으로 만들어보세요.' : 'Connect your thoughts! Use \'especially\', \'because\', and \'that\' to make one flowing sentence instead of choppy short ones.';
+      const examplePatternType = isKorean ? '짧고 단절된 문장들' : 'Short, disconnected sentences';
+      const examplePatternTip = isKorean ? '\'which\', \'that\', \'because\'를 사용해서 아이디어를 더 긴 문장으로 연결하는 연습을 해보세요. 원어민은 3-4단어짜리 문장만 사용하지 않아요.' : 'Practice using \'which\', \'that\', \'because\' to connect your ideas into longer thoughts. Native speakers rarely use only 3-4 word sentences.';
+      const exampleStrengths = isKorean ? ['주요 아이디어를 명확하게 전달했어요', 'X 같은 단어를 잘 선택했어요'] : ['You communicated your main ideas clearly', 'Good vocabulary choice with words like X'];
+      const exampleEncouragement = isKorean ? '구체적인 발전 상황과 다음에 집중할 점에 대한 따뜻한 메시지' : 'Personal, warm message about their specific progress and what to focus on next';
+
       systemPrompt = `You are ${persona.name}, a supportive English coach analyzing a student's conversation.
+${analysisLang}
 
 YOUR GOAL: Help them speak in LONGER, more CONNECTED sentences like native speakers do.
 
@@ -69,22 +83,22 @@ RETURN THIS EXACT JSON FORMAT (no markdown, valid JSON only):
   "corrections": [
     {
       "original": "I like coffee. It is good.",
-      "intended": "I wanted to express my love for coffee and why",
+      "intended": "${exampleIntended}",
       "corrected": "I really love coffee, especially the kind that has a rich, bold flavor because it helps me wake up in the morning and gives me the energy I need to start my day.",
-      "explanation": "Connect your thoughts! Use 'especially', 'because', and 'that' to make one flowing sentence instead of choppy short ones.",
+      "explanation": "${exampleExplanation}",
       "category": "sentence-extension"
     }
   ],
   "patterns": [
     {
-      "type": "Short, disconnected sentences",
+      "type": "${examplePatternType}",
       "count": 5,
-      "tip": "Practice using 'which', 'that', 'because' to connect your ideas into longer thoughts. Native speakers rarely use only 3-4 word sentences."
+      "tip": "${examplePatternTip}"
     }
   ],
-  "strengths": ["You communicated your main ideas clearly", "Good vocabulary choice with words like X"],
+  "strengths": ${JSON.stringify(exampleStrengths)},
   "overallLevel": "beginner|intermediate|advanced",
-  "encouragement": "Personal, warm message about their specific progress and what to focus on next"
+  "encouragement": "${exampleEncouragement}"
 }
 
 BE THOROUGH: Find at least 3-5 corrections. Even correct sentences can be improved to sound more natural and fluent. Show them how a native speaker would express the same idea with more detail and flow.`;
