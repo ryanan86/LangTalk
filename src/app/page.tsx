@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
+import Image from 'next/image';
 
 interface Persona {
   id: string;
@@ -73,11 +74,11 @@ export default function HomePage() {
   const { data: session, status } = useSession();
   const [selectedPersona, setSelectedPersona] = useState<string | null>(null);
   const [isSubscribed, setIsSubscribed] = useState<boolean | null>(null);
-  const [checkingSubscription, setCheckingSubscription] = useState(false);
+  const [, setCheckingSubscription] = useState(false);
 
   // Mic test states
   const [isTesting, setIsTesting] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
+  const [, setIsRecording] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
   const [testStatus, setTestStatus] = useState<'idle' | 'recording' | 'processing' | 'success' | 'error'>('idle');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -253,9 +254,11 @@ export default function HomePage() {
           ) : session ? (
             <div className="flex items-center gap-3">
               {session.user?.image && (
-                <img
+                <Image
                   src={session.user.image}
                   alt={session.user.name || ''}
+                  width={32}
+                  height={32}
                   className="w-8 h-8 rounded-full"
                 />
               )}
@@ -362,7 +365,7 @@ export default function HomePage() {
                           {testStatus === 'success' ? 'We heard:' : 'Error:'}
                         </p>
                         <p className={`font-medium ${testStatus === 'success' ? 'text-green-900' : 'text-red-900'}`}>
-                          "{testResult}"
+                          &ldquo;{testResult}&rdquo;
                         </p>
                       </div>
                     </div>

@@ -59,7 +59,7 @@ function TalkContent() {
 
   // Shadowing state
   const [shadowingIndex, setShadowingIndex] = useState(0);
-  const [shadowingAttempts, setShadowingAttempts] = useState<string[]>([]);
+  const [, setShadowingAttempts] = useState<string[]>([]);
 
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -373,6 +373,7 @@ function TalkContent() {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const startShadowing = () => {
     if (analysis && analysis.corrections.length > 0) {
       setShadowingIndex(0);
