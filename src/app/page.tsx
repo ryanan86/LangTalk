@@ -168,7 +168,7 @@ const personas: Persona[] = [
     name: 'Oliver',
     nationality: 'british',
     gender: 'male',
-    voice: 'onyx',
+    voice: 'fable',
     gradient: 'from-emerald-400 to-teal-500',
     flag: 'UK',
     sampleText: "Right then, hello! I'm Oliver. Looking forward to having a proper conversation with you. No formalities needed here.",

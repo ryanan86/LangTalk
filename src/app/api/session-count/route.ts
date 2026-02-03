@@ -45,7 +45,7 @@ export async function GET() {
 
     const rows = response.data.values || [];
 
-    for (let i = 0; i < rows.length; i++) {
+    for (let i = 1; i < rows.length; i++) { // Skip header row
       const row = rows[i];
       const rowEmail = row[0];
 
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
     let currentCount = 0;
     let currentLevel = '';
 
-    for (let i = 0; i < rows.length; i++) {
+    for (let i = 1; i < rows.length; i++) { // Skip header row
       const row = rows[i];
       const rowEmail = row[0];
 

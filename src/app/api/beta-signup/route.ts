@@ -40,7 +40,8 @@ export async function POST() {
     });
 
     const rows = existingData.data.values || [];
-    const emailExists = rows.some(row => row[0]?.toLowerCase() === email.toLowerCase());
+    // Skip header row (index 0) when checking for existing emails
+    const emailExists = rows.slice(1).some(row => row[0]?.toLowerCase() === email.toLowerCase());
 
     if (emailExists) {
       return NextResponse.json({
