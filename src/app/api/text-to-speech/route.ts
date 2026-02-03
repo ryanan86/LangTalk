@@ -68,11 +68,18 @@ export async function POST(request: NextRequest) {
 
     // Use ElevenLabs if API key is set, otherwise fall back to OpenAI
     const useElevenLabs = !!process.env.ELEVENLABS_API_KEY;
+    console.log('TTS Provider:', useElevenLabs ? 'ElevenLabs' : 'OpenAI');
 
     let audioBuffer: ArrayBuffer;
 
     if (useElevenLabs) {
-      audioBuffer = await generateWithElevenLabs(text, voice);
+      try {
+        audioBuffer = await generateWithElevenLabs(text, voice);
+        console.log('ElevenLabs TTS success');
+      } catch (elevenLabsError) {
+        console.error('ElevenLabs failed, falling back to OpenAI:', elevenLabsError);
+        audioBuffer = await generateWithOpenAI(text, voice);
+      }
     } else {
       audioBuffer = await generateWithOpenAI(text, voice);
     }
