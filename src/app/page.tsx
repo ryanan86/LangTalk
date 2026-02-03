@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import Image from 'next/image';
 import { useLanguage, LanguageToggle } from '@/lib/i18n';
+import { Flag } from '@/components/Icons';
 
 // Typewriter Effect Hook
 function useTypewriter(texts: string[], typingSpeed = 80, deletingSpeed = 40, pauseTime = 2000) {
@@ -1074,12 +1075,8 @@ export default function HomePage() {
                                 )}
 
                                 {/* Flag Badge */}
-                                <div className={`absolute top-3 left-3 text-xs font-bold px-2 py-1 rounded-full z-10 ${
-                                  persona.flag === 'US'
-                                    ? 'bg-blue-500/90 text-white'
-                                    : 'bg-red-500/90 text-white'
-                                }`}>
-                                  {persona.flag}
+                                <div className="absolute top-3 left-3 z-10 bg-white/90 backdrop-blur-sm rounded-md p-1 shadow-sm">
+                                  <Flag country={persona.flag as 'US' | 'UK'} size={24} />
                                 </div>
                               </div>
 
@@ -1328,10 +1325,10 @@ export default function HomePage() {
                       {/* Tutor Preview */}
                       <div className="mt-6 flex items-center gap-3">
                         {[
-                          { name: 'E', gradient: 'from-rose-400 to-pink-500', flag: 'US' },
-                          { name: 'J', gradient: 'from-blue-400 to-indigo-500', flag: 'US' },
-                          { name: 'C', gradient: 'from-violet-400 to-purple-500', flag: 'UK' },
-                          { name: 'O', gradient: 'from-emerald-400 to-teal-500', flag: 'UK' },
+                          { name: 'E', gradient: 'from-rose-400 to-pink-500', flag: 'US' as const },
+                          { name: 'J', gradient: 'from-blue-400 to-indigo-500', flag: 'US' as const },
+                          { name: 'C', gradient: 'from-violet-400 to-purple-500', flag: 'UK' as const },
+                          { name: 'O', gradient: 'from-emerald-400 to-teal-500', flag: 'UK' as const },
                         ].map((tutor, i) => (
                           <div
                             key={i}
@@ -1341,7 +1338,9 @@ export default function HomePage() {
                             <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tutor.gradient} flex items-center justify-center text-white font-bold shadow-lg group-hover/tutor:scale-110 transition-transform cursor-pointer`}>
                               {tutor.name}
                             </div>
-                            <span className={`absolute -top-1 -right-1 text-[10px] font-bold px-1 rounded ${tutor.flag === 'US' ? 'bg-blue-500 text-white' : 'bg-red-500 text-white'}`}>{tutor.flag}</span>
+                            <span className="absolute -top-1 -right-1 bg-white rounded shadow-sm">
+                              <Flag country={tutor.flag} size={16} />
+                            </span>
                           </div>
                         ))}
                       </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { Flag } from './Icons';
 
 interface TutorAvatarProps {
   tutorId: 'emma' | 'james' | 'charlotte' | 'oliver';
@@ -181,11 +182,10 @@ export default function TutorAvatar({
         <div
           className={`
             absolute -bottom-1 -right-1
-            ${size === 'sm' ? 'text-sm' : size === 'md' ? 'text-base' : 'text-xl'}
-            bg-white/90 backdrop-blur-sm rounded-full p-0.5 shadow-lg
+            bg-white/90 backdrop-blur-sm rounded-md p-0.5 shadow-lg
           `}
         >
-          {tutor.flag}
+          <Flag country={tutor.flag as 'US' | 'UK'} size={size === 'sm' ? 14 : size === 'md' ? 18 : 24} />
         </div>
 
         {/* Speaking indicator waves */}
@@ -294,8 +294,8 @@ export function TutorAvatarLarge({
         </div>
 
         {/* Flag */}
-        <div className="absolute -bottom-2 -right-2 text-3xl bg-white/90 backdrop-blur-sm rounded-full p-1 shadow-lg">
-          {tutor.flag}
+        <div className="absolute -bottom-2 -right-2 bg-white/90 backdrop-blur-sm rounded-md p-1 shadow-lg">
+          <Flag country={tutor.flag as 'US' | 'UK'} size={32} />
         </div>
       </div>
 
