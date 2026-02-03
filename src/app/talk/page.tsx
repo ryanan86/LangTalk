@@ -176,6 +176,30 @@ function TalkContent() {
           }
         })
         .catch(err => console.error('Failed to save lesson history:', err));
+
+      // Save individual corrections for spaced repetition review
+      if (analysis?.corrections && analysis.corrections.length > 0) {
+        const correctionsToSave = analysis.corrections.map(c => ({
+          original: c.original,
+          corrected: c.corrected,
+          explanation: c.explanation,
+          category: c.category || 'general',
+          difficulty: 3, // Default difficulty
+        }));
+
+        fetch('/api/corrections', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(correctionsToSave),
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              console.log(`${data.count} corrections saved for review`);
+            }
+          })
+          .catch(err => console.error('Failed to save corrections:', err));
+      }
     }
   }, [phase, analysis, messages, tutorId, conversationTime]);
 
