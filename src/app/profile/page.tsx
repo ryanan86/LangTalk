@@ -6,7 +6,6 @@ import { useLanguage } from '@/lib/i18n';
 
 interface ProfileType {
   id: string;
-  icon: string;
   labelEn: string;
   labelKo: string;
   descEn: string;
@@ -15,52 +14,46 @@ interface ProfileType {
 
 const profileTypes: ProfileType[] = [
   {
-    id: 'parent',
-    icon: '👨‍👩‍👧',
-    labelEn: 'Parent',
-    labelKo: '학부모',
-    descEn: 'School communication, playdates, parent-teacher meetings',
-    descKo: '학교 소통, 플레이데이트, 학부모 상담',
+    id: 'elementary_student',
+    labelEn: 'Elementary Student',
+    labelKo: '초등학생',
+    descEn: 'Basic conversations, hobbies, school life',
+    descKo: '기초 대화, 취미, 학교 생활',
   },
   {
-    id: 'developer',
-    icon: '💻',
-    labelEn: 'Developer',
-    labelKo: '개발자',
-    descEn: 'Code reviews, tech discussions, job interviews',
-    descKo: '코드 리뷰, 기술 토론, 면접',
+    id: 'middle_student',
+    labelEn: 'Middle School Student',
+    labelKo: '중학생',
+    descEn: 'School subjects, friends, everyday topics',
+    descKo: '학교 과목, 친구, 일상 주제',
   },
   {
-    id: 'business_traveler',
-    icon: '✈️',
-    labelEn: 'Business Traveler',
-    labelKo: '출장족',
-    descEn: 'Hotels, meetings, networking, airports',
-    descKo: '호텔, 미팅, 네트워킹, 공항',
-  },
-  {
-    id: 'student',
-    icon: '📚',
-    labelEn: 'Student',
-    labelKo: '학생',
+    id: 'college_student',
+    labelEn: 'College Student',
+    labelKo: '대학생',
     descEn: 'Academic discussions, presentations, campus life',
     descKo: '학술 토론, 발표, 캠퍼스 생활',
   },
   {
     id: 'office_worker',
-    icon: '🏢',
     labelEn: 'Office Worker',
     labelKo: '직장인',
-    descEn: 'Emails, meetings, presentations, colleagues',
-    descKo: '이메일, 회의, 발표, 동료 소통',
+    descEn: 'Emails, meetings, presentations, business English',
+    descKo: '이메일, 회의, 발표, 비즈니스 영어',
   },
   {
-    id: 'freelancer',
-    icon: '🎨',
-    labelEn: 'Freelancer',
-    labelKo: '프리랜서',
-    descEn: 'Client communication, negotiations, project updates',
-    descKo: '클라이언트 소통, 협상, 프로젝트 업데이트',
+    id: 'traveler',
+    labelEn: 'Traveler',
+    labelKo: '여행자',
+    descEn: 'Hotels, restaurants, directions, sightseeing',
+    descKo: '호텔, 식당, 길 찾기, 관광',
+  },
+  {
+    id: 'parent',
+    labelEn: 'Parent',
+    labelKo: '학부모',
+    descEn: 'School communication, playdates, parent-teacher meetings',
+    descKo: '학교 소통, 플레이데이트, 학부모 상담',
   },
 ];
 
@@ -202,7 +195,6 @@ export default function ProfilePage() {
                     : 'border-neutral-200 bg-white hover:border-neutral-300'
                 }`}
               >
-                <span className="text-2xl mb-2 block">{type.icon}</span>
                 <span className="font-medium text-neutral-900 block text-sm">
                   {language === 'ko' ? type.labelKo : type.labelEn}
                 </span>

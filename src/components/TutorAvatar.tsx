@@ -48,7 +48,7 @@ export const tutorData = {
   emma: {
     name: 'Emma',
     nationality: 'American',
-    flag: '🇺🇸',
+    flag: 'US',
     gradient: 'from-rose-400 to-pink-500',
     bgGradient: 'from-rose-500/20 to-pink-500/20',
     ringColor: 'ring-rose-400',
@@ -60,7 +60,7 @@ export const tutorData = {
   james: {
     name: 'James',
     nationality: 'American',
-    flag: '🇺🇸',
+    flag: 'US',
     gradient: 'from-blue-400 to-indigo-500',
     bgGradient: 'from-blue-500/20 to-indigo-500/20',
     ringColor: 'ring-blue-400',
@@ -71,7 +71,7 @@ export const tutorData = {
   charlotte: {
     name: 'Charlotte',
     nationality: 'British',
-    flag: '🇬🇧',
+    flag: 'UK',
     gradient: 'from-violet-400 to-purple-500',
     bgGradient: 'from-violet-500/20 to-purple-500/20',
     ringColor: 'ring-violet-400',
@@ -82,7 +82,7 @@ export const tutorData = {
   oliver: {
     name: 'Oliver',
     nationality: 'British',
-    flag: '🇬🇧',
+    flag: 'UK',
     gradient: 'from-emerald-400 to-teal-500',
     bgGradient: 'from-emerald-500/20 to-teal-500/20',
     ringColor: 'ring-emerald-400',
