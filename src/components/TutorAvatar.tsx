@@ -53,8 +53,8 @@ export const tutorData = {
     bgGradient: 'from-rose-500/20 to-pink-500/20',
     ringColor: 'ring-rose-400',
     glowColor: 'shadow-rose-500/50',
-    // Place your AI-generated image in public/tutors/emma.jpg
-    imagePath: '/tutors/emma.jpg',
+    // Place your AI-generated image in public/tutors/emma.png
+    imagePath: '/tutors/emma.png',
     fallbackColor: 'bg-gradient-to-br from-rose-400 to-pink-500',
   },
   james: {
@@ -65,7 +65,7 @@ export const tutorData = {
     bgGradient: 'from-blue-500/20 to-indigo-500/20',
     ringColor: 'ring-blue-400',
     glowColor: 'shadow-blue-500/50',
-    imagePath: '/tutors/james.jpg',
+    imagePath: '/tutors/james.png',
     fallbackColor: 'bg-gradient-to-br from-blue-400 to-indigo-500',
   },
   charlotte: {
@@ -76,7 +76,7 @@ export const tutorData = {
     bgGradient: 'from-violet-500/20 to-purple-500/20',
     ringColor: 'ring-violet-400',
     glowColor: 'shadow-violet-500/50',
-    imagePath: '/tutors/charlotte.jpg',
+    imagePath: '/tutors/charlotte.png',
     fallbackColor: 'bg-gradient-to-br from-violet-400 to-purple-500',
   },
   oliver: {
@@ -87,7 +87,7 @@ export const tutorData = {
     bgGradient: 'from-emerald-500/20 to-teal-500/20',
     ringColor: 'ring-emerald-400',
     glowColor: 'shadow-emerald-500/50',
-    imagePath: '/tutors/oliver.jpg',
+    imagePath: '/tutors/oliver.png',
     fallbackColor: 'bg-gradient-to-br from-emerald-400 to-teal-500',
   },
 };
