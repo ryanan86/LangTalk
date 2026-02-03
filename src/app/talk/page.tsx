@@ -134,8 +134,44 @@ function TalkContent() {
           }
         })
         .catch(err => console.error('Failed to increment session count:', err));
+
+      // Save lesson history
+      const userMessages = messages.filter(m => m.role === 'user');
+      const topicSummary = userMessages.length > 0
+        ? userMessages.slice(0, 3).map(m => m.content.slice(0, 50)).join(' / ')
+        : 'Free conversation';
+
+      const feedbackSummary = analysis
+        ? `${analysis.overallLevel}. ${analysis.encouragement.slice(0, 100)}`
+        : '';
+
+      const keyCorrections = analysis?.corrections
+        ?.slice(0, 5)
+        .map(c => `${c.original} -> ${c.corrected}`)
+        .join('; ') || '';
+
+      fetch('/api/lesson-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tutor: tutorId,
+          duration: Math.floor(conversationTime / 60),
+          topicSummary,
+          feedbackSummary,
+          keyCorrections,
+          level: analysis?.evaluatedGrade || '',
+          levelDetails: analysis?.levelDetails || null,
+        }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            console.log('Lesson history saved');
+          }
+        })
+        .catch(err => console.error('Failed to save lesson history:', err));
     }
-  }, [phase, analysis]);
+  }, [phase, analysis, messages, tutorId, conversationTime]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {

@@ -202,6 +202,15 @@ export default function HomePage() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [levelDetails, setLevelDetails] = useState<{ grammar: number; vocabulary: number; fluency: number; comprehension: number } | null>(null);
   const [activeTab, setActiveTab] = useState<'talk' | 'debate'>('talk');
+  const [lessonHistory, setLessonHistory] = useState<Array<{
+    dateTime: string;
+    tutor: string;
+    duration: number;
+    topicSummary: string;
+    feedbackSummary: string;
+    keyCorrections: string;
+    level: string;
+  }>>([]);
 
   // Mic test states
   const [isTesting, setIsTesting] = useState(false);
@@ -334,6 +343,13 @@ export default function HomePage() {
       setSessionCount(data.sessionCount || 0);
       setEvaluatedGrade(data.evaluatedGrade || null);
       setLevelDetails(data.levelDetails || null);
+
+      // Fetch lesson history
+      const historyRes = await fetch('/api/lesson-history');
+      const historyData = await historyRes.json();
+      if (historyData.lessons) {
+        setLessonHistory(historyData.lessons.slice(0, 5)); // Last 5 lessons
+      }
     } catch {
       setIsSubscribed(true);
       setSubscriptionStatus('active');
@@ -661,6 +677,59 @@ export default function HomePage() {
                       style={{ width: `${(sessionCount / 5) * 100}%` }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+                  </div>
+                </div>
+              )}
+
+              {/* Recent Lesson History */}
+              {session && isSubscribed && lessonHistory.length > 0 && (
+                <div className="max-w-2xl mx-auto mt-8">
+                  <h3 className="text-sm font-medium text-white/40 uppercase tracking-wider mb-4 text-center">
+                    {language === 'ko' ? '최근 학습 기록' : 'Recent Lessons'}
+                  </h3>
+                  <div className="space-y-3">
+                    {lessonHistory.map((lesson, idx) => (
+                      <div
+                        key={idx}
+                        className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${
+                              lesson.tutor === 'emma' ? 'from-rose-400 to-pink-500' :
+                              lesson.tutor === 'james' ? 'from-blue-400 to-indigo-500' :
+                              lesson.tutor === 'charlotte' ? 'from-violet-400 to-purple-500' :
+                              'from-emerald-400 to-teal-500'
+                            } flex items-center justify-center text-white font-bold text-sm`}>
+                              {lesson.tutor ? lesson.tutor[0].toUpperCase() : '?'}
+                            </div>
+                            <div>
+                              <p className="text-white font-medium capitalize">{lesson.tutor || 'Unknown'}</p>
+                              <p className="text-white/40 text-xs">{lesson.dateTime}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            {lesson.level && (
+                              <span className="inline-block px-2 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs font-medium">
+                                {lesson.level}
+                              </span>
+                            )}
+                            {lesson.duration > 0 && (
+                              <p className="text-white/40 text-xs mt-1">{lesson.duration}{language === 'ko' ? '분' : 'min'}</p>
+                            )}
+                          </div>
+                        </div>
+                        {lesson.topicSummary && (
+                          <p className="text-white/60 text-sm mb-2 line-clamp-1">{lesson.topicSummary}</p>
+                        )}
+                        {lesson.keyCorrections && (
+                          <p className="text-amber-400/70 text-xs">
+                            <span className="text-white/30">{language === 'ko' ? '교정: ' : 'Corrections: '}</span>
+                            {lesson.keyCorrections}
+                          </p>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
