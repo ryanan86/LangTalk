@@ -41,7 +41,9 @@ async function generateWithElevenLabs(text: string, voice: string): Promise<Arra
   });
 
   if (!response.ok) {
-    throw new Error('ElevenLabs TTS failed');
+    const errorText = await response.text();
+    console.error('ElevenLabs error:', response.status, errorText);
+    throw new Error(`ElevenLabs TTS failed: ${response.status} - ${errorText}`);
   }
 
   return response.arrayBuffer();
@@ -67,8 +69,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Use ElevenLabs if API key is set, otherwise fall back to OpenAI
-    const useElevenLabs = !!process.env.ELEVENLABS_API_KEY;
+    const elevenLabsKey = process.env.ELEVENLABS_API_KEY;
+    const useElevenLabs = !!elevenLabsKey && elevenLabsKey.trim().length > 0;
     console.log('TTS Provider:', useElevenLabs ? 'ElevenLabs' : 'OpenAI');
+    console.log('ElevenLabs key exists:', !!elevenLabsKey, '| Key length:', elevenLabsKey?.length || 0);
 
     let audioBuffer: ArrayBuffer;
 

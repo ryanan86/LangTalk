@@ -76,6 +76,7 @@ function TalkContent() {
 
   // Streaming state
   const [streamingText, setStreamingText] = useState('');
+  const [showTranscript, setShowTranscript] = useState(false);
 
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -86,6 +87,7 @@ function TalkContent() {
   const audioQueueRef = useRef<string[]>([]);
   const isPlayingQueueRef = useRef(false);
   const processedSentencesRef = useRef<Set<string>>(new Set());
+  const audioCacheRef = useRef<Map<string, Promise<Blob>>>(new Map());
 
   // Auto-scroll messages
   useEffect(() => {
@@ -368,8 +370,10 @@ function TalkContent() {
 
     // Reset streaming state
     setStreamingText('');
+    setShowTranscript(false); // Hide text by default for listening practice
     audioQueueRef.current = [];
     processedSentencesRef.current.clear();
+    audioCacheRef.current.clear();
 
     try {
       const MAX_MESSAGES = 10;
@@ -581,6 +585,8 @@ function TalkContent() {
     if (audioQueueRef.current.length === 0) {
       isPlayingQueueRef.current = false;
       setIsPlaying(false);
+      // Clear audio cache when done
+      audioCacheRef.current.clear();
       return;
     }
 
@@ -589,14 +595,14 @@ function TalkContent() {
 
     const sentence = audioQueueRef.current.shift()!;
 
-    try {
-      const response = await fetch('/api/text-to-speech', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: sentence, voice: persona.voice }),
-      });
+    // Prefetch next sentence while playing current one
+    if (audioQueueRef.current.length > 0) {
+      prefetchAudio(audioQueueRef.current[0]);
+    }
 
-      const audioBlob = await response.blob();
+    try {
+      // Use cached audio or fetch if not available
+      const audioBlob = await prefetchAudio(sentence);
       const audioUrl = URL.createObjectURL(audioBlob);
 
       if (audioRef.current) {
@@ -625,6 +631,9 @@ function TalkContent() {
           audio.onended = () => resolve();
           audio.play();
         });
+
+        // Revoke URL to free memory
+        URL.revokeObjectURL(audioUrl);
       }
     } catch (error) {
       console.error('TTS queue error:', error);
@@ -634,6 +643,22 @@ function TalkContent() {
     playNextInQueue();
   };
 
+  // Prefetch audio for a sentence
+  const prefetchAudio = (sentence: string): Promise<Blob> => {
+    if (audioCacheRef.current.has(sentence)) {
+      return audioCacheRef.current.get(sentence)!;
+    }
+
+    const promise = fetch('/api/text-to-speech', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: sentence, voice: persona.voice }),
+    }).then(res => res.blob());
+
+    audioCacheRef.current.set(sentence, promise);
+    return promise;
+  };
+
   // Add sentence to TTS queue
   const queueTTS = (sentence: string) => {
     // Skip if already processed
@@ -641,6 +666,9 @@ function TalkContent() {
       return;
     }
     processedSentencesRef.current.add(sentence);
+
+    // Start prefetching audio immediately
+    prefetchAudio(sentence);
 
     audioQueueRef.current.push(sentence);
 
@@ -854,15 +882,34 @@ function TalkContent() {
               />
 
               <div className="text-center mt-4 mb-6 sm:mb-8">
-                {/* Show streaming text while AI is responding */}
-                {streamingText && (
+                {/* Show transcript toggle button when AI is speaking */}
+                {(streamingText || isPlaying) && (
                   <div className="mb-4 px-4">
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-sm max-w-sm mx-auto">
-                      <p className="text-neutral-800 text-sm sm:text-base leading-relaxed">
-                        {streamingText}
-                        <span className="inline-block w-1.5 h-4 bg-primary-500 ml-0.5 animate-pulse" />
-                      </p>
-                    </div>
+                    {showTranscript ? (
+                      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-sm max-w-sm mx-auto">
+                        <p className="text-neutral-800 text-sm sm:text-base leading-relaxed">
+                          {streamingText || messages[messages.length - 1]?.content}
+                          {streamingText && <span className="inline-block w-1.5 h-4 bg-primary-500 ml-0.5 animate-pulse" />}
+                        </p>
+                        <button
+                          onClick={() => setShowTranscript(false)}
+                          className="mt-2 text-xs text-neutral-400 hover:text-neutral-600"
+                        >
+                          {language === 'ko' ? '텍스트 숨기기' : 'Hide text'}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setShowTranscript(true)}
+                        className="text-xs text-neutral-400 hover:text-neutral-600 flex items-center gap-1 mx-auto"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        {language === 'ko' ? '텍스트 보기' : 'Show text'}
+                      </button>
+                    )}
                   </div>
                 )}
 
