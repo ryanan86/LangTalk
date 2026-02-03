@@ -13,7 +13,8 @@ interface Message {
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages, tutorId, mode, language = 'en' } = await request.json();
+    const body = await request.json();
+    const { messages, tutorId, mode, language = 'en', stream: useStreaming = false } = body;
 
     const persona = getPersona(tutorId);
     if (!persona) {
@@ -168,6 +169,47 @@ Be specific, helpful, and maintain your teaching persona.`;
     // Optimize max_tokens based on mode
     const maxTokens = mode === 'interview' ? 150 : mode === 'analysis' ? 2048 : 500;
 
+    // Use streaming for interview mode when requested
+    if (useStreaming && mode === 'interview') {
+      const stream = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        max_tokens: maxTokens,
+        temperature: 0.8,
+        presence_penalty: 0.6,
+        frequency_penalty: 0.3,
+        messages: openaiMessages,
+        stream: true,
+      });
+
+      // Create a readable stream for SSE
+      const encoder = new TextEncoder();
+      const readableStream = new ReadableStream({
+        async start(controller) {
+          try {
+            for await (const chunk of stream) {
+              const text = chunk.choices[0]?.delta?.content || '';
+              if (text) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
+              }
+            }
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            controller.close();
+          } catch (error) {
+            controller.error(error);
+          }
+        },
+      });
+
+      return new Response(readableStream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      });
+    }
+
+    // Non-streaming mode (default)
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       max_tokens: maxTokens,

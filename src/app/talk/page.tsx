@@ -74,12 +74,18 @@ function TalkContent() {
   const [shadowingIndex, setShadowingIndex] = useState(0);
   const [, setShadowingAttempts] = useState<string[]>([]);
 
+  // Streaming state
+  const [streamingText, setStreamingText] = useState('');
+
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioQueueRef = useRef<string[]>([]);
+  const isPlayingQueueRef = useRef(false);
+  const processedSentencesRef = useRef<Set<string>>(new Set());
 
   // Auto-scroll messages
   useEffect(() => {
@@ -335,6 +341,12 @@ function TalkContent() {
 
   const getAIResponse = async (currentMessages: Message[]) => {
     setIsProcessing(true);
+
+    // Reset streaming state
+    setStreamingText('');
+    audioQueueRef.current = [];
+    processedSentencesRef.current.clear();
+
     try {
       const MAX_MESSAGES = 10;
       let messagesToSend = currentMessages;
@@ -352,14 +364,87 @@ function TalkContent() {
           messages: messagesToSend,
           tutorId,
           mode: 'interview',
+          stream: true,
         }),
       });
-      const data = await response.json();
 
-      if (data.message) {
-        const assistantMessage: Message = { role: 'assistant', content: data.message };
-        setMessages(prev => [...prev, assistantMessage]);
-        await playTTS(data.message);
+      // Check if response is streaming (SSE)
+      const contentType = response.headers.get('content-type');
+
+      if (contentType?.includes('text/event-stream')) {
+        // Process streaming response
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let fullResponse = '';
+        let textBuffer = '';
+
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+
+            // Process SSE events
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+
+                if (data === '[DONE]') {
+                  // Stream complete - add any remaining text
+                  if (textBuffer.trim()) {
+                    queueTTS(textBuffer.trim());
+                  }
+                  continue;
+                }
+
+                try {
+                  const parsed = JSON.parse(data);
+                  if (parsed.text) {
+                    fullResponse += parsed.text;
+                    textBuffer += parsed.text;
+                    setStreamingText(fullResponse);
+
+                    // Extract and queue complete sentences
+                    const { sentences, remaining } = extractCompleteSentences(textBuffer);
+                    for (const sentence of sentences) {
+                      queueTTS(sentence);
+                    }
+                    textBuffer = remaining;
+                  }
+                } catch {
+                  // Ignore parse errors
+                }
+              }
+            }
+          }
+        }
+
+        // Add completed message to conversation
+        if (fullResponse) {
+          const assistantMessage: Message = { role: 'assistant', content: fullResponse };
+          setMessages(prev => [...prev, assistantMessage]);
+        }
+
+        // Wait for all audio to finish playing
+        while (isPlayingQueueRef.current || audioQueueRef.current.length > 0) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        setStreamingText('');
+      } else {
+        // Fallback to non-streaming response
+        const data = await response.json();
+
+        if (data.message) {
+          const assistantMessage: Message = { role: 'assistant', content: data.message };
+          setMessages(prev => [...prev, assistantMessage]);
+          await playTTS(data.message);
+        }
       }
     } catch (error) {
       console.error('AI response error:', error);
@@ -415,13 +500,128 @@ function TalkContent() {
       const audioUrl = URL.createObjectURL(audioBlob);
 
       if (audioRef.current) {
-        audioRef.current.src = audioUrl;
-        await audioRef.current.play();
+        const audio = audioRef.current;
+
+        // Wait for audio to be fully loaded before playing
+        await new Promise<void>((resolve, reject) => {
+          const onCanPlay = () => {
+            audio.removeEventListener('canplaythrough', onCanPlay);
+            audio.removeEventListener('error', onError);
+            resolve();
+          };
+          const onError = () => {
+            audio.removeEventListener('canplaythrough', onCanPlay);
+            audio.removeEventListener('error', onError);
+            reject(new Error('Audio load failed'));
+          };
+
+          audio.addEventListener('canplaythrough', onCanPlay, { once: true });
+          audio.addEventListener('error', onError, { once: true });
+          audio.preload = 'auto';
+          audio.src = audioUrl;
+          audio.load();
+        });
+
+        await audio.play();
       }
     } catch (error) {
       console.error('TTS error:', error);
     } finally {
       setIsPlaying(false);
+    }
+  };
+
+  // ========== Streaming TTS Queue Functions ==========
+
+  // Extract complete sentences from text buffer
+  const extractCompleteSentences = (text: string): { sentences: string[]; remaining: string } => {
+    // Match sentences ending with . ! or ? followed by space or end
+    const sentencePattern = /[^.!?]*[.!?]+(?:\s|$)/g;
+    const matches = text.match(sentencePattern) || [];
+    const sentences = matches.map(s => s.trim()).filter(s => s.length > 0);
+
+    // Find remaining text after last complete sentence
+    let remaining = text;
+    for (const sentence of sentences) {
+      const idx = remaining.indexOf(sentence);
+      if (idx !== -1) {
+        remaining = remaining.slice(idx + sentence.length);
+      }
+    }
+
+    return { sentences, remaining: remaining.trim() };
+  };
+
+  // Play next audio in queue
+  const playNextInQueue = async () => {
+    if (audioQueueRef.current.length === 0) {
+      isPlayingQueueRef.current = false;
+      setIsPlaying(false);
+      return;
+    }
+
+    isPlayingQueueRef.current = true;
+    setIsPlaying(true);
+
+    const sentence = audioQueueRef.current.shift()!;
+
+    try {
+      const response = await fetch('/api/text-to-speech', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: sentence, voice: persona.voice }),
+      });
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+
+      if (audioRef.current) {
+        const audio = audioRef.current;
+
+        await new Promise<void>((resolve, reject) => {
+          const onCanPlay = () => {
+            audio.removeEventListener('canplaythrough', onCanPlay);
+            audio.removeEventListener('error', onError);
+            resolve();
+          };
+          const onError = () => {
+            audio.removeEventListener('canplaythrough', onCanPlay);
+            audio.removeEventListener('error', onError);
+            reject(new Error('Audio load failed'));
+          };
+
+          audio.addEventListener('canplaythrough', onCanPlay, { once: true });
+          audio.addEventListener('error', onError, { once: true });
+          audio.preload = 'auto';
+          audio.src = audioUrl;
+          audio.load();
+        });
+
+        await new Promise<void>((resolve) => {
+          audio.onended = () => resolve();
+          audio.play();
+        });
+      }
+    } catch (error) {
+      console.error('TTS queue error:', error);
+    }
+
+    // Play next in queue
+    playNextInQueue();
+  };
+
+  // Add sentence to TTS queue
+  const queueTTS = (sentence: string) => {
+    // Skip if already processed
+    if (processedSentencesRef.current.has(sentence)) {
+      return;
+    }
+    processedSentencesRef.current.add(sentence);
+
+    audioQueueRef.current.push(sentence);
+
+    if (!isPlayingQueueRef.current) {
+      playNextInQueue();
     }
   };
 
@@ -630,10 +830,22 @@ function TalkContent() {
               />
 
               <div className="text-center mt-4 mb-6 sm:mb-8">
+                {/* Show streaming text while AI is responding */}
+                {streamingText && (
+                  <div className="mb-4 px-4">
+                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-sm max-w-sm mx-auto">
+                      <p className="text-neutral-800 text-sm sm:text-base leading-relaxed">
+                        {streamingText}
+                        <span className="inline-block w-1.5 h-4 bg-primary-500 ml-0.5 animate-pulse" />
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {isPlaying && (
                   <p className="text-neutral-600 font-medium text-sm sm:text-base">{persona.name}{t.speaking}</p>
                 )}
-                {isProcessing && !isPlaying && (
+                {isProcessing && !isPlaying && !streamingText && (
                   <div className="flex flex-col items-center">
                     <div className="flex gap-2 mb-3">
                       <div className="loading-dot" />
@@ -651,7 +863,7 @@ function TalkContent() {
                     <p className="text-red-500 font-medium text-sm sm:text-base">{t.recordingVoice}</p>
                   </div>
                 )}
-                {!isPlaying && !isProcessing && !isRecordingReply && (
+                {!isPlaying && !isProcessing && !isRecordingReply && !streamingText && (
                   <p className="text-neutral-500 text-sm sm:text-base">{t.tapToSpeak}</p>
                 )}
               </div>
