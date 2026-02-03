@@ -289,25 +289,48 @@ export default function HomePage() {
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         stream.getTracks().forEach(track => track.stop());
 
+        console.log('=== Mic Test Debug ===');
+        console.log('Audio chunks:', audioChunksRef.current.length);
+        console.log('Audio blob size:', audioBlob.size, 'bytes');
+        console.log('Audio blob type:', audioBlob.type);
+        console.log('MIME type used:', mimeType);
+
+        if (audioBlob.size < 1000) {
+          console.error('Audio blob is too small, likely no audio recorded');
+          setTestResult(language === 'ko' ? '오디오가 녹음되지 않았습니다. 마이크를 확인해주세요.' : 'No audio recorded. Please check your microphone.');
+          setTestStatus('error');
+          setIsTesting(false);
+          return;
+        }
+
         try {
           const file = new File([audioBlob], 'test.webm', { type: mimeType });
           const formData = new FormData();
           formData.append('audio', file);
 
+          console.log('Sending to API, file size:', file.size);
+
           const response = await fetch('/api/speech-to-text', {
             method: 'POST',
             body: formData,
           });
-          const data = await response.json();
 
-          if (data.text && data.text.trim()) {
+          console.log('API response status:', response.status);
+          const data = await response.json();
+          console.log('API response data:', data);
+
+          if (data.error) {
+            setTestResult(language === 'ko' ? `오류: ${data.error}` : `Error: ${data.error}`);
+            setTestStatus('error');
+          } else if (data.text && data.text.trim()) {
             setTestResult(data.text);
             setTestStatus('success');
           } else {
-            setTestResult(language === 'ko' ? '음성이 인식되지 않았습니다. 다시 시도해주세요.' : 'No speech detected. Please try again.');
+            setTestResult(language === 'ko' ? '음성이 인식되지 않았습니다. 더 크게 말해주세요.' : 'No speech detected. Please speak louder.');
             setTestStatus('error');
           }
-        } catch {
+        } catch (err) {
+          console.error('Fetch error:', err);
           setTestResult(language === 'ko' ? '오디오 처리 중 오류가 발생했습니다.' : 'Error processing audio. Please try again.');
           setTestStatus('error');
         }
