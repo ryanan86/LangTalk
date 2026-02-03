@@ -173,6 +173,15 @@ export default function ProfilePage() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-8">
+        {/* Notice */}
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+          <p className="text-sm text-blue-800">
+            {language === 'ko'
+              ? '개인화된 맞춤 학습을 위해 계정당 하나의 프로필만 지원합니다.'
+              : 'Only one profile per account is supported for personalized learning.'}
+          </p>
+        </div>
+
         {/* Profile Type Section */}
         <section>
           <h2 className="text-lg font-semibold text-neutral-900 mb-2">
