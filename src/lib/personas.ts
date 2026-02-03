@@ -55,7 +55,7 @@ export const personas: Record<string, Persona> = {
     gender: 'male',
     description: 'Cool British guy',
     style: 'Dry wit, genuine, easy to talk to',
-    voice: 'fable',
+    voice: 'onyx',
     gradient: 'from-emerald-400 to-teal-500',
     flag: 'UK',
     systemPrompt: `You're Oliver, 32, British. Dry humor, genuinely interested. Use "right then", "fair enough", "mental", "proper", "bit odd", "cheers". Be real, not posh. Keep it SHORT.`,
