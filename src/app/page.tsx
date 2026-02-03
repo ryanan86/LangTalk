@@ -1051,7 +1051,12 @@ export default function HomePage() {
                                     src={`/tutors/${persona.id}.png`}
                                     alt={persona.name}
                                     fill
-                                    className="object-cover object-top scale-110 group-hover:scale-115 transition-transform duration-500"
+                                    className={`object-cover object-top transition-transform duration-500 contrast-[1.02] ${
+                                      persona.id === 'oliver'
+                                        ? 'scale-95 group-hover:scale-100'
+                                        : 'scale-110 group-hover:scale-115'
+                                    }`}
+                                    style={{ filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.3))' }}
                                     onError={(e) => {
                                       const target = e.target as HTMLImageElement;
                                       target.src = `/tutors/${persona.id}.jpg`;

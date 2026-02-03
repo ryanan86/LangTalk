@@ -157,7 +157,8 @@ export default function TutorAvatar({
               src={tutor.imagePath}
               alt={tutor.name}
               fill
-              className="object-cover"
+              className="object-cover contrast-[1.02]"
+              style={{ filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.3))' }}
               onError={() => setImageError(true)}
               priority={size === 'xl' || size === 'lg'}
             />
@@ -278,7 +279,8 @@ export function TutorAvatarLarge({
               src={tutor.imagePath}
               alt={tutor.name}
               fill
-              className="object-cover"
+              className="object-cover contrast-[1.02]"
+              style={{ filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.3))' }}
               onError={() => setImageError(true)}
               priority
             />
