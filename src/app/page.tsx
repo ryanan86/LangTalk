@@ -1075,12 +1075,16 @@ export default function HomePage() {
                                     src={`/tutors/${persona.id}.png`}
                                     alt={persona.name}
                                     fill
-                                    className={`object-cover object-top transition-transform duration-500 contrast-[1.02] ${
-                                      persona.id === 'oliver'
-                                        ? 'scale-95 group-hover:scale-100'
-                                        : 'scale-110 group-hover:scale-115'
+                                    className={`object-cover transition-transform duration-500 contrast-[1.02] ${
+                                      persona.id === 'emma' ? 'scale-110 group-hover:scale-115 object-top' :
+                                      persona.id === 'james' ? 'scale-105 group-hover:scale-110 object-top' :
+                                      persona.id === 'charlotte' ? 'scale-110 group-hover:scale-115 object-top' :
+                                      'scale-90 group-hover:scale-95 object-center'
                                     }`}
-                                    style={{ filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.3))' }}
+                                    style={{
+                                      filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.3))',
+                                      objectPosition: persona.id === 'oliver' ? 'center 20%' : undefined
+                                    }}
                                     onError={(e) => {
                                       const target = e.target as HTMLImageElement;
                                       target.src = `/tutors/${persona.id}.jpg`;
