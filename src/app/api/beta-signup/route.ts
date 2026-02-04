@@ -139,7 +139,35 @@ export async function POST() {
 
 // Send notification to admin
 async function sendAdminNotification(userEmail: string, userName: string, signupTime: string) {
-  // Option 1: Use Resend (if RESEND_API_KEY is configured)
+  // Option 1: Telegram (if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID are configured)
+  if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
+    try {
+      const message = `🆕 *새 베타 신청!*
+
+📧 이메일: \`${userEmail}\`
+👤 이름: ${userName || '(없음)'}
+🕐 시간: ${signupTime}
+
+[승인하러 가기](https://taptalk.xyz/admin/users)`;
+
+      await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: process.env.TELEGRAM_CHAT_ID,
+          text: message,
+          parse_mode: 'Markdown',
+          disable_web_page_preview: true,
+        }),
+      });
+      console.log('Admin notification sent via Telegram');
+    } catch (e) {
+      console.error('Failed to send Telegram notification:', e);
+    }
+    return;
+  }
+
+  // Option 2: Use Resend (if RESEND_API_KEY is configured)
   if (process.env.RESEND_API_KEY) {
     try {
       await fetch('https://api.resend.com/emails', {
@@ -169,7 +197,7 @@ async function sendAdminNotification(userEmail: string, userName: string, signup
     return;
   }
 
-  // Option 2: Use Slack webhook (if SLACK_WEBHOOK_URL is configured)
+  // Option 3: Use Slack webhook (if SLACK_WEBHOOK_URL is configured)
   if (process.env.SLACK_WEBHOOK_URL) {
     try {
       await fetch(process.env.SLACK_WEBHOOK_URL, {
