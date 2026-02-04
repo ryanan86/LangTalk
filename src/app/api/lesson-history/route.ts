@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { google } from 'googleapis';
 import { getServerSession } from 'next-auth';
+import { randomUUID } from 'crypto';
+import {
+  getLearningData,
+  addSession,
+  addCorrections,
+  updateUserFields,
+} from '@/lib/sheetHelper';
+import { SessionSummary, CorrectionItem } from '@/lib/sheetTypes';
 
 // GET: Retrieve lesson history for current user
 export async function GET() {
@@ -19,52 +26,33 @@ export async function GET() {
       return NextResponse.json({ lessons: [], email });
     }
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-
-    const sheets = google.sheets({ version: 'v4', auth });
-
-    const spreadsheetId = process.env.GOOGLE_SUBSCRIPTION_SHEET_ID;
-    if (!spreadsheetId) {
+    if (!process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
       console.log('No spreadsheet ID configured');
       return NextResponse.json({ lessons: [], email });
     }
 
-    // Read the LessonHistory sheet
-    // Format: A=Email, B=DateTime, C=Tutor, D=Duration, E=TopicSummary, F=FeedbackSummary, G=KeyCorrections, H=Level, I=LevelDetails
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: 'LessonHistory!A:I',
-    });
+    // Get learning data using optimized helper
+    const learningData = await getLearningData(email);
 
-    const rows = response.data.values || [];
-    const lessons = [];
-
-    for (let i = 1; i < rows.length; i++) { // Skip header row
-      const row = rows[i];
-      const rowEmail = row[0];
-
-      if (rowEmail?.toLowerCase() === email.toLowerCase()) {
-        lessons.push({
-          dateTime: row[1] || '',
-          tutor: row[2] || '',
-          duration: parseInt(row[3] || '0', 10),
-          topicSummary: row[4] || '',
-          feedbackSummary: row[5] || '',
-          keyCorrections: row[6] || '',
-          level: row[7] || '',
-          levelDetails: row[8] ? JSON.parse(row[8]) : null,
-        });
-      }
+    if (!learningData) {
+      return NextResponse.json({
+        lessons: [],
+        email,
+        total: 0,
+      });
     }
 
-    // Sort by date descending (most recent first)
-    lessons.sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
+    // Transform sessions to legacy format for backward compatibility
+    const lessons = learningData.recentSessions.map(s => ({
+      dateTime: s.date,
+      tutor: s.tutor || '',
+      duration: s.duration,
+      topicSummary: s.topics.join(', '),
+      feedbackSummary: '', // Not stored in new format
+      keyCorrections: '', // Corrections are stored separately now
+      level: s.level || '',
+      levelDetails: null,
+    }));
 
     return NextResponse.json({
       lessons,
@@ -98,6 +86,7 @@ export async function POST(request: NextRequest) {
       keyCorrections,
       level,
       levelDetails,
+      corrections: rawCorrections, // Array of correction objects
     } = body;
 
     // If no Google Sheets credentials, return success for development
@@ -106,25 +95,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, message: 'Development mode - not saved' });
     }
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-
-    const sheets = google.sheets({ version: 'v4', auth });
-
-    const spreadsheetId = process.env.GOOGLE_SUBSCRIPTION_SHEET_ID;
-    if (!spreadsheetId) {
+    if (!process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
       console.log('No spreadsheet ID configured');
       return NextResponse.json({ success: true, message: 'No spreadsheet configured' });
     }
 
-    // Create timestamp in Korea timezone
+    // Create session summary
+    const sessionId = `session_${Date.now()}`;
     const now = new Date();
-    const koreaTime = new Intl.DateTimeFormat('ko-KR', {
+    const koreaDate = new Intl.DateTimeFormat('ko-KR', {
       timeZone: 'Asia/Seoul',
       year: 'numeric',
       month: '2-digit',
@@ -135,29 +114,61 @@ export async function POST(request: NextRequest) {
       hour12: false,
     }).format(now);
 
-    // Append new row to LessonHistory sheet
-    await sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range: 'LessonHistory!A:I',
-      valueInputOption: 'RAW',
-      requestBody: {
-        values: [[
-          email,
-          koreaTime,
-          tutor || '',
-          duration || 0,
-          topicSummary || '',
-          feedbackSummary || '',
-          keyCorrections || '',
-          level || '',
-          levelDetails ? JSON.stringify(levelDetails) : '',
-        ]],
+    const sessionSummary: SessionSummary = {
+      id: sessionId,
+      date: koreaDate,
+      type: 'tutoring',
+      tutor: tutor || '',
+      duration: duration || 0,
+      topics: topicSummary ? [topicSummary] : [],
+      level: level || '',
+    };
+
+    // Add session to learning data
+    await addSession(email, sessionSummary);
+
+    // If there are individual corrections, add them
+    if (rawCorrections && Array.isArray(rawCorrections) && rawCorrections.length > 0) {
+      const nextReview = new Date();
+      nextReview.setDate(nextReview.getDate() + 1);
+
+      const correctionItems: CorrectionItem[] = rawCorrections.map((c: {
+        original?: string;
+        corrected?: string;
+        explanation?: string;
+        category?: string;
+      }) => ({
+        id: randomUUID(),
+        original: c.original || '',
+        corrected: c.corrected || '',
+        explanation: c.explanation || '',
+        category: (c.category as CorrectionItem['category']) || 'grammar',
+        nextReviewAt: nextReview.toISOString().split('T')[0],
+        interval: 1,
+        easeFactor: 2.5,
+        repetitions: 0,
+        createdAt: koreaDate,
+        fromSession: sessionId,
+        status: 'active',
+      }));
+
+      await addCorrections(email, correctionItems);
+    }
+
+    // Update user stats
+    await updateUserFields(email, {
+      stats: {
+        sessionCount: undefined, // Will be incremented
+        lastSessionAt: koreaDate,
+        currentLevel: level || undefined,
+        levelDetails: levelDetails || undefined,
       },
     });
 
     return NextResponse.json({
       success: true,
       message: 'Lesson saved to history',
+      sessionId,
     });
   } catch (error) {
     console.error('Lesson history save error:', error);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { google } from 'googleapis';
 import { getServerSession } from 'next-auth';
+import { getUserData, updateUserFields } from '@/lib/sheetHelper';
+import { ProfileData } from '@/lib/sheetTypes';
 
 // GET: Retrieve user profile
 export async function GET() {
@@ -19,53 +20,33 @@ export async function GET() {
       return NextResponse.json({ profile: null, email });
     }
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-
-    const sheets = google.sheets({ version: 'v4', auth });
-
-    const spreadsheetId = process.env.GOOGLE_SUBSCRIPTION_SHEET_ID;
-    if (!spreadsheetId) {
+    if (!process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
       console.log('No spreadsheet ID configured');
       return NextResponse.json({ profile: null, email });
     }
 
-    // Read the UserProfiles sheet
-    // Format: A=Email, B=ProfileType, C=Interests, D=CustomContext, E=PreferredTopics, F=CreatedAt, G=UpdatedAt
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: 'UserProfiles!A:G',
-    });
+    // Get user data using optimized helper
+    const userData = await getUserData(email);
 
-    const rows = response.data.values || [];
-
-    for (let i = 1; i < rows.length; i++) { // Skip header row
-      const row = rows[i];
-      const rowEmail = row[0];
-
-      if (rowEmail?.toLowerCase() === email.toLowerCase()) {
-        return NextResponse.json({
-          profile: {
-            email: row[0] || '',
-            profileType: row[1] || '',
-            interests: row[2] ? JSON.parse(row[2]) : [],
-            customContext: row[3] || '',
-            preferredTopics: row[4] ? JSON.parse(row[4]) : [],
-            createdAt: row[5] || '',
-            updatedAt: row[6] || '',
-          },
-          email,
-        });
-      }
+    if (!userData) {
+      return NextResponse.json({ profile: null, email });
     }
 
-    // No profile found
-    return NextResponse.json({ profile: null, email });
+    // Transform to legacy format for backward compatibility
+    const profile = {
+      email,
+      profileType: userData.profile.type,
+      interests: userData.profile.interests,
+      customContext: userData.profile.customContext || '',
+      preferredTopics: userData.profile.preferredTopics || [],
+      grade: userData.profile.grade || '',
+      age: userData.profile.age,
+      nativeLanguage: userData.profile.nativeLanguage,
+      preferredTutors: userData.profile.preferredTutors || [],
+      difficultyPreference: userData.profile.difficultyPreference || 'adaptive',
+    };
+
+    return NextResponse.json({ profile, email });
   } catch (error) {
     console.error('User profile retrieval error:', error);
     return NextResponse.json({ profile: null, error: 'Failed to retrieve profile' });
@@ -85,7 +66,17 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { profileType, interests, customContext, preferredTopics } = body;
+    const {
+      profileType,
+      interests,
+      customContext,
+      preferredTopics,
+      grade,
+      age,
+      nativeLanguage,
+      preferredTutors,
+      difficultyPreference,
+    } = body;
 
     // If no Google Sheets credentials, return success for development
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
@@ -93,93 +84,48 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, message: 'Development mode - not saved' });
     }
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-
-    const sheets = google.sheets({ version: 'v4', auth });
-
-    const spreadsheetId = process.env.GOOGLE_SUBSCRIPTION_SHEET_ID;
-    if (!spreadsheetId) {
+    if (!process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
       console.log('No spreadsheet ID configured');
       return NextResponse.json({ success: true, message: 'No spreadsheet configured' });
     }
 
-    // Create timestamp in Korea timezone
-    const now = new Date();
-    const koreaTime = new Intl.DateTimeFormat('ko-KR', {
-      timeZone: 'Asia/Seoul',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    }).format(now);
+    // Build profile update
+    const profileUpdate: Partial<ProfileData> = {};
 
-    // Check if profile already exists
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: 'UserProfiles!A:G',
-    });
+    if (profileType !== undefined) profileUpdate.type = profileType;
+    if (interests !== undefined) profileUpdate.interests = interests;
+    if (customContext !== undefined) profileUpdate.customContext = customContext;
+    if (preferredTopics !== undefined) profileUpdate.preferredTopics = preferredTopics;
+    if (grade !== undefined) profileUpdate.grade = grade;
+    if (age !== undefined) profileUpdate.age = age;
+    if (nativeLanguage !== undefined) profileUpdate.nativeLanguage = nativeLanguage;
+    if (preferredTutors !== undefined) profileUpdate.preferredTutors = preferredTutors;
+    if (difficultyPreference !== undefined) profileUpdate.difficultyPreference = difficultyPreference;
 
-    const rows = response.data.values || [];
-    let existingRowIndex = -1;
+    // Update user profile using helper
+    const success = await updateUserFields(email, { profile: profileUpdate });
 
-    for (let i = 1; i < rows.length; i++) {
-      const row = rows[i];
-      if (row[0]?.toLowerCase() === email.toLowerCase()) {
-        existingRowIndex = i + 1; // 1-indexed for Sheets API
-        break;
-      }
-    }
-
-    const profileData = [
-      email,
-      profileType || '',
-      JSON.stringify(interests || []),
-      customContext || '',
-      JSON.stringify(preferredTopics || []),
-      existingRowIndex === -1 ? koreaTime : rows[existingRowIndex - 1]?.[5] || koreaTime, // CreatedAt
-      koreaTime, // UpdatedAt
-    ];
-
-    if (existingRowIndex !== -1) {
-      // Update existing row
-      await sheets.spreadsheets.values.update({
-        spreadsheetId,
-        range: `UserProfiles!A${existingRowIndex}:G${existingRowIndex}`,
-        valueInputOption: 'RAW',
-        requestBody: {
-          values: [profileData],
-        },
-      });
-    } else {
-      // Append new row
-      await sheets.spreadsheets.values.append({
-        spreadsheetId,
-        range: 'UserProfiles!A:G',
-        valueInputOption: 'RAW',
-        requestBody: {
-          values: [profileData],
-        },
-      });
+    if (!success) {
+      return NextResponse.json(
+        { success: false, error: 'Failed to save profile' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
       success: true,
-      message: existingRowIndex !== -1 ? 'Profile updated' : 'Profile created',
+      message: 'Profile saved',
       profile: {
         email,
         profileType,
         interests,
         customContext,
         preferredTopics,
+        grade,
+        age,
+        nativeLanguage,
+        preferredTutors,
+        difficultyPreference,
       },
     });
   } catch (error) {

@@ -12,12 +12,18 @@ export type DebatePhase =
 export type DebateTeam = 'pro' | 'con';
 
 export type DebateCategory =
-  | 'social'
-  | 'culture'
+  | 'daily'
+  | 'school'
+  | 'technology'
+  | 'society'
   | 'environment'
+  | 'culture'
+  | 'sports'
+  | 'ethics'
+  // Legacy categories for backward compatibility
+  | 'social'
   | 'politics'
-  | 'international'
-  | 'sports';
+  | 'international';
 
 export interface DebateParticipant {
   id: string;

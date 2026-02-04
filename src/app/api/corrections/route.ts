@@ -1,24 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { google } from 'googleapis';
 import { getServerSession } from 'next-auth';
 import { randomUUID } from 'crypto';
-
-interface Correction {
-  correctionId: string;
-  email: string;
-  original: string;
-  corrected: string;
-  explanation: string;
-  category: string;
-  difficulty: number;
-  createdAt: string;
-  nextReviewAt: string;
-  interval: number;
-  easeFactor: number;
-  repetitions: number;
-  lastReviewedAt: string;
-  status: string;
-}
+import {
+  getLearningData,
+  addCorrections,
+  getDueCorrections,
+} from '@/lib/sheetHelper';
+import { CorrectionItem } from '@/lib/sheetTypes';
 
 // GET: Retrieve corrections for review (due today or earlier)
 export async function GET(request: NextRequest) {
@@ -40,68 +28,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ corrections: [], count: 0, email });
     }
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-
-    const sheets = google.sheets({ version: 'v4', auth });
-
-    const spreadsheetId = process.env.GOOGLE_SUBSCRIPTION_SHEET_ID;
-    if (!spreadsheetId) {
+    if (!process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
       console.log('No spreadsheet ID configured');
       return NextResponse.json({ corrections: [], count: 0, email });
     }
 
-    // Read the Corrections sheet
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: 'Corrections!A:N',
-    });
+    let corrections: CorrectionItem[];
 
-    const rows = response.data.values || [];
-    const corrections: Correction[] = [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    for (let i = 1; i < rows.length; i++) { // Skip header row
-      const row = rows[i];
-      const rowEmail = row[1]; // Email is in column B
-
-      if (rowEmail?.toLowerCase() === email.toLowerCase()) {
-        const nextReviewAt = row[8] ? new Date(row[8]) : new Date();
-        const status = row[13] || 'active';
-
-        // Skip if not due and dueOnly is true
-        if (dueOnly && nextReviewAt > today) {
-          continue;
-        }
-
-        // Skip archived/mastered if only getting due items
-        if (dueOnly && status !== 'active') {
-          continue;
-        }
-
-        corrections.push({
-          correctionId: row[0] || '',
-          email: row[1] || '',
-          original: row[2] || '',
-          corrected: row[3] || '',
-          explanation: row[4] || '',
-          category: row[5] || '',
-          difficulty: parseInt(row[6] || '3', 10),
-          createdAt: row[7] || '',
-          nextReviewAt: row[8] || '',
-          interval: parseInt(row[9] || '1', 10),
-          easeFactor: parseFloat(row[10] || '2.5'),
-          repetitions: parseInt(row[11] || '0', 10),
-          lastReviewedAt: row[12] || '',
-          status: row[13] || 'active',
-        });
-      }
+    if (dueOnly) {
+      // Get only corrections due for review
+      corrections = await getDueCorrections(email);
+    } else {
+      // Get all corrections from learning data
+      const learningData = await getLearningData(email);
+      corrections = learningData?.corrections || [];
     }
 
     // Sort by next review date (oldest first)
@@ -112,8 +52,26 @@ export async function GET(request: NextRequest) {
     // Apply limit
     const limitedCorrections = corrections.slice(0, limit);
 
+    // Transform to legacy format for backward compatibility
+    const formattedCorrections = limitedCorrections.map(c => ({
+      correctionId: c.id,
+      email,
+      original: c.original,
+      corrected: c.corrected,
+      explanation: c.explanation,
+      category: c.category,
+      difficulty: 3, // Not stored in new format
+      createdAt: c.createdAt,
+      nextReviewAt: c.nextReviewAt,
+      interval: c.interval,
+      easeFactor: c.easeFactor,
+      repetitions: c.repetitions,
+      lastReviewedAt: c.lastReviewedAt || '',
+      status: c.status,
+    }));
+
     return NextResponse.json({
-      corrections: limitedCorrections,
+      corrections: formattedCorrections,
       count: corrections.length,
       email,
     });
@@ -136,7 +94,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body - can be single correction or array
     const body = await request.json();
-    const corrections = Array.isArray(body) ? body : [body];
+    const rawCorrections = Array.isArray(body) ? body : [body];
 
     // If no Google Sheets credentials, return success for development
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
@@ -144,18 +102,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, message: 'Development mode - not saved' });
     }
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-
-    const sheets = google.sheets({ version: 'v4', auth });
-
-    const spreadsheetId = process.env.GOOGLE_SUBSCRIPTION_SHEET_ID;
-    if (!spreadsheetId) {
+    if (!process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
       console.log('No spreadsheet ID configured');
       return NextResponse.json({ success: true, message: 'No spreadsheet configured' });
     }
@@ -178,38 +125,40 @@ export async function POST(request: NextRequest) {
     nextReviewAt.setDate(nextReviewAt.getDate() + 1);
     const nextReviewStr = nextReviewAt.toISOString().split('T')[0];
 
-    // Prepare rows to append
-    const rows = corrections.map(c => [
-      randomUUID(),                           // A: CorrectionId
-      email,                              // B: Email
-      c.original || '',                   // C: Original
-      c.corrected || '',                  // D: Corrected
-      c.explanation || '',                // E: Explanation
-      c.category || 'general',            // F: Category
-      c.difficulty || 3,                  // G: Difficulty (1-5)
-      koreaTime,                          // H: CreatedAt
-      nextReviewStr,                      // I: NextReviewAt
-      1,                                  // J: Interval (days)
-      2.5,                                // K: EaseFactor
-      0,                                  // L: Repetitions
-      '',                                 // M: LastReviewedAt
-      'active',                           // N: Status
-    ]);
+    // Prepare correction items
+    const correctionItems: CorrectionItem[] = rawCorrections.map((c: {
+      original?: string;
+      corrected?: string;
+      explanation?: string;
+      category?: string;
+    }) => ({
+      id: randomUUID(),
+      original: c.original || '',
+      corrected: c.corrected || '',
+      explanation: c.explanation || '',
+      category: (c.category as CorrectionItem['category']) || 'grammar',
+      nextReviewAt: nextReviewStr,
+      interval: 1,
+      easeFactor: 2.5,
+      repetitions: 0,
+      createdAt: koreaTime,
+      status: 'active' as const,
+    }));
 
-    // Append new rows to Corrections sheet
-    await sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range: 'Corrections!A:N',
-      valueInputOption: 'RAW',
-      requestBody: {
-        values: rows,
-      },
-    });
+    // Add corrections using helper
+    const success = await addCorrections(email, correctionItems);
+
+    if (!success) {
+      return NextResponse.json(
+        { success: false, error: 'Failed to save corrections' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      message: `${corrections.length} correction(s) saved`,
-      count: corrections.length,
+      message: `${correctionItems.length} correction(s) saved`,
+      count: correctionItems.length,
     });
   } catch (error) {
     console.error('Corrections save error:', error);

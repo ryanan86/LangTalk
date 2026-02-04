@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { google } from 'googleapis';
 import { getServerSession } from 'next-auth';
+import { getUserData, getLearningData, getDueCorrections } from '@/lib/sheetHelper';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function GET(_request: NextRequest) {
@@ -19,105 +19,97 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ subscribed: true, email });
     }
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-    });
-
-    const sheets = google.sheets({ version: 'v4', auth });
-
-    const spreadsheetId = process.env.GOOGLE_SUBSCRIPTION_SHEET_ID;
-    if (!spreadsheetId) {
+    if (!process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
       console.log('No spreadsheet ID configured, allowing access');
       return NextResponse.json({ subscribed: true, email });
     }
 
-    // Read the subscription sheet
-    // Expected format: Column A = Email, Column B = Expiry Date (YYYY-MM-DD), Column C = Status (active/inactive),
-    // Column D = Name, Column E = SignupDate, Column F = SessionCount, Column G = Level, Column H = LevelDetails
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: 'Subscriptions!A:H',
-    });
+    // Get user data using optimized helper (single API call)
+    const userData = await getUserData(email);
 
-    const rows = response.data.values || [];
+    // User not found
+    if (!userData) {
+      return NextResponse.json({
+        subscribed: false,
+        status: 'not_found',
+        reason: '베타 신청이 필요합니다.',
+        sessionCount: 0,
+        email
+      });
+    }
+
+    const { subscription, stats, profile } = userData;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    for (const row of rows) {
-      const [rowEmail, expiryDate, status, , , sessionCountStr, evaluatedGrade, levelDetailsStr] = row;
+    // Check if status is pending (waiting for approval)
+    if (subscription.status === 'pending') {
+      return NextResponse.json({
+        subscribed: false,
+        status: 'pending',
+        reason: '베타 신청이 검토 중입니다.',
+        sessionCount: stats.sessionCount,
+        evaluatedGrade: stats.currentLevel || null,
+        levelDetails: stats.levelDetails || null,
+        profile,
+        email
+      });
+    }
 
-      if (rowEmail?.toLowerCase() === email.toLowerCase()) {
-        const statusLower = status?.toLowerCase() || '';
-        const sessionCount = parseInt(sessionCountStr || '0', 10);
-        let levelDetails = null;
-        try {
-          if (levelDetailsStr) levelDetails = JSON.parse(levelDetailsStr);
-        } catch { /* ignore parsing errors */ }
+    // Check if status is active
+    if (subscription.status !== 'active') {
+      return NextResponse.json({
+        subscribed: false,
+        status: subscription.status,
+        reason: '구독이 활성화되지 않았습니다.',
+        sessionCount: stats.sessionCount,
+        evaluatedGrade: stats.currentLevel || null,
+        levelDetails: stats.levelDetails || null,
+        profile,
+        email
+      });
+    }
 
-        // Check if status is pending (waiting for approval)
-        if (statusLower === 'pending') {
-          return NextResponse.json({
-            subscribed: false,
-            status: 'pending',
-            reason: '베타 신청이 검토 중입니다.',
-            sessionCount,
-            evaluatedGrade: evaluatedGrade || null,
-            levelDetails,
-            email
-          });
-        }
-
-        // Check if status is active
-        if (statusLower !== 'active') {
-          return NextResponse.json({
-            subscribed: false,
-            status: statusLower || 'inactive',
-            reason: '구독이 활성화되지 않았습니다.',
-            sessionCount,
-            evaluatedGrade: evaluatedGrade || null,
-            levelDetails,
-            email
-          });
-        }
-
-        // Check expiry date
-        if (expiryDate) {
-          const expiry = new Date(expiryDate);
-          if (expiry < today) {
-            return NextResponse.json({
-              subscribed: false,
-              status: 'expired',
-              reason: '구독 기간이 만료되었습니다.',
-              expiryDate,
-              sessionCount,
-              evaluatedGrade: evaluatedGrade || null,
-              levelDetails,
-              email
-            });
-          }
-        }
-
+    // Check expiry date
+    if (subscription.expiryDate) {
+      const expiry = new Date(subscription.expiryDate);
+      if (expiry < today) {
         return NextResponse.json({
-          subscribed: true,
-          status: 'active',
-          expiryDate,
-          sessionCount,
-          evaluatedGrade: evaluatedGrade || null,
-          levelDetails,
+          subscribed: false,
+          status: 'expired',
+          reason: '구독 기간이 만료되었습니다.',
+          expiryDate: subscription.expiryDate,
+          sessionCount: stats.sessionCount,
+          evaluatedGrade: stats.currentLevel || null,
+          levelDetails: stats.levelDetails || null,
+          profile,
           email
         });
       }
     }
 
+    // Get additional data for dashboard (corrections due, recent sessions)
+    const [learningData, dueCorrections] = await Promise.all([
+      getLearningData(email),
+      getDueCorrections(email),
+    ]);
+
     return NextResponse.json({
-      subscribed: false,
-      status: 'not_found',
-      reason: '베타 신청이 필요합니다.',
-      sessionCount: 0,
+      subscribed: true,
+      status: 'active',
+      expiryDate: subscription.expiryDate,
+      plan: subscription.plan,
+      sessionCount: stats.sessionCount,
+      totalMinutes: stats.totalMinutes,
+      debateCount: stats.debateCount,
+      currentStreak: stats.currentStreak,
+      longestStreak: stats.longestStreak,
+      evaluatedGrade: stats.currentLevel || null,
+      levelDetails: stats.levelDetails || null,
+      profile,
+      // Dashboard extras
+      dueCorrectionsCount: dueCorrections.length,
+      recentSessionsCount: learningData?.recentSessions.length || 0,
       email
     });
   } catch (error) {

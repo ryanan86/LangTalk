@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n';
 import { moderator, debaters } from '@/lib/debatePersonas';
-import { getRandomTopic } from '@/lib/debateTopics';
 import {
   DebatePhase,
   DebateTeam,
@@ -53,6 +52,35 @@ function DebateContent() {
   // Speaking order for the current phase
   const [speakingOrder, setSpeakingOrder] = useState<DebateParticipant[]>([]);
 
+  // Fetch age-appropriate topics from API
+  const fetchTopics = async () => {
+    try {
+      const response = await fetch('/api/debate-topics');
+      const data = await response.json();
+      if (data.topics && data.topics.length > 0) {
+        // Convert API format to DebateTopic format
+        const randomIndex = Math.floor(Math.random() * data.topics.length);
+        const apiTopic = data.topics[randomIndex];
+        const selectedTopic: DebateTopic = {
+          id: apiTopic.id,
+          category: apiTopic.category as DebateCategory,
+          title: apiTopic.title,
+          description: apiTopic.description,
+        };
+        setTopic(selectedTopic);
+      }
+    } catch (error) {
+      console.error('Failed to fetch topics:', error);
+      // Fallback to a default topic
+      setTopic({
+        id: 'default-1',
+        category: 'daily',
+        title: { en: 'Technology makes life better', ko: '기술이 삶을 더 좋게 만든다' },
+        description: { en: 'Discuss whether technology has improved our daily lives.', ko: '기술이 우리의 일상생활을 향상시켰는지 토론합니다.' },
+      });
+    }
+  };
+
   // Initialize debate
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -60,9 +88,8 @@ function DebateContent() {
   }, []);
 
   const initializeDebate = () => {
-    // Select random topic
-    const selectedTopic = getRandomTopic();
-    setTopic(selectedTopic);
+    // Fetch topic from API (age-appropriate)
+    fetchTopics();
 
     // Assign user to random team
     const team: DebateTeam = Math.random() < 0.5 ? 'pro' : 'con';
@@ -469,15 +496,22 @@ function DebateContent() {
   };
 
   const getCategoryText = (category: DebateCategory) => {
-    const categoryMap: Record<DebateCategory, string> = {
-      social: t.categorySocial,
-      culture: t.categoryCulture,
-      environment: t.categoryEnvironment,
-      politics: t.categoryPolitics,
-      international: t.categoryInternational,
-      sports: t.categorySports,
+    const categoryMap: Record<string, string> = {
+      // New categories
+      daily: language === 'ko' ? '일상' : 'Daily Life',
+      school: language === 'ko' ? '학교' : 'School',
+      technology: language === 'ko' ? '기술' : 'Technology',
+      society: language === 'ko' ? '사회' : 'Society',
+      environment: language === 'ko' ? '환경' : 'Environment',
+      culture: language === 'ko' ? '문화' : 'Culture',
+      sports: language === 'ko' ? '스포츠' : 'Sports',
+      ethics: language === 'ko' ? '윤리' : 'Ethics',
+      // Legacy categories
+      social: t.categorySocial || (language === 'ko' ? '사회' : 'Social'),
+      politics: t.categoryPolitics || (language === 'ko' ? '정치' : 'Politics'),
+      international: t.categoryInternational || (language === 'ko' ? '국제' : 'International'),
     };
-    return categoryMap[category];
+    return categoryMap[category] || category;
   };
 
   const getPhaseText = () => {
@@ -827,6 +861,7 @@ function DebateContent() {
                   setTurnCount(0);
                   setUserTurnCount(0);
                   setAnalysis(null);
+                  setTopic(null);
                   initializeDebate();
                 }}
                 className="flex-1 btn-primary py-3 sm:py-4"
