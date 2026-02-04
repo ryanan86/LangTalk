@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { getServerSession } from 'next-auth';
 
+// Admin email to notify
+const ADMIN_EMAIL = 'ryan@nuklabs.com';
+
 export async function POST() {
   try {
     const session = await getServerSession();
@@ -33,14 +36,13 @@ export async function POST() {
       return NextResponse.json({ error: 'Spreadsheet ID not configured' }, { status: 500 });
     }
 
-    // First, check if email already exists
+    // Check if email already exists in new Users sheet
     const existingData = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'Subscriptions!A:C',
+      range: 'Users!A:B',
     });
 
     const rows = existingData.data.values || [];
-    // Skip header row (index 0) when checking for existing emails
     const emailExists = rows.slice(1).some(row => row[0]?.toLowerCase() === email.toLowerCase());
 
     if (emailExists) {
@@ -50,17 +52,77 @@ export async function POST() {
       }, { status: 400 });
     }
 
-    // Add new row
-    const signupDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    // Create timestamp in Korea timezone
+    const now = new Date();
+    const koreaTime = new Intl.DateTimeFormat('ko-KR', {
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).format(now);
 
+    // Prepare data for new Users sheet structure
+    const subscription = {
+      status: 'pending',
+      expiryDate: '',
+      signupDate: koreaTime,
+      name: name,
+      plan: 'free',
+    };
+
+    const profile = {
+      type: 'adult_beginner',
+      interests: [],
+      nativeLanguage: 'ko',
+    };
+
+    const stats = {
+      sessionCount: 0,
+      totalMinutes: 0,
+      debateCount: 0,
+      currentStreak: 0,
+      longestStreak: 0,
+    };
+
+    // Add to new Users sheet
     await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: 'Subscriptions!A:D',
-      valueInputOption: 'USER_ENTERED',
+      range: 'Users!A:E',
+      valueInputOption: 'RAW',
       requestBody: {
-        values: [[email, '', 'pending', name, signupDate]],
+        values: [[
+          email,
+          JSON.stringify(subscription),
+          JSON.stringify(profile),
+          JSON.stringify(stats),
+          koreaTime,
+        ]],
       },
     });
+
+    // Also create empty LearningData row
+    await sheets.spreadsheets.values.append({
+      spreadsheetId,
+      range: 'LearningData!A:F',
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [[
+          email,
+          JSON.stringify([]), // recentSessions
+          JSON.stringify([]), // corrections
+          JSON.stringify([]), // topicsHistory
+          JSON.stringify([]), // debateHistory
+          koreaTime,
+        ]],
+      },
+    });
+
+    // Send notification email to admin (if configured)
+    await sendAdminNotification(email, name, koreaTime);
 
     return NextResponse.json({
       success: true,
@@ -73,4 +135,57 @@ export async function POST() {
       { status: 500 }
     );
   }
+}
+
+// Send notification to admin
+async function sendAdminNotification(userEmail: string, userName: string, signupTime: string) {
+  // Option 1: Use Resend (if RESEND_API_KEY is configured)
+  if (process.env.RESEND_API_KEY) {
+    try {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'TapTalk <noreply@taptalk.xyz>',
+          to: ADMIN_EMAIL,
+          subject: `[TapTalk] 새 베타 신청: ${userEmail}`,
+          html: `
+            <h2>새로운 베타 신청이 들어왔습니다!</h2>
+            <p><strong>이메일:</strong> ${userEmail}</p>
+            <p><strong>이름:</strong> ${userName || '(없음)'}</p>
+            <p><strong>신청 시간:</strong> ${signupTime}</p>
+            <br/>
+            <p><a href="https://taptalk.xyz/admin/users">관리자 페이지에서 승인하기</a></p>
+          `,
+        }),
+      });
+      console.log('Admin notification sent via Resend');
+    } catch (e) {
+      console.error('Failed to send Resend notification:', e);
+    }
+    return;
+  }
+
+  // Option 2: Use Slack webhook (if SLACK_WEBHOOK_URL is configured)
+  if (process.env.SLACK_WEBHOOK_URL) {
+    try {
+      await fetch(process.env.SLACK_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: `🆕 새 베타 신청!\n이메일: ${userEmail}\n이름: ${userName || '(없음)'}\n시간: ${signupTime}\n<https://taptalk.xyz/admin/users|승인하러 가기>`,
+        }),
+      });
+      console.log('Admin notification sent via Slack');
+    } catch (e) {
+      console.error('Failed to send Slack notification:', e);
+    }
+    return;
+  }
+
+  // No notification service configured
+  console.log('No notification service configured. New signup:', userEmail);
 }
