@@ -181,8 +181,10 @@ export async function POST(request: NextRequest) {
     if (customExpiryDate) {
       updatedSubscription.expiryDate = customExpiryDate;
     } else if (newStatus === 'active' && !currentSubscription.expiryDate) {
+      // 기본값: 다음달 말일
       const expiryDate = new Date();
-      expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+      expiryDate.setMonth(expiryDate.getMonth() + 2);
+      expiryDate.setDate(0); // 이전달 마지막 날
       updatedSubscription.expiryDate = expiryDate.toISOString().split('T')[0];
     }
 

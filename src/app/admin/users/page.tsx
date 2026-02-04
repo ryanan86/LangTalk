@@ -122,7 +122,9 @@ export default function AdminUsersPage() {
 
   const getDefaultExpiry = () => {
     const date = new Date();
-    date.setFullYear(date.getFullYear() + 1);
+    // 다음달 말일: month + 2 후 0일로 설정하면 이전달 말일이 됨
+    date.setMonth(date.getMonth() + 2);
+    date.setDate(0);
     return date.toISOString().split('T')[0];
   };
 
