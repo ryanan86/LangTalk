@@ -10,7 +10,7 @@ const ELEVENLABS_VOICE_MAP: Record<string, string> = {
   shimmer: 'EXAVITQu4vr4xnSDxMaL', // Rachel - warm American female
   echo: 'pNInz6obpgDQGcFmaJgB', // Adam - friendly American male
   fable: 'ThT5KcBeYPX3keUQqHPh', // Dorothy - British female
-  onyx: 'onwK4e9ZLuTAKqWW03F9', // Daniel - British male, deep authoritative voice
+  onyx: 'JBFqnCBsd6RMkjVDRZzb', // George - British male, warm friendly voice
 };
 
 async function generateWithElevenLabs(text: string, voice: string): Promise<ArrayBuffer> {
