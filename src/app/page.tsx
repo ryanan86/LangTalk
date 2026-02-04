@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useLanguage, LanguageToggle } from '@/lib/i18n';
 import { Flag } from '@/components/Icons';
 
@@ -537,6 +538,13 @@ export default function HomePage() {
 
             {/* Right Side */}
             <div className="flex items-center gap-3 sm:gap-4">
+              <Link
+                href="/about"
+                className="text-white/70 hover:text-white text-sm font-medium transition-colors"
+              >
+                {language === 'ko' ? '소개' : 'About'}
+              </Link>
+
               <LanguageToggle />
 
               {status === 'loading' ? (

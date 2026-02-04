@@ -542,13 +542,27 @@ export function LanguageToggle() {
   const { language, setLanguage } = useLanguage();
 
   return (
-    <button
-      onClick={() => setLanguage(language === 'ko' ? 'en' : 'ko')}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutral-100 hover:bg-neutral-200 text-sm font-medium text-neutral-700 transition-colors"
-    >
-      <span className={language === 'ko' ? 'opacity-100' : 'opacity-50'}>한</span>
-      <span className="text-neutral-300">/</span>
-      <span className={language === 'en' ? 'opacity-100' : 'opacity-50'}>EN</span>
-    </button>
+    <div className="flex items-center rounded-full bg-white/10 backdrop-blur-sm border border-white/20 p-1">
+      <button
+        onClick={() => setLanguage('ko')}
+        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+          language === 'ko'
+            ? 'bg-white text-black shadow-sm'
+            : 'text-white/70 hover:text-white'
+        }`}
+      >
+        한국어
+      </button>
+      <button
+        onClick={() => setLanguage('en')}
+        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+          language === 'en'
+            ? 'bg-white text-black shadow-sm'
+            : 'text-white/70 hover:text-white'
+        }`}
+      >
+        EN
+      </button>
+    </div>
   );
 }
