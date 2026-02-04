@@ -115,8 +115,8 @@ RETURN THIS EXACT JSON FORMAT (no markdown, valid JSON only):
     }
   ],
   "strengths": ${JSON.stringify(exampleStrengths)},
-  "overallLevel": "beginner|intermediate|advanced",
-  "evaluatedGrade": "K|1-2|3-4|5-6|7-8|9-10|11-12|College",
+  "overallLevel": "beginner or intermediate or advanced (pick ONE)",
+  "evaluatedGrade": "PICK EXACTLY ONE: K, 1-2, 3-4, 5-6, 7-8, 9-10, 11-12, or College",
   "levelDetails": {
     "grammar": 0-100,
     "vocabulary": 0-100,
@@ -225,6 +225,17 @@ Be specific, helpful, and maintain your teaching persona.`;
     if (mode === 'analysis') {
       try {
         const analysisData = JSON.parse(assistantMessage);
+
+        // Validate and sanitize evaluatedGrade
+        const validGrades = ['K', '1-2', '3-4', '5-6', '7-8', '9-10', '11-12', 'College'];
+        if (analysisData.evaluatedGrade) {
+          // Extract first valid grade if AI returned multiple options
+          const foundGrade = validGrades.find(g =>
+            analysisData.evaluatedGrade.includes(g)
+          );
+          analysisData.evaluatedGrade = foundGrade || '5-6'; // Default to 5-6 if invalid
+        }
+
         return NextResponse.json({ analysis: analysisData });
       } catch {
         // If JSON parsing fails, return raw message
