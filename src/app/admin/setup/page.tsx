@@ -11,11 +11,16 @@ interface ActionResult {
   error?: string;
 }
 
+// Setup was completed on 2025-02-04
+const SETUP_COMPLETED = true;
+const SETUP_COMPLETED_DATE = '2025-02-04';
+
 export default function AdminSetupPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [results, setResults] = useState<Record<string, ActionResult>>({});
+  const [unlocked, setUnlocked] = useState(false);
 
   const ADMIN_EMAILS = ['ryan@nuklabs.com', 'taewoongan@gmail.com'];
 
@@ -88,18 +93,20 @@ export default function AdminSetupPage() {
     },
   ];
 
+  const isDisabled = SETUP_COMPLETED && !unlocked;
+
   return (
     <div className="min-h-screen bg-neutral-900 p-6">
       <div className="max-w-2xl mx-auto">
         <div className="mb-8">
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/admin/users')}
             className="text-neutral-400 hover:text-white mb-4 flex items-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            홈으로
+            사용자 관리
           </button>
           <h1 className="text-3xl font-bold text-white">Admin Setup</h1>
           <p className="text-neutral-400 mt-2">Google Sheets 구조 초기화</p>
@@ -108,29 +115,72 @@ export default function AdminSetupPage() {
           </p>
         </div>
 
+        {/* Setup Completed Banner */}
+        {SETUP_COMPLETED && (
+          <div className="mb-6 p-4 bg-green-900/30 rounded-xl border border-green-700/50">
+            <div className="flex items-center gap-3">
+              <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="text-green-400 font-medium">셋업 완료됨</p>
+                <p className="text-green-300/70 text-sm">
+                  {SETUP_COMPLETED_DATE}에 모든 셋업이 완료되었습니다. 버튼이 비활성화되어 있습니다.
+                </p>
+              </div>
+            </div>
+            {!unlocked && (
+              <button
+                onClick={() => {
+                  if (confirm('정말 잠금을 해제하시겠습니까? 다시 실행하면 데이터가 중복될 수 있습니다.')) {
+                    setUnlocked(true);
+                  }
+                }}
+                className="mt-3 text-sm text-neutral-400 hover:text-white underline"
+              >
+                긴급 시 잠금 해제
+              </button>
+            )}
+            {unlocked && (
+              <p className="mt-3 text-amber-400 text-sm">
+                잠금이 해제되었습니다. 주의해서 사용하세요.
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="space-y-4">
           {actions.map((action) => (
             <div
               key={action.id}
-              className="bg-neutral-800 rounded-xl p-6 border border-neutral-700"
+              className={`bg-neutral-800 rounded-xl p-6 border border-neutral-700 ${isDisabled ? 'opacity-60' : ''}`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h2 className="text-lg font-semibold text-white">{action.title}</h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-semibold text-white">{action.title}</h2>
+                    {SETUP_COMPLETED && (
+                      <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded">
+                        완료됨
+                      </span>
+                    )}
+                  </div>
                   <p className="text-neutral-400 text-sm mt-1">{action.description}</p>
                 </div>
                 <button
                   onClick={() => runAction(action.id)}
-                  disabled={loading !== null}
+                  disabled={loading !== null || isDisabled}
                   className={`
                     px-4 py-2 rounded-lg font-medium transition-all
-                    ${loading === action.id
-                      ? 'bg-neutral-600 text-neutral-400 cursor-wait'
-                      : action.color === 'blue'
-                        ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                        : action.color === 'amber'
-                          ? 'bg-amber-600 hover:bg-amber-500 text-white'
-                          : 'bg-green-600 hover:bg-green-500 text-white'
+                    ${isDisabled
+                      ? 'bg-neutral-700 text-neutral-500 cursor-not-allowed'
+                      : loading === action.id
+                        ? 'bg-neutral-600 text-neutral-400 cursor-wait'
+                        : action.color === 'blue'
+                          ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                          : action.color === 'amber'
+                            ? 'bg-amber-600 hover:bg-amber-500 text-white'
+                            : 'bg-green-600 hover:bg-green-500 text-white'
                     }
                     ${loading !== null && loading !== action.id ? 'opacity-50' : ''}
                   `}
@@ -143,6 +193,8 @@ export default function AdminSetupPage() {
                       </svg>
                       실행 중...
                     </span>
+                  ) : isDisabled ? (
+                    '잠김'
                   ) : (
                     '실행'
                   )}
