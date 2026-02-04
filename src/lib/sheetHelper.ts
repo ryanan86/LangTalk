@@ -513,8 +513,8 @@ export async function generatePersonalizedTopics(email: string): Promise<string[
   // Get user's interests
   const interests = userData.profile.interests || [];
 
-  // Combine for topic suggestions
-  return [...new Set([...topTopics, ...interests])];
+  // Combine for topic suggestions (remove duplicates)
+  return Array.from(new Set([...topTopics, ...interests]));
 }
 
 // ============================================
