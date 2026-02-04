@@ -64,8 +64,8 @@ The "intended", "explanation", "type", "tip", "strengths", and "encouragement" f
       const examplePatternTip = isKorean ? '\'which\', \'that\', \'because\'를 사용해서 아이디어를 더 긴 문장으로 연결하는 연습을 해보세요. 원어민은 3-4단어짜리 문장만 사용하지 않아요.' : 'Practice using \'which\', \'that\', \'because\' to connect your ideas into longer thoughts. Native speakers rarely use only 3-4 word sentences.';
       const exampleStrengths = isKorean ? ['주요 아이디어를 명확하게 전달했어요', 'X 같은 단어를 잘 선택했어요'] : ['You communicated your main ideas clearly', 'Good vocabulary choice with words like X'];
       const exampleEncouragement = isKorean
-        ? (userName ? `${userName}에게 보내는 구체적인 발전 상황과 다음에 집중할 점에 대한 따뜻한 메시지` : '구체적인 발전 상황과 다음에 집중할 점에 대한 따뜻한 메시지')
-        : (userName ? `Personal, warm message to ${userName} about their specific progress and what to focus on next` : 'Personal, warm message about their specific progress and what to focus on next');
+        ? (userName ? `${userName}에게 보내는 짧고 따뜻한 격려 메시지 (1-2문장, 예: "정말 잘했어요! 다음에도 화이팅!")` : '짧고 따뜻한 격려 메시지 (1-2문장)')
+        : (userName ? `Short, warm encouragement for ${userName} (1-2 sentences, e.g., "Great job! Keep it up!")` : 'Short, warm encouragement (1-2 sentences)');
 
       systemPrompt = `You are ${persona.name}, a supportive English coach analyzing a student's conversation.
 ${analysisLang}
@@ -85,7 +85,23 @@ For EACH correction, provide:
 - Clear explanation of WHY the improved version is better
 
 LEVEL EVALUATION (US Grade Equivalent):
-${learnerAge ? `IMPORTANT: The learner is ${learnerAge} years old${userName ? ` (${userName})` : ''}. Evaluate their English relative to their age - a ${learnerAge}-year-old speaking at "5-6" level may be impressive or expected depending on their age. Consider age-appropriate expectations in your feedback.\n` : ''}
+${learnerAge ? (() => {
+        const koreanAge = learnerAge + 1; // Korean age
+        // Expected US grade for age (age 6 = G1, age 7 = G2, etc.)
+        const expectedGradeMap: Record<number, string> = {
+          5: 'K', 6: '1-2', 7: '1-2', 8: '3-4', 9: '3-4', 10: '5-6', 11: '5-6',
+          12: '7-8', 13: '7-8', 14: '9-10', 15: '9-10', 16: '11-12', 17: '11-12', 18: 'College'
+        };
+        const expectedGrade = expectedGradeMap[learnerAge] || '5-6';
+        return `LEARNER INFO:
+- Name: ${userName || 'Student'}
+- Age: ${learnerAge} years old (Korean age: ${koreanAge}세)
+- Expected US grade for this age: ${expectedGrade}
+
+AGE-TO-GRADE REFERENCE (US system):
+Age 5-6 → K-G1, Age 7-8 → G2-G3, Age 9-10 → G4-G5, Age 11-12 → G6-G7, Age 13-14 → G8-G9, Age 15-16 → G10-G11, Age 17+ → G12/College
+\n`;
+      })() : ''}
 Based on the student's conversation, evaluate their English proficiency using US school grade levels:
 - K (Kindergarten): Very basic words, single words or 2-3 word phrases, many grammar errors
 - 1-2 (Grade 1-2): Simple sentences, basic vocabulary, frequent grammar mistakes
@@ -101,7 +117,18 @@ Evaluate based on:
 2. Vocabulary range (25%): Word variety, appropriate word choice, idioms
 3. Fluency (20%): Sentence length, natural flow, conversation pace
 4. Comprehension (15%): Understanding context, appropriate responses
-${learnerAge ? `\nIn the levelDetails.summary, mention how their level compares to their age (e.g., "Great for a ${learnerAge}-year-old!" or "At expected level for age ${learnerAge}").` : ''}
+${learnerAge ? (() => {
+        const koreanAge = learnerAge + 1;
+        const expectedGradeMap: Record<number, string> = {
+          5: 'K', 6: '1-2', 7: '1-2', 8: '3-4', 9: '3-4', 10: '5-6', 11: '5-6',
+          12: '7-8', 13: '7-8', 14: '9-10', 15: '9-10', 16: '11-12', 17: '11-12', 18: 'College'
+        };
+        const expectedGrade = expectedGradeMap[learnerAge] || '5-6';
+        const summaryExample = isKorean
+          ? `한국나이 ${koreanAge}세는 영미권에서 G${expectedGrade}에 해당합니다. 탭톡 평가 결과 G[평가등급]으로, 동나이대 대비 [높은/적정/낮은] 수준입니다.`
+          : `A ${koreanAge}-year-old (Korean age) corresponds to US Grade ${expectedGrade}. TapTalk evaluated at G[grade], which is [above/at/below] the expected level for this age.`;
+        return `\nIn levelDetails.summary, provide a DETAILED comparison like this example: "${summaryExample}"`;
+      })() : ''}
 
 RETURN THIS EXACT JSON FORMAT (no markdown, valid JSON only):
 {
