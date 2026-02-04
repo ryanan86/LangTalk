@@ -14,7 +14,7 @@ function getAuth() {
   });
 }
 
-// GET: List all users
+// GET: List all users with learning data
 export async function GET() {
   try {
     const session = await getServerSession();
@@ -35,26 +35,66 @@ export async function GET() {
       return NextResponse.json({ error: 'Spreadsheet ID not configured' }, { status: 500 });
     }
 
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: 'Users!A:E',
-    });
+    // Fetch both Users and LearningData in parallel
+    const [usersResponse, learningResponse] = await Promise.all([
+      sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: 'Users!A:E',
+      }),
+      sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: 'LearningData!A:F',
+      }),
+    ]);
 
-    const rows = response.data.values || [];
+    const userRows = usersResponse.data.values || [];
+    const learningRows = learningResponse.data.values || [];
+
+    // Build learning data map
+    const learningMap = new Map<string, {
+      recentSessions: unknown[];
+      corrections: unknown[];
+      topicsHistory: unknown[];
+      debateHistory: unknown[];
+    }>();
+
+    for (let i = 1; i < learningRows.length; i++) {
+      const row = learningRows[i];
+      if (!row[0]) continue;
+      try {
+        learningMap.set(row[0].toLowerCase(), {
+          recentSessions: row[1] ? JSON.parse(row[1]) : [],
+          corrections: row[2] ? JSON.parse(row[2]) : [],
+          topicsHistory: row[3] ? JSON.parse(row[3]) : [],
+          debateHistory: row[4] ? JSON.parse(row[4]) : [],
+        });
+      } catch (e) {
+        console.error(`Error parsing learning row ${i}:`, e);
+      }
+    }
+
     const users = [];
 
-    for (let i = 1; i < rows.length; i++) {
-      const row = rows[i];
+    for (let i = 1; i < userRows.length; i++) {
+      const row = userRows[i];
       if (!row[0]) continue;
 
       try {
+        const email = row[0];
+        const learning = learningMap.get(email.toLowerCase());
+
         users.push({
-          email: row[0],
+          email,
           subscription: row[1] ? JSON.parse(row[1]) : { status: 'pending' },
           profile: row[2] ? JSON.parse(row[2]) : { type: '', interests: [] },
           stats: row[3] ? JSON.parse(row[3]) : { sessionCount: 0, totalMinutes: 0, debateCount: 0 },
           updatedAt: row[4] || '',
           rowIndex: i + 1,
+          // Learning data
+          recentSessions: learning?.recentSessions || [],
+          corrections: learning?.corrections || [],
+          topicsHistory: learning?.topicsHistory || [],
+          debateHistory: learning?.debateHistory || [],
         });
       } catch (e) {
         console.error(`Error parsing row ${i}:`, e);
