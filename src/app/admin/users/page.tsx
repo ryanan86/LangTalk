@@ -36,6 +36,8 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'active'>('all');
+  const [editingExpiry, setEditingExpiry] = useState<string | null>(null);
+  const [expiryValue, setExpiryValue] = useState('');
 
   useEffect(() => {
     if (session?.user?.email && ADMIN_EMAILS.includes(session.user.email)) {
@@ -58,28 +60,47 @@ export default function AdminUsersPage() {
     }
   };
 
-  const updateUserStatus = async (email: string, newStatus: string) => {
+  const updateUserStatus = async (email: string, newStatus: string, expiryDate?: string) => {
     setUpdating(email);
     try {
       const response = await fetch('/api/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, status: newStatus }),
+        body: JSON.stringify({ email, status: newStatus, expiryDate }),
       });
       const data = await response.json();
       if (data.success) {
         // Update local state
         setUsers(prev => prev.map(u =>
           u.email === email
-            ? { ...u, subscription: { ...u.subscription, status: newStatus } }
+            ? {
+                ...u,
+                subscription: {
+                  ...u.subscription,
+                  status: newStatus,
+                  expiryDate: expiryDate || u.subscription.expiryDate,
+                }
+              }
             : u
         ));
+        setEditingExpiry(null);
       }
     } catch (error) {
       console.error('Failed to update user:', error);
     } finally {
       setUpdating(null);
     }
+  };
+
+  const startEditingExpiry = (email: string, currentExpiry: string) => {
+    setEditingExpiry(email);
+    setExpiryValue(currentExpiry || getDefaultExpiry());
+  };
+
+  const getDefaultExpiry = () => {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() + 1);
+    return date.toISOString().split('T')[0];
   };
 
   if (status === 'loading' || loading) {
@@ -197,11 +218,47 @@ export default function AdminUsersPage() {
                     <span>프로필: {user.profile.type || '-'}</span>
                     {user.profile.grade && <span>학년: {user.profile.grade}</span>}
                   </div>
+                  {/* Expiry date section */}
+                  {user.subscription.status === 'active' && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-sm text-neutral-400">만료일:</span>
+                      {editingExpiry === user.email ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="date"
+                            value={expiryValue}
+                            onChange={(e) => setExpiryValue(e.target.value)}
+                            className="px-2 py-1 bg-neutral-700 text-white rounded border border-neutral-600 text-sm"
+                          />
+                          <button
+                            onClick={() => updateUserStatus(user.email, 'active', expiryValue)}
+                            disabled={updating === user.email}
+                            className="px-2 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm"
+                          >
+                            저장
+                          </button>
+                          <button
+                            onClick={() => setEditingExpiry(null)}
+                            className="px-2 py-1 bg-neutral-600 hover:bg-neutral-500 text-white rounded text-sm"
+                          >
+                            취소
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => startEditingExpiry(user.email, user.subscription.expiryDate)}
+                          className="text-sm text-blue-400 hover:text-blue-300 underline"
+                        >
+                          {user.subscription.expiryDate || '설정안됨'}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   {user.subscription.status !== 'active' && (
                     <button
-                      onClick={() => updateUserStatus(user.email, 'active')}
+                      onClick={() => updateUserStatus(user.email, 'active', getDefaultExpiry())}
                       disabled={updating === user.email}
                       className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg font-medium disabled:opacity-50"
                     >

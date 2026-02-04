@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, status: newStatus } = body;
+    const { email, status: newStatus, expiryDate: customExpiryDate } = body;
 
     if (!email || !newStatus) {
       return NextResponse.json({ error: 'Missing email or status' }, { status: 400 });
@@ -137,8 +137,10 @@ export async function POST(request: NextRequest) {
       status: newStatus,
     };
 
-    // If activating, set expiry date to 1 year from now
-    if (newStatus === 'active' && !currentSubscription.expiryDate) {
+    // Use custom expiry date if provided, otherwise set default for new activations
+    if (customExpiryDate) {
+      updatedSubscription.expiryDate = customExpiryDate;
+    } else if (newStatus === 'active' && !currentSubscription.expiryDate) {
       const expiryDate = new Date();
       expiryDate.setFullYear(expiryDate.getFullYear() + 1);
       updatedSubscription.expiryDate = expiryDate.toISOString().split('T')[0];
