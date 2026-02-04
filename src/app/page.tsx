@@ -1519,7 +1519,7 @@ export default function HomePage() {
                     onClick={() => router.push('/login')}
                     className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-semibold text-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/40 hover:scale-105 transition-all animate-breathe"
                   >
-                    {language === 'ko' ? '무료로 시작하기' : 'Start for Free'}
+                    {language === 'ko' ? '무료체험 신청하기' : 'Start Free Trial'}
                   </button>
                   <p className="text-white/30 text-sm mt-4">
                     {language === 'ko' ? '신용카드 없이 바로 시작' : 'No credit card required'}
