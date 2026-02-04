@@ -358,7 +358,7 @@ async function migrateExistingData(
     const usersData: string[][] = [];
     const learningData: string[][] = [];
 
-    for (const [, user] of userMap) {
+    Array.from(userMap.values()).forEach(user => {
       // Convert topics map to array
       const topicsHistory = Array.from(user.topics.entries()).map(([topic, data]) => ({
         topic,
@@ -384,7 +384,7 @@ async function migrateExistingData(
         JSON.stringify([]), // empty debate history
         new Date().toISOString(),
       ]);
-    }
+    });
 
     // Write to Users sheet
     if (usersData.length > 0) {
