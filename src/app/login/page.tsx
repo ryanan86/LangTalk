@@ -55,6 +55,28 @@ function LoginContent() {
             Continue with Google
           </button>
 
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/20"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-transparent text-gray-400">or</span>
+            </div>
+          </div>
+
+          <button
+            onClick={() => signIn('kakao', { callbackUrl })}
+            className="w-full flex items-center justify-center gap-3 bg-[#FEE500] hover:bg-[#FDD800] text-[#191919] font-medium py-3 px-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path
+                fill="#191919"
+                d="M12 3C6.477 3 2 6.463 2 10.691c0 2.72 1.8 5.108 4.5 6.454-.144.522-.926 3.36-.962 3.587 0 0-.02.166.088.229.108.063.235.014.235.014.31-.043 3.59-2.357 4.156-2.759.647.09 1.314.138 1.983.138 5.523 0 10-3.463 10-7.663S17.523 3 12 3z"
+              />
+            </svg>
+            카카오로 계속하기
+          </button>
+
           <p className="mt-6 text-center text-gray-400 text-sm">
             By signing in, you agree to our Terms of Service and Privacy Policy
           </p>
