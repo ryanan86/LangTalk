@@ -196,6 +196,7 @@ export default function HomePage() {
   const [selectedPersona, setSelectedPersona] = useState<string | null>(null);
   const [isSubscribed, setIsSubscribed] = useState<boolean | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
+  const [expiryDate, setExpiryDate] = useState<string | null>(null);
   const [, setCheckingSubscription] = useState(false);
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [signupMessage, setSignupMessage] = useState<string | null>(null);
@@ -367,6 +368,7 @@ export default function HomePage() {
       const data = await res.json();
       setIsSubscribed(data.subscribed);
       setSubscriptionStatus(data.status || null);
+      setExpiryDate(data.expiryDate || null);
       setSessionCount(data.sessionCount || 0);
       setEvaluatedGrade(data.evaluatedGrade || null);
       setLevelDetails(data.levelDetails || null);
@@ -739,6 +741,27 @@ export default function HomePage() {
                       </div>
                     </div>
                     <div className="mt-2 text-xs text-white/50">{language === 'ko' ? '현재 레벨' : 'Level'}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Subscription Expiry Info - For active subscribers */}
+              {session && isSubscribed && expiryDate && (
+                <div className="max-w-2xl mx-auto mb-6">
+                  <div className="text-center text-sm text-white/40">
+                    {language === 'ko' ? '이용 기간: ' : 'Subscription valid until: '}
+                    <span className="text-white/60 font-medium">{expiryDate}</span>
+                    {(() => {
+                      const daysLeft = Math.ceil((new Date(expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                      if (daysLeft <= 7 && daysLeft > 0) {
+                        return (
+                          <span className="ml-2 text-amber-400">
+                            ({language === 'ko' ? `${daysLeft}일 남음` : `${daysLeft} days left`})
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 </div>
               )}
