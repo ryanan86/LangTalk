@@ -11,6 +11,7 @@ import {
   calculateOverallScore,
   formatMetricsForDisplay,
 } from '@/lib/speechMetrics';
+import html2canvas from 'html2canvas';
 
 type Phase = 'ready' | 'recording' | 'interview' | 'analysis' | 'review' | 'shadowing' | 'summary';
 
@@ -104,6 +105,33 @@ function TalkContent() {
   const isPlayingQueueRef = useRef(false);
   const processedSentencesRef = useRef<Set<string>>(new Set());
   const audioCacheRef = useRef<Map<string, Promise<Blob>>>(new Map());
+  const summaryRef = useRef<HTMLDivElement>(null);
+  const [isSavingImage, setIsSavingImage] = useState(false);
+
+  // Save summary as image
+  const saveAsImage = async () => {
+    if (!summaryRef.current) return;
+
+    setIsSavingImage(true);
+    try {
+      const canvas = await html2canvas(summaryRef.current, {
+        backgroundColor: '#f5f5f5',
+        scale: 2, // Higher quality
+        useCORS: true,
+        logging: false,
+      });
+
+      const link = document.createElement('a');
+      const date = new Date().toISOString().split('T')[0];
+      link.download = `taptalk-report-${date}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (error) {
+      console.error('Failed to save image:', error);
+    } finally {
+      setIsSavingImage(false);
+    }
+  };
 
   // Auto-scroll messages
   useEffect(() => {
@@ -803,6 +831,7 @@ function TalkContent() {
     userSpeakingTimeRef.current = 0;
     setHasPlayedReviewIntro(false);
     setLastPlayedReviewIndex(-1);
+    setIsSavingImage(false);
     setPhase('ready');
   };
 
@@ -1236,15 +1265,36 @@ function TalkContent() {
         {/* ========== SUMMARY PHASE ========== */}
         {phase === 'summary' && (
           <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-            <div className="text-center mb-6 sm:mb-8">
-              <div className="flex justify-center mb-4">
-                <TutorAvatar
-                  tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
-                  size="lg"
-                />
-              </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-neutral-900">{t.sessionComplete}</h2>
+            {/* Save as Image Button */}
+            <div className="flex justify-end mb-4">
+              <button
+                onClick={saveAsImage}
+                disabled={isSavingImage}
+                className="flex items-center gap-2 px-3 py-2 text-sm bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-colors disabled:opacity-50"
+              >
+                {isSavingImage ? (
+                  <div className="w-4 h-4 border-2 border-neutral-400 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-4 h-4 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                )}
+                {language === 'ko' ? '이미지 저장' : 'Save Image'}
+              </button>
             </div>
+
+            {/* Report Content - for image capture */}
+            <div ref={summaryRef} className="bg-neutral-50 rounded-2xl p-4">
+              <div className="text-center mb-6 sm:mb-8">
+                <div className="flex justify-center mb-4">
+                  <TutorAvatar
+                    tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
+                    size="lg"
+                  />
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold text-neutral-900">{t.sessionComplete}</h2>
+                <p className="text-xs text-neutral-400 mt-1">Taptalk Report • {new Date().toLocaleDateString()}</p>
+              </div>
 
             {/* Speech Metrics - Quantitative Analysis */}
             {speechMetrics && (
@@ -1413,14 +1463,16 @@ function TalkContent() {
                 )}
 
                 {/* Encouragement */}
-                <div className="card-premium p-4 sm:p-6 mb-6 bg-gradient-to-br from-primary-50 to-white">
+                <div className="card-premium p-4 sm:p-6 bg-gradient-to-br from-primary-50 to-white">
                   <p className="text-primary-900 italic text-sm sm:text-base">&ldquo;{analysis.encouragement}&rdquo;</p>
                   <p className="text-xs sm:text-sm text-primary-600 mt-2">— {persona.name}</p>
                 </div>
               </>
             )}
+            </div>
+            {/* End of Report Content */}
 
-            <div className="flex gap-3 sm:gap-4">
+            <div className="flex gap-3 sm:gap-4 mt-6">
               <button onClick={() => router.push('/')} className="flex-1 btn-secondary text-sm sm:text-base py-3 sm:py-4">
                 {t.backToHome}
               </button>
