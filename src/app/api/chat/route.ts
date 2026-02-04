@@ -14,7 +14,10 @@ interface Message {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { messages, tutorId, mode, language = 'en', stream: useStreaming = false } = body;
+    const { messages, tutorId, mode, language = 'en', stream: useStreaming = false, birthYear, userName } = body;
+
+    // Calculate age if birthYear is provided
+    const learnerAge = birthYear ? new Date().getFullYear() - birthYear : null;
 
     const persona = getPersona(tutorId);
     if (!persona) {
@@ -60,7 +63,9 @@ The "intended", "explanation", "type", "tip", "strengths", and "encouragement" f
       const examplePatternType = isKorean ? '짧고 단절된 문장들' : 'Short, disconnected sentences';
       const examplePatternTip = isKorean ? '\'which\', \'that\', \'because\'를 사용해서 아이디어를 더 긴 문장으로 연결하는 연습을 해보세요. 원어민은 3-4단어짜리 문장만 사용하지 않아요.' : 'Practice using \'which\', \'that\', \'because\' to connect your ideas into longer thoughts. Native speakers rarely use only 3-4 word sentences.';
       const exampleStrengths = isKorean ? ['주요 아이디어를 명확하게 전달했어요', 'X 같은 단어를 잘 선택했어요'] : ['You communicated your main ideas clearly', 'Good vocabulary choice with words like X'];
-      const exampleEncouragement = isKorean ? '구체적인 발전 상황과 다음에 집중할 점에 대한 따뜻한 메시지' : 'Personal, warm message about their specific progress and what to focus on next';
+      const exampleEncouragement = isKorean
+        ? (userName ? `${userName}에게 보내는 구체적인 발전 상황과 다음에 집중할 점에 대한 따뜻한 메시지` : '구체적인 발전 상황과 다음에 집중할 점에 대한 따뜻한 메시지')
+        : (userName ? `Personal, warm message to ${userName} about their specific progress and what to focus on next` : 'Personal, warm message about their specific progress and what to focus on next');
 
       systemPrompt = `You are ${persona.name}, a supportive English coach analyzing a student's conversation.
 ${analysisLang}
@@ -80,6 +85,7 @@ For EACH correction, provide:
 - Clear explanation of WHY the improved version is better
 
 LEVEL EVALUATION (US Grade Equivalent):
+${learnerAge ? `IMPORTANT: The learner is ${learnerAge} years old${userName ? ` (${userName})` : ''}. Evaluate their English relative to their age - a ${learnerAge}-year-old speaking at "5-6" level may be impressive or expected depending on their age. Consider age-appropriate expectations in your feedback.\n` : ''}
 Based on the student's conversation, evaluate their English proficiency using US school grade levels:
 - K (Kindergarten): Very basic words, single words or 2-3 word phrases, many grammar errors
 - 1-2 (Grade 1-2): Simple sentences, basic vocabulary, frequent grammar mistakes
@@ -95,6 +101,7 @@ Evaluate based on:
 2. Vocabulary range (25%): Word variety, appropriate word choice, idioms
 3. Fluency (20%): Sentence length, natural flow, conversation pace
 4. Comprehension (15%): Understanding context, appropriate responses
+${learnerAge ? `\nIn the levelDetails.summary, mention how their level compares to their age (e.g., "Great for a ${learnerAge}-year-old!" or "At expected level for age ${learnerAge}").` : ''}
 
 RETURN THIS EXACT JSON FORMAT (no markdown, valid JSON only):
 {

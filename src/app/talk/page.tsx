@@ -95,6 +95,11 @@ function TalkContent() {
   const [streamingText, setStreamingText] = useState('');
   const [showTranscript, setShowTranscript] = useState(false);
 
+  // User info for session (birth year & name)
+  const [showUserInfoModal, setShowUserInfoModal] = useState(false);
+  const [birthYear, setBirthYear] = useState<number | null>(null);
+  const [userName, setUserName] = useState<string>('');
+
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -592,6 +597,8 @@ function TalkContent() {
           tutorId,
           mode: 'analysis',
           language: language,
+          birthYear: birthYear,
+          userName: userName,
         }),
       });
       const data = await response.json();
@@ -938,7 +945,7 @@ function TalkContent() {
               </div>
             </div>
 
-            <button onClick={startRecording} className="btn-primary flex items-center gap-2 sm:gap-3 text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4">
+            <button onClick={() => setShowUserInfoModal(true)} className="btn-primary flex items-center gap-2 sm:gap-3 text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4">
               <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
               </svg>
@@ -1483,6 +1490,108 @@ function TalkContent() {
           </div>
         )}
       </main>
+
+      {/* User Info Modal - Birth Year & Name */}
+      {showUserInfoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowUserInfoModal(false)}
+          />
+
+          {/* Modal */}
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-center">
+              <div className="w-16 h-16 mx-auto mb-3 bg-white/20 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-white">
+                {language === 'ko' ? '학습자 정보' : 'Learner Info'}
+              </h3>
+              <p className="text-white/80 text-sm mt-1">
+                {language === 'ko' ? '나이에 맞는 평가를 위해 입력해주세요' : 'For age-appropriate evaluation'}
+              </p>
+            </div>
+
+            {/* Form */}
+            <div className="p-6 space-y-5">
+              {/* English Name */}
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  {language === 'ko' ? '영문 이름' : 'English Name'}
+                </label>
+                <input
+                  type="text"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  placeholder={language === 'ko' ? '예: Emma, James' : 'e.g. Emma, James'}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 focus:border-indigo-500 focus:ring-0 transition-colors text-neutral-900 placeholder-neutral-400"
+                />
+              </div>
+
+              {/* Birth Year */}
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  {language === 'ko' ? '출생연도' : 'Birth Year'}
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {(() => {
+                    const currentYear = new Date().getFullYear();
+                    const years = [];
+                    for (let y = currentYear - 5; y >= currentYear - 18; y--) {
+                      years.push(y);
+                    }
+                    return years.map((year) => (
+                      <button
+                        key={year}
+                        onClick={() => setBirthYear(year)}
+                        className={`py-2.5 rounded-xl text-sm font-medium transition-all ${
+                          birthYear === year
+                            ? 'bg-indigo-500 text-white shadow-lg scale-105'
+                            : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                        }`}
+                      >
+                        {year}
+                      </button>
+                    ));
+                  })()}
+                </div>
+                <p className="text-xs text-neutral-500 mt-2 text-center">
+                  {birthYear && `${language === 'ko' ? '만' : 'Age'} ${new Date().getFullYear() - birthYear}${language === 'ko' ? '세' : ' years old'}`}
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 pb-6 space-y-3">
+              <button
+                onClick={() => {
+                  setShowUserInfoModal(false);
+                  startRecording();
+                }}
+                disabled={!birthYear}
+                className={`w-full py-4 rounded-xl font-semibold text-white transition-all ${
+                  birthYear
+                    ? 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-lg'
+                    : 'bg-neutral-300 cursor-not-allowed'
+                }`}
+              >
+                {language === 'ko' ? '시작하기' : 'Start Session'}
+              </button>
+              <button
+                onClick={() => setShowUserInfoModal(false)}
+                className="w-full py-3 text-neutral-500 hover:text-neutral-700 text-sm"
+              >
+                {language === 'ko' ? '취소' : 'Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
