@@ -82,8 +82,8 @@ export async function POST(request: NextRequest) {
       tutor,
       duration,
       topicSummary,
-      feedbackSummary,
-      keyCorrections,
+      // feedbackSummary, // Not used in new format
+      // keyCorrections, // Corrections are stored separately now
       level,
       levelDetails,
       corrections: rawCorrections, // Array of correction objects

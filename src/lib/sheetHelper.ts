@@ -13,8 +13,6 @@ import {
   StatsData,
   SessionSummary,
   CorrectionItem,
-  TopicHistory,
-  DebateHistoryItem,
   AgeGroup,
   DebateCategory,
   MAX_RECENT_SESSIONS,

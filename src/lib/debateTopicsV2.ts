@@ -3,7 +3,7 @@
  * Personalized based on grade level and interests
  */
 
-import { DebateTopicRow, AgeGroup, DebateCategory, DebateTopicData } from './sheetTypes';
+import { DebateTopicRow, AgeGroup, DebateCategory } from './sheetTypes';
 import { randomUUID } from 'crypto';
 
 // ============================================
