@@ -5,6 +5,12 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { personas } from '@/lib/personas';
 import { useLanguage } from '@/lib/i18n';
 import TutorAvatar, { TutorAvatarLarge } from '@/components/TutorAvatar';
+import {
+  SpeechMetrics,
+  calculateSpeechMetrics,
+  calculateOverallScore,
+  formatMetricsForDisplay,
+} from '@/lib/speechMetrics';
 
 type Phase = 'ready' | 'recording' | 'interview' | 'analysis' | 'review' | 'shadowing' | 'summary';
 
@@ -73,6 +79,12 @@ function TalkContent() {
   // Shadowing state
   const [shadowingIndex, setShadowingIndex] = useState(0);
   const [, setShadowingAttempts] = useState<string[]>([]);
+
+  // Speech metrics state
+  const [speechMetrics, setSpeechMetrics] = useState<SpeechMetrics | null>(null);
+  const responseTimesRef = useRef<number[]>([]);
+  const aiFinishedSpeakingTimeRef = useRef<number>(0);
+  const userSpeakingTimeRef = useRef<number>(0);
 
   // Streaming state
   const [streamingText, setStreamingText] = useState('');
@@ -284,6 +296,15 @@ function TalkContent() {
       return;
     }
 
+    // Calculate response time (time since AI finished speaking)
+    if (aiFinishedSpeakingTimeRef.current > 0) {
+      const responseTime = (Date.now() - aiFinishedSpeakingTimeRef.current) / 1000;
+      responseTimesRef.current.push(responseTime);
+    }
+
+    // Track user speaking start time
+    const speakingStartTime = Date.now();
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
@@ -306,6 +327,10 @@ function TalkContent() {
 
       mediaRecorder.onstop = async () => {
         setIsRecordingReply(false);
+        // Track user speaking time
+        const speakingDuration = (Date.now() - speakingStartTime) / 1000;
+        userSpeakingTimeRef.current += speakingDuration;
+
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         stream.getTracks().forEach(track => track.stop());
         await processAudio(audioBlob, false);
@@ -485,6 +510,12 @@ function TalkContent() {
     setPhase('analysis');
     setIsProcessing(true);
 
+    // Calculate speech metrics from user messages
+    const userMessages = messages.filter(m => m.role === 'user').map(m => m.content);
+    const totalSpeakingTime = userSpeakingTimeRef.current > 0
+      ? userSpeakingTimeRef.current
+      : conversationTime * 0.4; // Estimate 40% of conversation time is user speaking
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -499,10 +530,28 @@ function TalkContent() {
       const data = await response.json();
 
       if (data.analysis) {
+        // Calculate metrics with grammar error count from AI analysis
+        const grammarErrors = data.analysis.corrections?.length || 0;
+        const metrics = calculateSpeechMetrics(
+          userMessages,
+          totalSpeakingTime,
+          responseTimesRef.current,
+          grammarErrors
+        );
+        setSpeechMetrics(metrics);
+
         setAnalysis(data.analysis);
         setPhase('review');
       } else {
         console.error('Analysis parsing failed');
+        // Still calculate basic metrics even if AI analysis fails
+        const metrics = calculateSpeechMetrics(
+          userMessages,
+          totalSpeakingTime,
+          responseTimesRef.current,
+          0
+        );
+        setSpeechMetrics(metrics);
         setPhase('summary');
       }
     } catch (error) {
@@ -587,6 +636,8 @@ function TalkContent() {
       setIsPlaying(false);
       // Clear audio cache when done
       audioCacheRef.current.clear();
+      // Track when AI finished speaking for response time measurement
+      aiFinishedSpeakingTimeRef.current = Date.now();
       return;
     }
 
@@ -707,6 +758,10 @@ function TalkContent() {
     setCurrentReviewIndex(0);
     setShadowingIndex(0);
     setShadowingAttempts([]);
+    setSpeechMetrics(null);
+    responseTimesRef.current = [];
+    aiFinishedSpeakingTimeRef.current = 0;
+    userSpeakingTimeRef.current = 0;
     setPhase('ready');
   };
 
@@ -1128,6 +1183,68 @@ function TalkContent() {
               </div>
               <h2 className="text-xl sm:text-2xl font-bold text-neutral-900">{t.sessionComplete}</h2>
             </div>
+
+            {/* Speech Metrics - Quantitative Analysis */}
+            {speechMetrics && (
+              <div className="card-premium p-4 sm:p-6 mb-4 bg-gradient-to-br from-cyan-50 to-blue-50">
+                <h3 className="font-semibold text-neutral-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
+                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-cyan-100 rounded-full flex items-center justify-center">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </span>
+                  {language === 'ko' ? '발화 분석 (정량 지표)' : 'Speech Analysis (Metrics)'}
+                </h3>
+
+                {/* Overall Score */}
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                    <span className="text-white font-bold text-xl">{calculateOverallScore(speechMetrics)}</span>
+                  </div>
+                  <div>
+                    <p className="text-xs text-neutral-500">{language === 'ko' ? '종합 점수' : 'Overall Score'}</p>
+                    <p className="text-lg font-bold text-neutral-900">/ 100</p>
+                  </div>
+                </div>
+
+                {/* Metrics Grid */}
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  {formatMetricsForDisplay(speechMetrics, language).map((metric) => (
+                    <div key={metric.label} className="bg-white/60 rounded-lg p-2">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs text-neutral-600">{metric.label}</span>
+                        <span className={`text-xs font-bold ${
+                          metric.level === 'high' ? 'text-green-600' :
+                          metric.level === 'low' ? 'text-red-500' : 'text-neutral-900'
+                        }`}>{metric.value}</span>
+                      </div>
+                      <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${
+                          metric.level === 'high' ? 'bg-green-500' :
+                          metric.level === 'low' ? 'bg-red-400' : 'bg-blue-500'
+                        }`} style={{ width: metric.level === 'high' ? '90%' : metric.level === 'low' ? '30%' : '60%' }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Summary Stats */}
+                <div className="flex justify-around text-center pt-2 border-t border-neutral-200">
+                  <div>
+                    <p className="text-lg font-bold text-neutral-900">{speechMetrics.totalWords}</p>
+                    <p className="text-xs text-neutral-500">{language === 'ko' ? '총 단어' : 'Words'}</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-neutral-900">{speechMetrics.totalSentences}</p>
+                    <p className="text-xs text-neutral-500">{language === 'ko' ? '문장 수' : 'Sentences'}</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-neutral-900">{speechMetrics.uniqueWords}</p>
+                    <p className="text-xs text-neutral-500">{language === 'ko' ? '고유 단어' : 'Unique'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {analysis && (
               <>

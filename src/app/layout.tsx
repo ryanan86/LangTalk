@@ -4,7 +4,7 @@ import AuthProvider from "@/components/AuthProvider";
 import { LanguageProvider } from "@/lib/i18n";
 
 export const metadata: Metadata = {
-  title: "LangTalk - AI 영어 회화 연습",
+  title: "Taptalk - AI 영어 회화 연습",
   description: "AI 튜터와 함께하는 영어 회화 연습 | Practice English conversation with AI tutors",
 };
 

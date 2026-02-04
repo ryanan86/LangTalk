@@ -1274,7 +1274,7 @@ export default function HomePage() {
                     {language === 'ko' ? '핵심 기능' : 'Key Features'}
                   </div>
                   <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4">
-                    {language === 'ko' ? '왜 LangTalk인가?' : 'Why LangTalk?'}
+                    {language === 'ko' ? '왜 Taptalk인가?' : 'Why Taptalk?'}
                   </h2>
                   <p className="text-white/50 max-w-lg mx-auto">
                     {language === 'ko'
