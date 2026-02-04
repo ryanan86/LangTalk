@@ -86,6 +86,10 @@ function TalkContent() {
   const aiFinishedSpeakingTimeRef = useRef<number>(0);
   const userSpeakingTimeRef = useRef<number>(0);
 
+  // Auto-play voice feedback flag
+  const [hasPlayedReviewIntro, setHasPlayedReviewIntro] = useState(false);
+  const [lastPlayedReviewIndex, setLastPlayedReviewIndex] = useState(-1);
+
   // Streaming state
   const [streamingText, setStreamingText] = useState('');
   const [showTranscript, setShowTranscript] = useState(false);
@@ -216,6 +220,41 @@ function TalkContent() {
       }
     }
   }, [phase, analysis, messages, tutorId, conversationTime]);
+
+  // Auto-play voice feedback for review phase
+  useEffect(() => {
+    if (phase === 'review' && analysis && analysis.corrections.length > 0 && !isPlaying) {
+      // Play intro message when first entering review phase
+      if (!hasPlayedReviewIntro) {
+        const correction = analysis.corrections[0];
+        const introMessage = `Let me help you improve. You said: "${correction.original}". A better way to say this is: "${correction.corrected}".`;
+        playTTS(introMessage);
+        setHasPlayedReviewIntro(true);
+        setLastPlayedReviewIndex(0);
+      }
+      // Play correction explanation when index changes
+      else if (currentReviewIndex !== lastPlayedReviewIndex) {
+        const correction = analysis.corrections[currentReviewIndex];
+        const feedbackMessage = `You said: "${correction.original}". Try saying: "${correction.corrected}".`;
+        playTTS(feedbackMessage);
+        setLastPlayedReviewIndex(currentReviewIndex);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, analysis, currentReviewIndex, hasPlayedReviewIntro, lastPlayedReviewIndex, isPlaying]);
+
+  // Auto-play summary feedback
+  useEffect(() => {
+    if (phase === 'summary' && analysis) {
+      // Small delay to let the UI render first
+      const timer = setTimeout(() => {
+        const summaryMessage = analysis.encouragement;
+        playTTS(summaryMessage);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -762,6 +801,8 @@ function TalkContent() {
     responseTimesRef.current = [];
     aiFinishedSpeakingTimeRef.current = 0;
     userSpeakingTimeRef.current = 0;
+    setHasPlayedReviewIntro(false);
+    setLastPlayedReviewIndex(-1);
     setPhase('ready');
   };
 
@@ -1100,13 +1141,34 @@ function TalkContent() {
 
                   {/* Explanation */}
                   <div className="p-3 sm:p-4 bg-primary-50 rounded-xl">
-                    <span className="text-xs font-medium text-primary-600 uppercase tracking-wider">{t.why}</span>
-                    <p className="text-primary-900 mt-2 text-xs sm:text-sm">
-                      {analysis.corrections[currentReviewIndex].explanation}
-                    </p>
-                    <span className="inline-block mt-2 px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full">
-                      {analysis.corrections[currentReviewIndex].category}
-                    </span>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <span className="text-xs font-medium text-primary-600 uppercase tracking-wider">{t.why}</span>
+                        <p className="text-primary-900 mt-2 text-xs sm:text-sm">
+                          {analysis.corrections[currentReviewIndex].explanation}
+                        </p>
+                        <span className="inline-block mt-2 px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full">
+                          {analysis.corrections[currentReviewIndex].category}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const correction = analysis.corrections[currentReviewIndex];
+                          playTTS(`You said: "${correction.original}". A better way is: "${correction.corrected}". ${correction.explanation}`);
+                        }}
+                        disabled={isPlaying}
+                        className="w-9 h-9 bg-primary-100 rounded-lg flex items-center justify-center hover:bg-primary-200 transition-colors flex-shrink-0"
+                        title={language === 'ko' ? '설명 듣기' : 'Listen to explanation'}
+                      >
+                        {isPlaying ? (
+                          <div className="w-3 h-3 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <svg className="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
