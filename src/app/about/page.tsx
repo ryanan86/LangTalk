@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { useLanguage } from '@/lib/i18n';
+import TapTalkLogo from '@/components/TapTalkLogo';
 
 export default function AboutPage() {
   const { language } = useLanguage();
 
   const content = {
     ko: {
-      title: 'Taptalk 소개',
+      title: 'TapTalk 소개',
       subtitle: 'AI 튜터와 함께하는 새로운 영어 회화 학습',
       heroDescription: '원어민 수준의 AI 튜터와 실시간 대화하며 자연스럽게 영어 실력을 향상시키세요. 부담 없이 언제 어디서나 연습할 수 있습니다.',
       features: {
@@ -60,7 +61,7 @@ export default function AboutPage() {
       },
     },
     en: {
-      title: 'About Taptalk',
+      title: 'About TapTalk',
       subtitle: 'A New Way to Learn English Conversation with AI Tutors',
       heroDescription: 'Improve your English naturally through real-time conversations with native-level AI tutors. Practice anytime, anywhere without pressure.',
       features: {
@@ -121,13 +122,8 @@ export default function AboutPage() {
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-black/20 border-b border-white/5">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-              </div>
-              <span className="text-xl font-bold text-white">Taptalk</span>
+            <Link href="/" className="flex items-center">
+              <TapTalkLogo size="md" theme="dark" />
             </Link>
             <Link
               href="/"
@@ -259,7 +255,7 @@ export default function AboutPage() {
       <footer className="relative z-10 py-8 border-t border-white/5">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
           <p className="text-white/30 text-sm">
-            {language === 'ko' ? '© 2024 Taptalk. All rights reserved.' : '© 2024 Taptalk. All rights reserved.'}
+            {language === 'ko' ? '© 2024 TapTalk. All rights reserved.' : '© 2024 TapTalk. All rights reserved.'}
           </p>
         </div>
       </footer>

@@ -172,7 +172,7 @@ interface Translations {
 const translations: Record<Language, Translations> = {
   ko: {
     // Common
-    appName: 'Taptalk',
+    appName: 'TapTalk',
     signIn: '로그인',
     signOut: '로그아웃',
     loading: '로딩 중...',
@@ -203,7 +203,7 @@ const translations: Record<Language, Translations> = {
     step2Desc: 'AI 튜터가 당신의 주제에 맞춰 대화를 이어갑니다.',
     step3Title: '상세한 피드백',
     step3Desc: '문법 교정과 더 나은 표현 방법을 제안받으세요.',
-    footer: 'Taptalk - AI 영어 회화 연습',
+    footer: 'TapTalk - AI 영어 회화 연습',
 
     // Beta signup
     loginRequired: '로그인 후 베타 서비스를 이용할 수 있습니다.',
@@ -336,7 +336,7 @@ const translations: Record<Language, Translations> = {
   },
   en: {
     // Common
-    appName: 'Taptalk',
+    appName: 'TapTalk',
     signIn: 'Sign in',
     signOut: 'Sign out',
     loading: 'Loading...',
@@ -367,7 +367,7 @@ const translations: Record<Language, Translations> = {
     step2Desc: 'Your AI tutor continues the conversation based on your topic.',
     step3Title: 'Detailed Feedback',
     step3Desc: 'Get comprehensive corrections and better ways to express yourself.',
-    footer: 'Taptalk - AI English Conversation Practice',
+    footer: 'TapTalk - AI English Conversation Practice',
 
     // Beta signup
     loginRequired: 'Please sign in to use the beta service.',

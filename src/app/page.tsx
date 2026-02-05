@@ -7,6 +7,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useLanguage, LanguageToggle } from '@/lib/i18n';
 import { Flag } from '@/components/Icons';
+import TapTalkLogo from '@/components/TapTalkLogo';
 
 // Typewriter Effect Hook
 function useTypewriter(texts: string[], typingSpeed = 80, deletingSpeed = 40, pauseTime = 2000) {
@@ -527,16 +528,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-              </div>
-              <span className="font-display text-xl font-bold bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
-                {t.appName}
-              </span>
-            </div>
+            <TapTalkLogo size="md" theme="dark" />
 
             {/* Right Side */}
             <div className="flex items-center gap-2 sm:gap-4">
@@ -1351,7 +1343,7 @@ export default function HomePage() {
                     {language === 'ko' ? '핵심 기능' : 'Key Features'}
                   </div>
                   <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4">
-                    {language === 'ko' ? '왜 Taptalk인가?' : 'Why Taptalk?'}
+                    {language === 'ko' ? '왜 TapTalk인가?' : 'Why TapTalk?'}
                   </h2>
                   <p className="text-white/50 max-w-lg mx-auto">
                     {language === 'ko'

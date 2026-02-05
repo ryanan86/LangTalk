@@ -12,6 +12,7 @@ import {
   formatMetricsForDisplay,
 } from '@/lib/speechMetrics';
 import html2canvas from 'html2canvas';
+import TapTalkLogo from '@/components/TapTalkLogo';
 
 type Phase = 'ready' | 'recording' | 'interview' | 'analysis' | 'review' | 'shadowing' | 'summary';
 
@@ -1300,7 +1301,10 @@ function TalkContent() {
                   />
                 </div>
                 <h2 className="text-xl sm:text-2xl font-bold text-neutral-900">{t.sessionComplete}</h2>
-                <p className="text-xs text-neutral-400 mt-1">Taptalk Report • {new Date().toLocaleDateString()}</p>
+                <div className="flex items-center justify-center gap-1 mt-1">
+                  <TapTalkLogo size="sm" theme="light" iconOnly />
+                  <span className="text-xs text-neutral-400">TapTalk Report • {new Date().toLocaleDateString()}</span>
+                </div>
               </div>
 
             {/* Speech Metrics - Quantitative Analysis */}
