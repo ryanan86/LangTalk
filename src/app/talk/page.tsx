@@ -603,9 +603,17 @@ function TalkContent() {
           setMessages(prev => [...prev, assistantMessage]);
         }
 
-        // Wait for all audio to finish playing
+        // Wait for all audio to finish playing (max 30 seconds)
+        const audioWaitStart = Date.now();
         while (isPlayingQueueRef.current || audioQueueRef.current.length > 0) {
           await new Promise(resolve => setTimeout(resolve, 100));
+          if (Date.now() - audioWaitStart > 30000) {
+            console.warn('Audio queue wait timeout - forcing continue');
+            audioQueueRef.current = [];
+            isPlayingQueueRef.current = false;
+            setIsPlaying(false);
+            break;
+          }
         }
 
         setStreamingText('');
@@ -817,8 +825,27 @@ function TalkContent() {
         });
 
         await new Promise<void>((resolve) => {
-          audio.onended = () => resolve();
-          audio.play();
+          const playTimeout = setTimeout(() => {
+            console.warn('Audio play timeout - skipping sentence');
+            audio.pause();
+            resolve();
+          }, 15000); // 15초 타임아웃
+
+          audio.onended = () => {
+            clearTimeout(playTimeout);
+            resolve();
+          };
+          audio.onerror = () => {
+            clearTimeout(playTimeout);
+            console.warn('Audio play error - skipping');
+            resolve();
+          };
+
+          audio.play().catch((err) => {
+            clearTimeout(playTimeout);
+            console.warn('Audio play() rejected:', err);
+            resolve();
+          });
         });
 
         // Revoke URL to free memory
