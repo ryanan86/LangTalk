@@ -176,6 +176,26 @@ const personas: Persona[] = [
     flag: 'UK',
     sampleText: "Right then, hello! I'm Oliver. Looking forward to having a proper conversation with you. No formalities needed here.",
   },
+  {
+    id: 'alina',
+    name: 'Alina',
+    nationality: 'american',
+    gender: 'female',
+    voice: 'nova',
+    gradient: 'from-amber-400 to-orange-500',
+    flag: 'US',
+    sampleText: "Hi hi! I'm Alina! I'm so happy to meet you! Let's talk about fun stuff together, okay?",
+  },
+  {
+    id: 'henly',
+    name: 'Henly',
+    nationality: 'american',
+    gender: 'male',
+    voice: 'alloy',
+    gradient: 'from-lime-400 to-green-500',
+    flag: 'US',
+    sampleText: "Hey hey! I'm Henly! Wanna know something cool? I love asking questions! So, what do you wanna talk about?",
+  },
 ];
 
 // Grade level mapping for AI evaluation
@@ -481,6 +501,8 @@ export default function HomePage() {
       james: { desc: t.jamesDesc, style: t.jamesStyle },
       charlotte: { desc: t.charlotteDesc, style: t.charlotteStyle },
       oliver: { desc: t.oliverDesc, style: t.oliverStyle },
+      alina: { desc: t.alinaDesc, style: t.alinaStyle },
+      henly: { desc: t.henlyDesc, style: t.henlyStyle },
     };
     return descriptions[id] || { desc: '', style: '' };
   };
@@ -1114,7 +1136,7 @@ export default function HomePage() {
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
                       {personas.map((persona) => {
                         const { desc, style } = getPersonaDescription(persona.id);
                         const isSelected = selectedPersona === persona.id;
@@ -1134,7 +1156,7 @@ export default function HomePage() {
                                 : 'bg-gradient-to-b from-white/5 to-transparent hover:from-white/10'
                             }`}>
                               {/* Large Profile Image - No circular frame */}
-                              <div className="relative h-52 sm:h-60 lg:h-72 overflow-hidden">
+                              <div className="relative h-44 sm:h-56 lg:h-72 overflow-hidden">
                                 {/* Background Glow */}
                                 <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-2/3 bg-gradient-to-t ${persona.gradient} rounded-full blur-3xl opacity-30 group-hover:opacity-50 transition-opacity`} />
 
@@ -1148,6 +1170,8 @@ export default function HomePage() {
                                       persona.id === 'emma' ? 'scale-110 group-hover:scale-115 object-top' :
                                       persona.id === 'james' ? 'scale-105 group-hover:scale-110 object-top' :
                                       persona.id === 'charlotte' ? 'scale-110 group-hover:scale-115 object-top' :
+                                      persona.id === 'alina' ? 'scale-110 group-hover:scale-115 object-top' :
+                                      persona.id === 'henly' ? 'scale-110 group-hover:scale-115 object-top' :
                                       'scale-90 group-hover:scale-95 object-center'
                                     }`}
                                     style={{

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Flag } from './Icons';
 
 interface TutorAvatarProps {
-  tutorId: 'emma' | 'james' | 'charlotte' | 'oliver';
+  tutorId: 'emma' | 'james' | 'charlotte' | 'oliver' | 'alina' | 'henly';
   size?: 'sm' | 'md' | 'lg' | 'xl';
   speaking?: boolean;
   className?: string;
@@ -90,6 +90,28 @@ export const tutorData = {
     glowColor: 'shadow-emerald-500/50',
     imagePath: '/tutors/oliver.png',
     fallbackColor: 'bg-gradient-to-br from-emerald-400 to-teal-500',
+  },
+  alina: {
+    name: 'Alina',
+    nationality: 'American',
+    flag: 'US',
+    gradient: 'from-amber-400 to-orange-500',
+    bgGradient: 'from-amber-500/20 to-orange-500/20',
+    ringColor: 'ring-amber-400',
+    glowColor: 'shadow-amber-500/50',
+    imagePath: '/tutors/alina.png',
+    fallbackColor: 'bg-gradient-to-br from-amber-400 to-orange-500',
+  },
+  henly: {
+    name: 'Henly',
+    nationality: 'American',
+    flag: 'US',
+    gradient: 'from-lime-400 to-green-500',
+    bgGradient: 'from-lime-500/20 to-green-500/20',
+    ringColor: 'ring-lime-400',
+    glowColor: 'shadow-lime-500/50',
+    imagePath: '/tutors/henly.png',
+    fallbackColor: 'bg-gradient-to-br from-lime-400 to-green-500',
   },
 };
 
@@ -227,7 +249,7 @@ export function TutorAvatarLarge({
   speaking = false,
   status = 'idle',
 }: {
-  tutorId: 'emma' | 'james' | 'charlotte' | 'oliver';
+  tutorId: 'emma' | 'james' | 'charlotte' | 'oliver' | 'alina' | 'henly';
   speaking?: boolean;
   status?: 'idle' | 'listening' | 'thinking' | 'speaking';
 }) {

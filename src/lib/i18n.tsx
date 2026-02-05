@@ -110,6 +110,10 @@ interface Translations {
   charlotteStyle: string;
   oliverDesc: string;
   oliverStyle: string;
+  alinaDesc: string;
+  alinaStyle: string;
+  henlyDesc: string;
+  henlyStyle: string;
 
   // Debate Mode
   debateMode: string;
@@ -281,6 +285,10 @@ const translations: Record<Language, Translations> = {
     charlotteStyle: '매력적이고 똑똑, 재치있는 대화',
     oliverDesc: '쿨한 영국인 친구',
     oliverStyle: '드라이한 유머, 진솔함, 편안한 대화',
+    alinaDesc: '밝고 활발한 친구',
+    alinaStyle: '에너지 넘치고 늘 신나는 또래 친구',
+    henlyDesc: '장난꾸러기 호기심쟁이',
+    henlyStyle: '모험심 가득, 재미있는 또래 친구',
 
     // Debate Mode
     debateMode: '디베이트 모드',
@@ -450,6 +458,10 @@ const translations: Record<Language, Translations> = {
     charlotteStyle: 'Charming, clever, great banter',
     oliverDesc: 'Cool British guy',
     oliverStyle: 'Dry wit, genuine, easy to talk to',
+    alinaDesc: 'Bright & bubbly friend',
+    alinaStyle: 'Cheerful, energetic, always excited',
+    henlyDesc: 'Playful & curious buddy',
+    henlyStyle: 'Adventurous, funny, full of questions',
 
     // Debate Mode
     debateMode: 'Debate Mode',
