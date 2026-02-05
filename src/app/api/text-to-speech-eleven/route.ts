@@ -8,6 +8,9 @@ const VOICE_MAP: Record<string, string> = {
   // British voices
   fable: 'ThT5KcBeYPX3keUQqHPh', // Dorothy - British female
   onyx: 'VR6AewLTigWG4xSOukaG', // Arnold - British male
+  // Kid voices
+  nova: 'jBpfuIE2acCO8z3wKNLl', // Gigi - young girl, childish tone
+  alloy: 'g5CIjZEefAph4nQFvHAz', // Ethan - young boy
 };
 
 export async function POST(request: NextRequest) {

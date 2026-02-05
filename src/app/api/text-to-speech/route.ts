@@ -11,7 +11,12 @@ const ELEVENLABS_VOICE_MAP: Record<string, string> = {
   echo: 'pNInz6obpgDQGcFmaJgB', // Adam - friendly American male
   fable: 'ThT5KcBeYPX3keUQqHPh', // Dorothy - British female
   onyx: 'JBFqnCBsd6RMkjVDRZzb', // George - British male, warm friendly voice
+  nova: 'jBpfuIE2acCO8z3wKNLl', // Gigi - young girl, childish tone
+  alloy: 'g5CIjZEefAph4nQFvHAz', // Ethan - young boy
 };
+
+// Kid voices that need higher speed in OpenAI fallback
+const KID_VOICES = new Set(['nova', 'alloy']);
 
 async function generateWithElevenLabs(text: string, voice: string): Promise<ArrayBuffer> {
   const apiKey = process.env.ELEVENLABS_API_KEY;
@@ -54,7 +59,7 @@ async function generateWithOpenAI(text: string, voice: string): Promise<ArrayBuf
     model: 'tts-1', // Use tts-1 for faster response (tts-1-hd is slower)
     voice: voice as 'nova' | 'onyx' | 'alloy' | 'echo' | 'fable' | 'shimmer',
     input: text,
-    speed: 1.0,
+    speed: KID_VOICES.has(voice) ? 1.15 : 1.0,
   });
 
   return mp3.arrayBuffer();
