@@ -10,6 +10,8 @@ import {
   calculateSpeechMetrics,
   calculateOverallScore,
   formatMetricsForDisplay,
+  getAgeGroup,
+  calculateAdaptiveDifficulty,
 } from '@/lib/speechMetrics';
 import html2canvas from 'html2canvas';
 import TapTalkLogo from '@/components/TapTalkLogo';
@@ -100,6 +102,11 @@ function TalkContent() {
   const [showUserInfoModal, setShowUserInfoModal] = useState(false);
   const [birthYear, setBirthYear] = useState<number | null>(null);
   const [userName, setUserName] = useState<string>('');
+  const [selectedDecade, setSelectedDecade] = useState<number | null>(null);
+
+  // Previous session data for adaptive difficulty
+  const [previousGrade, setPreviousGrade] = useState<string | null>(null);
+  const [previousLevelDetails, setPreviousLevelDetails] = useState<{ grammar: number; vocabulary: number; fluency: number; comprehension: number } | null>(null);
 
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -138,6 +145,17 @@ function TalkContent() {
       setIsSavingImage(false);
     }
   };
+
+  // Fetch previous session data for adaptive difficulty
+  useEffect(() => {
+    fetch('/api/session-count')
+      .then(res => res.json())
+      .then(data => {
+        if (data.evaluatedGrade) setPreviousGrade(data.evaluatedGrade);
+        if (data.levelDetails) setPreviousLevelDetails(data.levelDetails);
+      })
+      .catch(() => { /* ignore */ });
+  }, []);
 
   // Auto-scroll messages
   useEffect(() => {
@@ -231,12 +249,19 @@ function TalkContent() {
 
       // Save individual corrections for spaced repetition review
       if (analysis?.corrections && analysis.corrections.length > 0) {
+        // Calculate adaptive difficulty for correction storage
+        const ageGroup = birthYear ? getAgeGroup(birthYear) : null;
+        const adaptiveDifficulty = ageGroup
+          ? calculateAdaptiveDifficulty(ageGroup, previousGrade, previousLevelDetails, speechMetrics)
+          : null;
+        const correctionDifficulty = adaptiveDifficulty?.difficulty ?? 3;
+
         const correctionsToSave = analysis.corrections.map(c => ({
           original: c.original,
           corrected: c.corrected,
           explanation: c.explanation,
           category: c.category || 'general',
-          difficulty: 3, // Default difficulty
+          difficulty: correctionDifficulty,
         }));
 
         fetch('/api/corrections', {
@@ -253,7 +278,8 @@ function TalkContent() {
           .catch(err => console.error('Failed to save corrections:', err));
       }
     }
-  }, [phase, analysis, messages, tutorId, conversationTime]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, analysis, messages, tutorId, conversationTime, birthYear, previousGrade, previousLevelDetails, speechMetrics]);
 
   // Auto-play voice feedback for review phase
   useEffect(() => {
@@ -313,7 +339,10 @@ function TalkContent() {
 
   // ========== Recording Functions ==========
 
+  const initialRecordingStoppedRef = useRef(false);
+
   const startRecording = async () => {
+    initialRecordingStoppedRef.current = false;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
@@ -334,8 +363,10 @@ function TalkContent() {
       };
 
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        if (initialRecordingStoppedRef.current) return; // Prevent double processing
+        initialRecordingStoppedRef.current = true;
         stream.getTracks().forEach(track => track.stop());
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         await processAudio(audioBlob, true);
       };
 
@@ -349,18 +380,34 @@ function TalkContent() {
   };
 
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current) {
-      if (mediaRecorderRef.current.state === 'recording') {
-        mediaRecorderRef.current.stop();
-      } else {
-        try {
-          mediaRecorderRef.current.stop();
-        } catch (e) {
-          console.log('Error stopping:', e);
-        }
+    const recorder = mediaRecorderRef.current;
+    if (!recorder) return;
+
+    try {
+      if (recorder.state === 'recording' || recorder.state === 'paused') {
+        recorder.stop();
       }
+    } catch (e) {
+      console.log('Error stopping recorder:', e);
     }
-  }, []);
+
+    // Fallback: if onstop doesn't fire within 2 seconds (Android bug),
+    // force stop tracks and proceed
+    setTimeout(() => {
+      if (!initialRecordingStoppedRef.current && phase === 'recording') {
+        console.warn('onstop did not fire, forcing fallback');
+        initialRecordingStoppedRef.current = true;
+        // Stop all media tracks
+        try {
+          recorder.stream?.getTracks().forEach(track => track.stop());
+        } catch { /* ignore */ }
+        // Build blob from whatever data we have and proceed
+        const mimeType = recorder.mimeType || 'audio/webm';
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        processAudio(audioBlob, true);
+      }
+    }, 2000);
+  }, [phase]);
 
   const recordReply = async () => {
     if (isRecordingReply) {
@@ -589,6 +636,14 @@ function TalkContent() {
       ? userSpeakingTimeRef.current
       : conversationTime * 0.4; // Estimate 40% of conversation time is user speaking
 
+    // Pre-calculate speech metrics for adaptive difficulty
+    const preMetrics = calculateSpeechMetrics(
+      userMessages,
+      totalSpeakingTime,
+      responseTimesRef.current,
+      0
+    );
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -600,6 +655,14 @@ function TalkContent() {
           language: language,
           birthYear: birthYear,
           userName: userName,
+          previousGrade: previousGrade,
+          previousLevelDetails: previousLevelDetails,
+          speechMetrics: {
+            avgSentenceLength: preMetrics.avgSentenceLength,
+            vocabularyDiversity: preMetrics.vocabularyDiversity,
+            complexSentenceRatio: preMetrics.complexSentenceRatio,
+            wordsPerMinute: preMetrics.wordsPerMinute,
+          },
         }),
       });
       const data = await response.json();
@@ -946,7 +1009,7 @@ function TalkContent() {
               </div>
             </div>
 
-            <button onClick={() => setShowUserInfoModal(true)} className="btn-primary flex items-center gap-2 sm:gap-3 text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4">
+            <button onClick={() => { setSelectedDecade(null); setShowUserInfoModal(true); }} className="btn-primary flex items-center gap-2 sm:gap-3 text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4">
               <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
               </svg>
@@ -1537,33 +1600,71 @@ function TalkContent() {
                 />
               </div>
 
-              {/* Birth Year */}
+              {/* Birth Year - 2-Step Selector */}
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  {language === 'ko' ? '출생연도' : 'Birth Year'}
+                  {t.birthYear}
                 </label>
-                <div className="grid grid-cols-4 gap-2">
-                  {(() => {
-                    const currentYear = new Date().getFullYear();
-                    const years = [];
-                    for (let y = currentYear - 5; y >= currentYear - 18; y--) {
-                      years.push(y);
-                    }
-                    return years.map((year) => (
+
+                {selectedDecade === null ? (
+                  /* Step 1: Decade Selection */
+                  <>
+                    <p className="text-xs text-neutral-500 mb-2 text-center">
+                      {t.selectDecade}
+                    </p>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020].map((decade) => (
+                        <button
+                          key={decade}
+                          onClick={() => setSelectedDecade(decade)}
+                          className={`py-2.5 rounded-xl text-sm font-medium transition-all ${
+                            birthYear !== null && birthYear >= decade && birthYear < decade + 10
+                              ? 'bg-indigo-500 text-white shadow-lg scale-105'
+                              : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                          }`}
+                        >
+                          {decade}s
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  /* Step 2: Year Selection within Decade */
+                  <>
+                    <div className="flex items-center gap-2 mb-2">
                       <button
-                        key={year}
-                        onClick={() => setBirthYear(year)}
-                        className={`py-2.5 rounded-xl text-sm font-medium transition-all ${
-                          birthYear === year
-                            ? 'bg-indigo-500 text-white shadow-lg scale-105'
-                            : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                        }`}
+                        onClick={() => setSelectedDecade(null)}
+                        className="flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
                       >
-                        {year}
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        {selectedDecade}s
                       </button>
-                    ));
-                  })()}
-                </div>
+                      <span className="text-xs text-neutral-500">
+                        {t.selectYear}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-5 gap-2">
+                      {Array.from({ length: 10 }, (_, i) => selectedDecade + i)
+                        .filter(year => year <= new Date().getFullYear())
+                        .map((year) => (
+                        <button
+                          key={year}
+                          onClick={() => setBirthYear(year)}
+                          className={`py-2.5 rounded-xl text-sm font-medium transition-all ${
+                            birthYear === year
+                              ? 'bg-indigo-500 text-white shadow-lg scale-105'
+                              : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                          }`}
+                        >
+                          {year}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
                 <p className="text-xs text-neutral-500 mt-2 text-center">
                   {birthYear && `${language === 'ko' ? '만' : 'Age'} ${new Date().getFullYear() - birthYear}${language === 'ko' ? '세' : ' years old'}`}
                 </p>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { getPersona } from '@/lib/personas';
+import { getAgeGroup, calculateAdaptiveDifficulty } from '@/lib/speechMetrics';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -14,10 +15,19 @@ interface Message {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { messages, tutorId, mode, language = 'en', stream: useStreaming = false, birthYear, userName } = body;
+    const {
+      messages, tutorId, mode, language = 'en', stream: useStreaming = false,
+      birthYear, userName, previousGrade, previousLevelDetails, speechMetrics: clientSpeechMetrics,
+    } = body;
 
     // Calculate age if birthYear is provided
     const learnerAge = birthYear ? new Date().getFullYear() - birthYear : null;
+
+    // Calculate age group and adaptive difficulty
+    const ageGroup = birthYear ? getAgeGroup(birthYear) : null;
+    const adaptiveDifficulty = ageGroup
+      ? calculateAdaptiveDifficulty(ageGroup, previousGrade || null, previousLevelDetails || null, clientSpeechMetrics || null)
+      : null;
 
     const persona = getPersona(tutorId);
     if (!persona) {
@@ -78,28 +88,46 @@ ANALYSIS FOCUS:
 3. Suggest richer vocabulary and expressions
 4. Point out missed opportunities to connect ideas
 
+${ageGroup && adaptiveDifficulty ? `LEARNER AGE GROUP: ${ageGroup.key}
+EFFECTIVE DIFFICULTY: ${adaptiveDifficulty.difficulty}/5
+
+CORRECTION RULES FOR THIS LEARNER:
+- Maximum correction sentence length: ${ageGroup.maxCorrectionWords} words
+- Vocabulary level: ${ageGroup.vocabularyLevel}
+- Grammar focus: ${ageGroup.grammarFocus.join(', ')}
+- Use idioms: ${ageGroup.useIdioms ? 'Yes' : 'No'}
+- Use conjunctions: ${ageGroup.useConjunctions ? 'Yes' + (ageGroup.conjunctionExamples ? ' (' + ageGroup.conjunctionExamples + ')' : '') : 'No'}
+
+${adaptiveDifficulty.weakAreas.length > 0 ? `PRIORITY WEAK AREAS (focus 60% of corrections here):
+${adaptiveDifficulty.weakAreas.map(w => '- ' + w).join('\n')}
+` : ''}
+AGE-SPECIFIC CORRECTION STYLE:
+${ageGroup.correctionStyle}
+
+IMPORTANT: Keep ALL corrected sentences within ${ageGroup.maxCorrectionWords} words. Do NOT use vocabulary or structures beyond the learner's level.
+` : ''}
 For EACH correction, provide:
 - What they said (even if grammatically correct but too short)
 - What they probably wanted to express (their intent)
-- A MUCH BETTER version that is longer, more natural, and uses connectors (that, which, who, because, so, and then, especially when, which means)
+- A MUCH BETTER version that is ${ageGroup ? 'appropriate for their age group' : 'longer, more natural, and uses connectors (that, which, who, because, so, and then, especially when, which means)'}
 - Clear explanation of WHY the improved version is better
 
 LEVEL EVALUATION (US Grade Equivalent):
 ${learnerAge ? (() => {
         const koreanAge = learnerAge + 1; // Korean age
-        // Expected US grade for age (age 6 = G1, age 7 = G2, etc.)
+        // Expected US grade for age - extended to all ages
         const expectedGradeMap: Record<number, string> = {
-          5: 'K', 6: '1-2', 7: '1-2', 8: '3-4', 9: '3-4', 10: '5-6', 11: '5-6',
-          12: '7-8', 13: '7-8', 14: '9-10', 15: '9-10', 16: '11-12', 17: '11-12', 18: 'College'
+          3: 'K', 4: 'K', 5: 'K', 6: '1-2', 7: '1-2', 8: '3-4', 9: '3-4', 10: '5-6', 11: '5-6',
+          12: '7-8', 13: '7-8', 14: '9-10', 15: '9-10', 16: '11-12', 17: '11-12',
         };
-        const expectedGrade = expectedGradeMap[learnerAge] || '5-6';
+        const expectedGrade = expectedGradeMap[learnerAge] || (learnerAge >= 18 ? 'College' : '5-6');
         return `LEARNER INFO:
 - Name: ${userName || 'Student'}
 - Age: ${learnerAge} years old (Korean age: ${koreanAge}세)
 - Expected US grade for this age: ${expectedGrade}
 
 AGE-TO-GRADE REFERENCE (US system):
-Age 5-6 → K-G1, Age 7-8 → G2-G3, Age 9-10 → G4-G5, Age 11-12 → G6-G7, Age 13-14 → G8-G9, Age 15-16 → G10-G11, Age 17+ → G12/College
+Age 3-5 → K, Age 6-7 → G1-G2, Age 8-9 → G3-G4, Age 10-11 → G5-G6, Age 12-13 → G7-G8, Age 14-15 → G9-G10, Age 16-17 → G11-G12, Age 18+ → College
 \n`;
       })() : ''}
 Based on the student's conversation, evaluate their English proficiency using US school grade levels:
@@ -120,10 +148,10 @@ Evaluate based on:
 ${learnerAge ? (() => {
         const koreanAge = learnerAge + 1;
         const expectedGradeMap: Record<number, string> = {
-          5: 'K', 6: '1-2', 7: '1-2', 8: '3-4', 9: '3-4', 10: '5-6', 11: '5-6',
-          12: '7-8', 13: '7-8', 14: '9-10', 15: '9-10', 16: '11-12', 17: '11-12', 18: 'College'
+          3: 'K', 4: 'K', 5: 'K', 6: '1-2', 7: '1-2', 8: '3-4', 9: '3-4', 10: '5-6', 11: '5-6',
+          12: '7-8', 13: '7-8', 14: '9-10', 15: '9-10', 16: '11-12', 17: '11-12',
         };
-        const expectedGrade = expectedGradeMap[learnerAge] || '5-6';
+        const expectedGrade = expectedGradeMap[learnerAge] || (learnerAge >= 18 ? 'College' : '5-6');
         const summaryExample = isKorean
           ? `한국나이 ${koreanAge}세는 영미권에서 G${expectedGrade}에 해당합니다. 탭톡 평가 결과 G[평가등급]으로, 동나이대 대비 [높은/적정/낮은] 수준입니다.`
           : `A ${koreanAge}-year-old (Korean age) corresponds to US Grade ${expectedGrade}. TapTalk evaluated at G[grade], which is [above/at/below] the expected level for this age.`;

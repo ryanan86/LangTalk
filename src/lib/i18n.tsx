@@ -167,6 +167,11 @@ interface Translations {
   tryAnotherDebate: string;
   nextSpeaker: string;
   skipIntro: string;
+
+  // Birth Year Selector
+  selectDecade: string;
+  selectYear: string;
+  birthYear: string;
 }
 
 const translations: Record<Language, Translations> = {
@@ -333,6 +338,11 @@ const translations: Record<Language, Translations> = {
     tryAnotherDebate: '다른 토론하기',
     nextSpeaker: '다음 발언자',
     skipIntro: '건너뛰기',
+
+    // Birth Year Selector
+    selectDecade: '연대를 선택하세요',
+    selectYear: '연도를 선택하세요',
+    birthYear: '출생연도',
   },
   en: {
     // Common
@@ -497,6 +507,11 @@ const translations: Record<Language, Translations> = {
     tryAnotherDebate: 'Try Another Debate',
     nextSpeaker: 'Next Speaker',
     skipIntro: 'Skip',
+
+    // Birth Year Selector
+    selectDecade: 'Select a decade',
+    selectYear: 'Select a year',
+    birthYear: 'Birth Year',
   },
 };
 
@@ -515,12 +530,18 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem('taptalk-language') as Language;
     if (saved && (saved === 'ko' || saved === 'en')) {
       setLanguage(saved);
+      document.cookie = `lang=${saved};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
+    } else {
+      // Set default cookie
+      document.cookie = `lang=ko;path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
     }
   }, []);
 
   const handleSetLanguage = (lang: Language) => {
     setLanguage(lang);
     localStorage.setItem('taptalk-language', lang);
+    // Also set cookie for server-side access (layout.tsx html lang)
+    document.cookie = `lang=${lang};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
   };
 
   return (

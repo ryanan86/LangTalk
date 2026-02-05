@@ -4,6 +4,169 @@
  * Provides quantitative metrics for evaluating English speaking ability.
  */
 
+// ===== Age Group & Adaptive Difficulty =====
+
+export type AgeGroupKey = 'young_child' | 'older_child' | 'teenager' | 'adult';
+
+export interface AgeGroupConfig {
+  key: AgeGroupKey;
+  ageRange: [number, number]; // [min, max] inclusive
+  maxCorrectionWords: number;
+  vocabularyLevel: string;
+  useIdioms: boolean;
+  useConjunctions: boolean;
+  conjunctionExamples: string;
+  grammarFocus: string[];
+  correctionStyle: string;
+}
+
+const AGE_GROUPS: AgeGroupConfig[] = [
+  {
+    key: 'young_child',
+    ageRange: [3, 8],
+    maxCorrectionWords: 8,
+    vocabularyLevel: 'Basic 500 words (sight words, everyday objects, simple verbs)',
+    useIdioms: false,
+    useConjunctions: false,
+    conjunctionExamples: '',
+    grammarFocus: ['simple present tense', 'singular/plural', 'basic pronouns', 'simple questions'],
+    correctionStyle: 'Very short and simple. Use only words a 5-8 year old would know. Example: "I goed" → "I went to school."',
+  },
+  {
+    key: 'older_child',
+    ageRange: [9, 12],
+    maxCorrectionWords: 15,
+    vocabularyLevel: 'Basic + elementary academic words (describe, compare, explain)',
+    useIdioms: false,
+    useConjunctions: true,
+    conjunctionExamples: 'and, but, because, so',
+    grammarFocus: ['past tense', 'future tense', 'comparative/superlative', 'basic prepositions'],
+    correctionStyle: 'Clear and encouraging. Use simple connectors. Example: "I like it because is fun" → "I like it because it is really fun."',
+  },
+  {
+    key: 'teenager',
+    ageRange: [13, 17],
+    maxCorrectionWords: 25,
+    vocabularyLevel: 'Intermediate + academic vocabulary (analyze, significant, perspective)',
+    useIdioms: true,
+    useConjunctions: true,
+    conjunctionExamples: 'however, although, therefore, moreover, while',
+    grammarFocus: ['complex tenses', 'passive voice', 'conditional sentences', 'relative clauses'],
+    correctionStyle: 'Natural and slightly challenging. Include idiomatic expressions. Example: "I think is good idea" → "I genuinely think this is a great idea, especially because it addresses the main issue."',
+  },
+  {
+    key: 'adult',
+    ageRange: [18, 120],
+    maxCorrectionWords: 35,
+    vocabularyLevel: 'Advanced + collocations + professional/academic register',
+    useIdioms: true,
+    useConjunctions: true,
+    conjunctionExamples: 'nevertheless, furthermore, consequently, notwithstanding, in light of',
+    grammarFocus: ['all tenses', 'subjunctive mood', 'inversion', 'cleft sentences', 'advanced modals'],
+    correctionStyle: 'Native-level sophistication. Use rich collocations and nuanced expressions. Example: "I think is good" → "I genuinely believe this is an excellent approach, particularly given the current circumstances."',
+  },
+];
+
+/**
+ * Determine age group from birth year
+ */
+export function getAgeGroup(birthYear: number): AgeGroupConfig {
+  const age = new Date().getFullYear() - birthYear;
+  const group = AGE_GROUPS.find(g => age >= g.ageRange[0] && age <= g.ageRange[1]);
+  return group || AGE_GROUPS[AGE_GROUPS.length - 1]; // default to adult
+}
+
+export interface AdaptiveDifficultyResult {
+  difficulty: number; // 1-5
+  weakAreas: string[];
+  description: string;
+}
+
+/** Partial speech metrics needed for adaptive difficulty calculation */
+export interface SpeechMetricsPartial {
+  avgSentenceLength: number;
+  vocabularyDiversity: number;
+}
+
+/**
+ * Calculate adaptive difficulty based on age group, previous performance, and speech metrics
+ */
+export function calculateAdaptiveDifficulty(
+  ageGroup: AgeGroupConfig,
+  previousGrade: string | null,
+  levelDetails: { grammar: number; vocabulary: number; fluency: number; comprehension: number } | null,
+  metrics: SpeechMetricsPartial | null,
+): AdaptiveDifficultyResult {
+  // Base difficulty by age group
+  const baseDifficultyMap: Record<AgeGroupKey, number> = {
+    young_child: 1,
+    older_child: 2,
+    teenager: 3,
+    adult: 4,
+  };
+
+  let difficulty = baseDifficultyMap[ageGroup.key];
+
+  // Expected grade ranges per age group
+  const expectedGrades: Record<AgeGroupKey, string[]> = {
+    young_child: ['K', '1-2'],
+    older_child: ['3-4', '5-6'],
+    teenager: ['7-8', '9-10'],
+    adult: ['11-12', 'College'],
+  };
+
+  const gradeOrder = ['K', '1-2', '3-4', '5-6', '7-8', '9-10', '11-12', 'College'];
+
+  // Adjust based on previous grade vs expected
+  if (previousGrade) {
+    const prevIndex = gradeOrder.indexOf(previousGrade);
+    const expectedRange = expectedGrades[ageGroup.key];
+    const expectedMinIndex = gradeOrder.indexOf(expectedRange[0]);
+    const expectedMaxIndex = gradeOrder.indexOf(expectedRange[expectedRange.length - 1]);
+
+    if (prevIndex > expectedMaxIndex) {
+      difficulty = Math.min(5, difficulty + 1); // Above expectation → harder
+    } else if (prevIndex < expectedMinIndex) {
+      difficulty = Math.max(1, difficulty - 1); // Below expectation → easier
+    }
+  }
+
+  // Identify weak areas from levelDetails
+  const weakAreas: string[] = [];
+  if (levelDetails) {
+    if (levelDetails.grammar < 50) weakAreas.push(`grammar accuracy (${levelDetails.grammar}/100)`);
+    if (levelDetails.vocabulary < 50) weakAreas.push(`vocabulary range (${levelDetails.vocabulary}/100)`);
+    if (levelDetails.fluency < 50) weakAreas.push(`fluency (${levelDetails.fluency}/100)`);
+    if (levelDetails.comprehension < 50) weakAreas.push(`comprehension (${levelDetails.comprehension}/100)`);
+  }
+
+  // Adjust from speech metrics
+  if (metrics) {
+    if (metrics.vocabularyDiversity < 0.3) {
+      if (!weakAreas.some(w => w.startsWith('vocabulary'))) {
+        weakAreas.push('vocabulary diversity (low)');
+      }
+    }
+    if (metrics.avgSentenceLength < 4) {
+      weakAreas.push('sentence length (too short)');
+    }
+  }
+
+  const descriptions: Record<number, string> = {
+    1: 'Very basic - simple words and short phrases',
+    2: 'Elementary - simple sentences with basic grammar',
+    3: 'Intermediate - varied sentences with some complexity',
+    4: 'Upper-intermediate - natural flow with rich vocabulary',
+    5: 'Advanced - native-level sophistication',
+  };
+
+  return {
+    difficulty,
+    weakAreas,
+    description: descriptions[difficulty] || descriptions[3],
+  };
+}
+
 export interface SpeechMetrics {
   // Basic metrics
   totalWords: number;
