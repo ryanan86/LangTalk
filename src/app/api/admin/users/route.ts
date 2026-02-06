@@ -135,17 +135,28 @@ export async function GET() {
         const isActiveToday = lastActivity?.includes(today.replace(/-/g, '.'));
         const isActiveThisWeek = lastActivity && lastActivity >= weekAgo.replace(/-/g, '.');
 
-        // Tutor usage
+        // Tutor usage and session stats - calculate from actual session data
+        let userSessionMinutes = 0;
         sessions.forEach((s: SessionData) => {
           if (s.tutor) {
             tutorCounts[s.tutor] = (tutorCounts[s.tutor] || 0) + 1;
           }
+          if (s.duration) {
+            userSessionMinutes += s.duration;
+          }
         });
 
-        const stats = row[3] ? JSON.parse(row[3]) : { sessionCount: 0, totalMinutes: 0, debateCount: 0 };
-        totalSessions += stats.sessionCount || 0;
-        totalMinutes += stats.totalMinutes || 0;
+        // Use actual session data for accurate totals
+        const actualSessionCount = sessions.length;
+        totalSessions += actualSessionCount;
+        totalMinutes += userSessionMinutes;
         totalCorrections += corrections.length;
+
+        // Still load stats from sheet for display, but use actual data for calculations
+        const stats = row[3] ? JSON.parse(row[3]) : { sessionCount: 0, totalMinutes: 0, debateCount: 0 };
+        // Update stats with actual data
+        stats.sessionCount = actualSessionCount;
+        stats.totalMinutes = userSessionMinutes;
 
         users.push({
           email,
