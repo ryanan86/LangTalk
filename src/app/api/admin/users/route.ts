@@ -14,6 +14,21 @@ function getAuth() {
   });
 }
 
+interface CorrectionData {
+  id?: string;
+  category?: string;
+  nextReviewAt?: string;
+  status?: string;
+  lastReviewedAt?: string;
+}
+
+interface SessionData {
+  date?: string;
+  level?: string;
+  tutor?: string;
+  duration?: number;
+}
+
 // GET: List all users with learning data
 export async function GET() {
   try {
@@ -52,8 +67,8 @@ export async function GET() {
 
     // Build learning data map
     const learningMap = new Map<string, {
-      recentSessions: unknown[];
-      corrections: unknown[];
+      recentSessions: SessionData[];
+      corrections: CorrectionData[];
       topicsHistory: unknown[];
       debateHistory: unknown[];
     }>();
@@ -74,6 +89,15 @@ export async function GET() {
     }
 
     const users = [];
+    const today = new Date().toISOString().split('T')[0];
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // Overall stats
+    let totalSessions = 0;
+    let totalMinutes = 0;
+    let totalCorrections = 0;
+    const tutorCounts: Record<string, number> = {};
+    const categoryCounts: Record<string, number> = { grammar: 0, vocabulary: 0, fluency: 0, 'sentence-extension': 0, other: 0 };
 
     for (let i = 1; i < userRows.length; i++) {
       const row = userRows[i];
@@ -82,19 +106,70 @@ export async function GET() {
       try {
         const email = row[0];
         const learning = learningMap.get(email.toLowerCase());
+        const corrections = learning?.corrections || [];
+        const sessions = learning?.recentSessions || [];
+
+        // Calculate correction stats
+        const dueCorrections = corrections.filter((c: CorrectionData) => {
+          if (c.status === 'mastered') return false;
+          return c.nextReviewAt && c.nextReviewAt <= today;
+        });
+        const completedCorrections = corrections.filter((c: CorrectionData) => c.status === 'mastered');
+
+        // Category breakdown
+        const categoryBreakdown: Record<string, number> = {};
+        corrections.forEach((c: CorrectionData) => {
+          const cat = c.category || 'other';
+          categoryBreakdown[cat] = (categoryBreakdown[cat] || 0) + 1;
+          categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+        });
+
+        // Level history from sessions
+        const levelHistory = sessions
+          .filter((s: SessionData) => s.level)
+          .map((s: SessionData) => ({ date: s.date, level: s.level }))
+          .slice(-10); // Last 10 levels
+
+        // Last activity date
+        const lastActivity = sessions.length > 0 ? sessions[0]?.date : null;
+        const isActiveToday = lastActivity?.includes(today.replace(/-/g, '.'));
+        const isActiveThisWeek = lastActivity && lastActivity >= weekAgo.replace(/-/g, '.');
+
+        // Tutor usage
+        sessions.forEach((s: SessionData) => {
+          if (s.tutor) {
+            tutorCounts[s.tutor] = (tutorCounts[s.tutor] || 0) + 1;
+          }
+        });
+
+        const stats = row[3] ? JSON.parse(row[3]) : { sessionCount: 0, totalMinutes: 0, debateCount: 0 };
+        totalSessions += stats.sessionCount || 0;
+        totalMinutes += stats.totalMinutes || 0;
+        totalCorrections += corrections.length;
 
         users.push({
           email,
           subscription: row[1] ? JSON.parse(row[1]) : { status: 'pending' },
           profile: row[2] ? JSON.parse(row[2]) : { type: '', interests: [] },
-          stats: row[3] ? JSON.parse(row[3]) : { sessionCount: 0, totalMinutes: 0, debateCount: 0 },
+          stats,
           updatedAt: row[4] || '',
           rowIndex: i + 1,
           // Learning data
-          recentSessions: learning?.recentSessions || [],
-          corrections: learning?.corrections || [],
+          recentSessions: sessions,
+          corrections,
           topicsHistory: learning?.topicsHistory || [],
           debateHistory: learning?.debateHistory || [],
+          // Enhanced stats
+          correctionStats: {
+            total: corrections.length,
+            due: dueCorrections.length,
+            completed: completedCorrections.length,
+            categoryBreakdown,
+          },
+          levelHistory,
+          lastActivity,
+          isActiveToday,
+          isActiveThisWeek,
         });
       } catch (e) {
         console.error(`Error parsing row ${i}:`, e);
@@ -108,7 +183,27 @@ export async function GET() {
       return dateB.localeCompare(dateA);
     });
 
-    return NextResponse.json({ users });
+    // Popular tutors (sorted by usage)
+    const popularTutors = Object.entries(tutorCounts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([tutor, count]) => ({ tutor, count }));
+
+    // Overall statistics
+    const overallStats = {
+      totalUsers: users.length,
+      activeUsers: users.filter(u => u.subscription.status === 'active').length,
+      totalSessions,
+      totalMinutes,
+      avgMinutesPerUser: users.length > 0 ? Math.round(totalMinutes / users.length) : 0,
+      totalCorrections,
+      activeToday: users.filter(u => u.isActiveToday).length,
+      activeThisWeek: users.filter(u => u.isActiveThisWeek).length,
+      popularTutors,
+      categoryCounts,
+    };
+
+    return NextResponse.json({ users, overallStats });
   } catch (error) {
     console.error('Admin users GET error:', error);
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
