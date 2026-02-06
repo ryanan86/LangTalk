@@ -76,7 +76,7 @@ async function generateWithOpenAI(text: string, voice: string): Promise<ArrayBuf
     model: 'tts-1', // Use tts-1 for faster response (tts-1-hd is slower)
     voice: voice as 'nova' | 'onyx' | 'alloy' | 'echo' | 'fable' | 'shimmer',
     input: text,
-    speed: KID_VOICES.has(voice) ? 1.2 : 1.0,
+    speed: 1.0, // Normal speed for all voices
   });
 
   return mp3.arrayBuffer();
