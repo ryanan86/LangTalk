@@ -12,7 +12,7 @@ const ELEVENLABS_VOICE_MAP: Record<string, string> = {
   fable: 'ThT5KcBeYPX3keUQqHPh', // Dorothy - British female
   onyx: 'JBFqnCBsd6RMkjVDRZzb', // George - British male, warm friendly voice
   nova: 'jBpfuIE2acCO8z3wKNLl', // Gigi - young girl, childish tone
-  alloy: 'g5CIjZEefAph4nQFvHAz', // Ethan - young boy
+  alloy: 'TX3LPaxmHKxFdv7VOQHJ', // Liam - young boy, brighter tone
 };
 
 // Kid voices that need higher speed in OpenAI fallback
@@ -59,7 +59,7 @@ async function generateWithOpenAI(text: string, voice: string): Promise<ArrayBuf
     model: 'tts-1', // Use tts-1 for faster response (tts-1-hd is slower)
     voice: voice as 'nova' | 'onyx' | 'alloy' | 'echo' | 'fable' | 'shimmer',
     input: text,
-    speed: KID_VOICES.has(voice) ? 1.15 : 1.0,
+    speed: KID_VOICES.has(voice) ? 1.2 : 1.0,
   });
 
   return mp3.arrayBuffer();
