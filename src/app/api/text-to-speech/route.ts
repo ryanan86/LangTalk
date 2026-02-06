@@ -30,6 +30,23 @@ async function generateWithElevenLabs(text: string, voice: string): Promise<Arra
   }
 
   const voiceId = ELEVENLABS_VOICE_MAP[voice] || ELEVENLABS_VOICE_MAP.shimmer;
+  const isKidVoice = KID_VOICES.has(voice);
+
+  // Kid voices: higher stability for slower, more measured speech
+  // Adult voices: standard settings
+  const voiceSettings = isKidVoice
+    ? {
+        stability: 0.75,        // Higher = more consistent, slower pacing
+        similarity_boost: 0.6,  // Slightly lower for more natural kid speech
+        style: 0.3,             // Lower style for clearer pronunciation
+        use_speaker_boost: true,
+      }
+    : {
+        stability: 0.5,
+        similarity_boost: 0.75,
+        style: 0.5,
+        use_speaker_boost: true,
+      };
 
   const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
     method: 'POST',
@@ -41,12 +58,7 @@ async function generateWithElevenLabs(text: string, voice: string): Promise<Arra
     body: JSON.stringify({
       text,
       model_id: 'eleven_turbo_v2_5',
-      voice_settings: {
-        stability: 0.5,
-        similarity_boost: 0.75,
-        style: 0.5,
-        use_speaker_boost: true,
-      },
+      voice_settings: voiceSettings,
     }),
   });
 
