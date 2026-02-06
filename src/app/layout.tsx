@@ -1,17 +1,32 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import "./globals.css";
 import AuthProvider from "@/components/AuthProvider";
 import { LanguageProvider } from "@/lib/i18n";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 
+export const viewport: Viewport = {
+  themeColor: '#2563eb',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://taptalk.xyz'),
   title: "TapTalk - AI English Conversation Practice",
   description: "Practice English conversation with AI tutors. Get real-time feedback on grammar, vocabulary, and fluency.",
   keywords: ['English learning', 'AI tutor', 'conversation practice', 'speaking practice', 'English speaking', 'AI English'],
+  manifest: '/manifest.json',
   icons: {
     icon: '/icon.svg',
+    apple: '/icon-192.png',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'TapTalk',
   },
   openGraph: {
     title: 'TapTalk - AI English Conversation Practice',
@@ -29,6 +44,9 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
   },
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '',
