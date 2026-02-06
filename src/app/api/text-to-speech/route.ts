@@ -18,6 +18,11 @@ const ELEVENLABS_VOICE_MAP: Record<string, string> = {
 // Kid voices that need higher speed in OpenAI fallback
 const KID_VOICES = new Set(['nova', 'alloy']);
 
+// Hybrid TTS strategy: voices that should use ElevenLabs
+// Emma (shimmer), James (echo), Alina (nova), Henly (alloy) → ElevenLabs
+// Charlotte (fable), Oliver (onyx) → OpenAI
+const ELEVENLABS_PREFERRED_VOICES = new Set(['shimmer', 'echo', 'nova', 'alloy']);
+
 async function generateWithElevenLabs(text: string, voice: string): Promise<ArrayBuffer> {
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) {
@@ -73,18 +78,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No text provided' }, { status: 400 });
     }
 
-    // Use ElevenLabs if API key is set, otherwise fall back to OpenAI
+    // Hybrid TTS strategy:
+    // - Emma (shimmer), James (echo), Alina (nova), Henly (alloy) → ElevenLabs
+    // - Charlotte (fable), Oliver (onyx) → OpenAI
     const elevenLabsKey = process.env.ELEVENLABS_API_KEY;
-    const useElevenLabs = !!elevenLabsKey && elevenLabsKey.trim().length > 0;
-    console.log('TTS Provider:', useElevenLabs ? 'ElevenLabs' : 'OpenAI');
-    console.log('ElevenLabs key exists:', !!elevenLabsKey, '| Key length:', elevenLabsKey?.length || 0);
+    const hasElevenLabsKey = !!elevenLabsKey && elevenLabsKey.trim().length > 0;
+    const shouldUseElevenLabs = hasElevenLabsKey && ELEVENLABS_PREFERRED_VOICES.has(voice);
+
+    console.log(`TTS: voice=${voice}, provider=${shouldUseElevenLabs ? 'ElevenLabs' : 'OpenAI'}`);
 
     let audioBuffer: ArrayBuffer;
 
-    if (useElevenLabs) {
+    if (shouldUseElevenLabs) {
       try {
         audioBuffer = await generateWithElevenLabs(text, voice);
-        console.log('ElevenLabs TTS success');
       } catch (elevenLabsError) {
         console.error('ElevenLabs failed, falling back to OpenAI:', elevenLabsError);
         audioBuffer = await generateWithOpenAI(text, voice);
