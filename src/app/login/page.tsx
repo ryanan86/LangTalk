@@ -3,6 +3,7 @@
 import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useState, useEffect, useCallback } from 'react';
+import { Capacitor } from '@capacitor/core';
 import TapTalkLogo from '@/components/TapTalkLogo';
 
 // Check if running on Android
@@ -23,20 +24,20 @@ function LoginContent() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const isAndroid = isAndroidDevice();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const hasCap = !!(window as any).Capacitor;
-      setDebugInfo(`LOGIN: Android:${isAndroid} Cap:${hasCap}`);
+      const isNative = Capacitor.isNativePlatform();
+      const platform = Capacitor.getPlatform();
+      setDebugInfo(`LOGIN: Android:${isAndroid} Native:${isNative} Platform:${platform}`);
     }
   }, []);
 
   const handleGoogleSignIn = useCallback(async () => {
     const isAndroid = isAndroidDevice();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const hasCap = !!(window as any).Capacitor;
+    const isNative = Capacitor.isNativePlatform();
+    const platform = Capacitor.getPlatform();
 
-    setDebugInfo(`CLICKED! Android:${isAndroid} Cap:${hasCap}`);
+    setDebugInfo(`CLICKED! Android:${isAndroid} Native:${isNative} Platform:${platform}`);
 
-    if (isAndroid && hasCap) {
+    if (isAndroid && isNative) {
       // Native sign-in path
       try {
         setIsLoading(true);
@@ -73,8 +74,8 @@ function LoginContent() {
         setIsLoading(false);
       }
     } else {
-      // Web OAuth - Capacitor not available
-      setDebugInfo(`Web OAuth (no Capacitor)`);
+      // Web OAuth - not in native app
+      setDebugInfo(`Web OAuth: Android:${isAndroid} Native:${isNative}`);
       signIn('google', { callbackUrl });
     }
   }, [callbackUrl]);
