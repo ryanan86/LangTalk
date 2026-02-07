@@ -2,16 +2,97 @@
 
 import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import TapTalkLogo from '@/components/TapTalkLogo';
+
+// Check if running on Android
+function isAndroidDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+  return /Android/i.test(navigator.userAgent);
+}
 
 function LoginContent() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/';
   const error = searchParams.get('error');
 
+  const [debugInfo, setDebugInfo] = useState('');
+  const [nativeError, setNativeError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isAndroid = isAndroidDevice();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const hasCap = !!(window as any).Capacitor;
+      setDebugInfo(`LOGIN: Android:${isAndroid} Cap:${hasCap}`);
+    }
+  }, []);
+
+  const handleGoogleSignIn = useCallback(async () => {
+    const isAndroid = isAndroidDevice();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const hasCap = !!(window as any).Capacitor;
+
+    setDebugInfo(`CLICKED! Android:${isAndroid} Cap:${hasCap}`);
+
+    if (isAndroid && hasCap) {
+      // Native sign-in path
+      try {
+        setIsLoading(true);
+        setNativeError(null);
+
+        const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
+
+        await GoogleAuth.initialize({
+          clientId: '670234764770-sib307dj55oj4pg2d5cu1k27i7u5hith.apps.googleusercontent.com',
+          scopes: ['profile', 'email'],
+          grantOfflineAccess: true,
+        });
+
+        const result = await GoogleAuth.signIn();
+
+        const signInResult = await signIn('google-native', {
+          idToken: result.authentication.idToken,
+          email: result.email,
+          name: result.name || result.givenName,
+          image: result.imageUrl,
+          redirect: false,
+        });
+
+        if (signInResult?.ok) {
+          window.location.href = callbackUrl;
+        } else {
+          setNativeError('로그인 실패');
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        setNativeError(msg);
+        setDebugInfo(`ERROR: ${msg}`);
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      // Web OAuth - Capacitor not available
+      setDebugInfo(`Web OAuth (no Capacitor)`);
+      signIn('google', { callbackUrl });
+    }
+  }, [callbackUrl]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+      {/* Debug Banner */}
+      {debugInfo && (
+        <div className="fixed top-0 left-0 right-0 z-[9999] bg-yellow-500 text-black text-xs p-2 font-mono">
+          {debugInfo}
+        </div>
+      )}
+      {/* Native Error */}
+      {nativeError && (
+        <div className="fixed top-8 left-0 right-0 z-[9999] bg-red-500 text-white text-xs p-2 font-mono">
+          Error: {nativeError}
+        </div>
+      )}
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-3">
@@ -34,8 +115,9 @@ function LoginContent() {
           )}
 
           <button
-            onClick={() => signIn('google', { callbackUrl })}
-            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-800 font-medium py-3 px-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+            onClick={handleGoogleSignIn}
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-800 font-medium py-3 px-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -55,7 +137,7 @@ function LoginContent() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            Continue with Google
+            {isLoading ? 'Loading...' : 'Continue with Google'}
           </button>
 
           <div className="relative my-4">
