@@ -545,8 +545,8 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,#0a0a0f_70%)]" />
       </div>
 
-      {/* Header */}
-      <header className="relative z-50 border-b border-white/5">
+      {/* Header - pt-12 for Android status bar + notch clearance */}
+      <header className="relative z-50 border-b border-white/5 pt-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Logo */}
@@ -997,7 +997,7 @@ export default function HomePage() {
                         <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
                         <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                       </svg>
-                      Google로 계속하기
+                      {t.continueWithGoogle}
                     </button>
                     <button
                       onClick={() => signIn('kakao')}
@@ -1006,7 +1006,7 @@ export default function HomePage() {
                       <svg className="w-5 h-5" viewBox="0 0 24 24">
                         <path fill="#191919" d="M12 3C6.477 3 2 6.463 2 10.691c0 2.72 1.8 5.108 4.5 6.454-.144.522-.926 3.36-.962 3.587 0 0-.02.166.088.229.108.063.235.014.235.014.31-.043 3.59-2.357 4.156-2.759.647.09 1.314.138 1.983.138 5.523 0 10-3.463 10-7.663S17.523 3 12 3z"/>
                       </svg>
-                      카카오로 계속하기
+                      {t.continueWithKakao}
                     </button>
                   </div>
                 </div>

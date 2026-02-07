@@ -10,6 +10,8 @@ interface Translations {
   signIn: string;
   signOut: string;
   loading: string;
+  continueWithGoogle: string;
+  continueWithKakao: string;
 
   // Home page
   heroTitle: string;
@@ -185,6 +187,8 @@ const translations: Record<Language, Translations> = {
     signIn: '로그인',
     signOut: '로그아웃',
     loading: '로딩 중...',
+    continueWithGoogle: 'Google로 계속하기',
+    continueWithKakao: '카카오로 계속하기',
 
     // Home page
     heroTitle: 'AI 튜터와 함께하는',
@@ -358,6 +362,8 @@ const translations: Record<Language, Translations> = {
     signIn: 'Sign in',
     signOut: 'Sign out',
     loading: 'Loading...',
+    continueWithGoogle: 'Continue with Google',
+    continueWithKakao: 'Continue with Kakao',
 
     // Home page
     heroTitle: 'Practice English with',

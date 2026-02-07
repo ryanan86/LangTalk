@@ -941,8 +941,8 @@ function TalkContent() {
     <div className="min-h-screen bg-neutral-50 flex flex-col">
       <audio ref={audioRef} onEnded={() => setIsPlaying(false)} />
 
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-neutral-200 px-4 sm:px-6 py-3 sm:py-4 sticky top-0 z-50">
+      {/* Header - pt-12 for Android status bar + notch clearance */}
+      <header className="bg-white/80 backdrop-blur-md border-b border-neutral-200 px-4 sm:px-6 pb-3 sm:pb-4 sticky top-0 z-50 pt-12">
         <div className="max-w-2xl mx-auto flex justify-between items-center">
           <button onClick={() => router.push('/')} className="text-neutral-500 hover:text-neutral-700 p-1">
             <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
