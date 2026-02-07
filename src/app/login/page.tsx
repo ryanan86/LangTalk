@@ -2,7 +2,7 @@
 
 import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useCallback } from 'react';
 import TapTalkLogo from '@/components/TapTalkLogo';
 
 // Check if running in TapTalk native app (via User-Agent)
@@ -17,40 +17,17 @@ function isAndroidDevice(): boolean {
   return /Android/i.test(navigator.userAgent);
 }
 
-// Get platform info for debugging
-function getPlatformInfo(): { isNative: boolean; isAndroid: boolean; ua: string } {
-  if (typeof window === 'undefined') {
-    return { isNative: false, isAndroid: false, ua: 'ssr' };
-  }
-  const ua = navigator.userAgent;
-  return {
-    isNative: ua.includes('TapTalkNative'),
-    isAndroid: /Android/i.test(ua),
-    ua: ua.substring(0, 60),
-  };
-}
-
 function LoginContent() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/';
   const error = searchParams.get('error');
 
-  const [debugInfo, setDebugInfo] = useState('Loading...');
   const [nativeError, setNativeError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const info = getPlatformInfo();
-      setDebugInfo(`LOGIN v4: Native:${info.isNative} Android:${info.isAndroid} UA:${info.ua}`);
-    }
-  }, []);
 
   const handleGoogleSignIn = useCallback(async () => {
     const isNative = isTapTalkNativeApp();
     const isAndroid = isAndroidDevice();
-
-    setDebugInfo(`CLICKED! Native:${isNative} Android:${isAndroid}`);
 
     if (isNative && isAndroid) {
       // Native sign-in path using TapTalkAuth interface
@@ -68,7 +45,6 @@ function LoginContent() {
         // Set up callbacks for native auth result
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window as any).onTapTalkAuthSuccess = async (result: { idToken: string; email: string; name: string; photoUrl: string }) => {
-          setDebugInfo(`Auth success: ${result.email}`);
           const signInResult = await signIn('google-native', {
             idToken: result.idToken,
             email: result.email,
@@ -88,7 +64,6 @@ function LoginContent() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window as any).onTapTalkAuthError = (error: string) => {
           setNativeError(error);
-          setDebugInfo(`ERROR: ${error}`);
           setIsLoading(false);
         };
 
@@ -97,27 +72,19 @@ function LoginContent() {
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         setNativeError(msg);
-        setDebugInfo(`ERROR: ${msg}`);
         setIsLoading(false);
       }
     } else {
       // Web OAuth - not in native app
-      setDebugInfo(`Web OAuth: Native:${isNative} Android:${isAndroid}`);
       signIn('google', { callbackUrl });
     }
   }, [callbackUrl]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-      {/* Debug Banner */}
-      {debugInfo && (
-        <div className="fixed top-0 left-0 right-0 z-[9999] bg-yellow-500 text-black text-xs p-2 font-mono">
-          {debugInfo}
-        </div>
-      )}
       {/* Native Error */}
       {nativeError && (
-        <div className="fixed top-8 left-0 right-0 z-[9999] bg-red-500 text-white text-xs p-2 font-mono">
+        <div className="fixed top-0 left-0 right-0 z-[9999] bg-red-500 text-white text-xs p-2 font-mono">
           Error: {nativeError}
         </div>
       )}

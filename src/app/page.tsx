@@ -276,19 +276,6 @@ export default function HomePage() {
   // State for native sign-in error debugging
   const [nativeSignInError, setNativeSignInError] = useState<string | null>(null);
 
-  // Debug info state - shows platform detection at top of screen
-  const [debugInfo, setDebugInfo] = useState<string>('');
-
-  // Check platform on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const ua = navigator.userAgent;
-      const isAndroid = /Android/i.test(ua);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const hasCapacitor = !!(window as any).Capacitor;
-      setDebugInfo(`Android:${isAndroid} Cap:${hasCapacitor} UA:${ua.substring(0, 50)}...`);
-    }
-  }, []);
 
   // Handle Google Sign-In (native for Android, web for browser)
   const handleGoogleSignIn = useCallback(async () => {
@@ -297,8 +284,6 @@ export default function HomePage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const hasCap = !!(window as any).Capacitor;
 
-    // Update debug info to show button was clicked
-    setDebugInfo(`CLICKED! Android:${isAndroid} Cap:${hasCap}`);
     console.log('[TapTalk] Google Sign-In - isAndroid:', isAndroid, 'hasCap:', hasCap);
 
     if (isAndroid) {
@@ -307,14 +292,7 @@ export default function HomePage() {
         setNativeSignInError(null);
         console.log('[TapTalk] Starting native Google Sign-In...');
 
-        // Check if Capacitor bridge is available
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const win = window as any;
-        if (!win.Capacitor) {
-          setDebugInfo(`ERROR: No Capacitor bridge!`);
-          throw new Error('Capacitor bridge not available');
-        }
-        console.log('[TapTalk] Capacitor bridge found');
+        console.log('[TapTalk] Starting native sign-in...');
 
         // Dynamic import for Capacitor plugin
         const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
@@ -623,12 +601,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white overflow-hidden">
-      {/* Debug Banner - REMOVE BEFORE PRODUCTION */}
-      {debugInfo && (
-        <div className="fixed top-0 left-0 right-0 z-[9999] bg-yellow-500 text-black text-xs p-2 font-mono">
-          DEBUG v2: {debugInfo}
-        </div>
-      )}
       {/* Animated Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         {/* Morphing Gradient Blobs */}
