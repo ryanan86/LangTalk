@@ -8,16 +8,24 @@ import Link from 'next/link';
 import { useLanguage, LanguageToggle } from '@/lib/i18n';
 import { Flag } from '@/components/Icons';
 import TapTalkLogo from '@/components/TapTalkLogo';
-import { Capacitor } from '@capacitor/core';
-
 // Helper function to check if running in Capacitor native app (must be called at runtime)
 function checkIsCapacitor(): boolean {
   if (typeof window === 'undefined') return false;
-  try {
-    return Capacitor.isNativePlatform();
-  } catch {
-    return false;
-  }
+
+  // Check multiple indicators for Capacitor WebView
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isCapacitorUA = userAgent.includes('capacitor') ||
+                        (userAgent.includes('android') && !userAgent.includes('wv'));
+
+  // Also check for Capacitor global object
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const win = window as any;
+  const hasCapacitorGlobal = !!(win.Capacitor?.isNativePlatform?.() || win.Capacitor?.getPlatform);
+
+  console.log('[TapTalk] checkIsCapacitor - UA:', userAgent.substring(0, 100));
+  console.log('[TapTalk] checkIsCapacitor - isCapacitorUA:', isCapacitorUA, 'hasCapacitorGlobal:', hasCapacitorGlobal);
+
+  return isCapacitorUA || hasCapacitorGlobal;
 }
 
 // Typewriter Effect Hook
