@@ -9,9 +9,13 @@ import { useLanguage, LanguageToggle } from '@/lib/i18n';
 import { Flag } from '@/components/Icons';
 import TapTalkLogo from '@/components/TapTalkLogo';
 
-// Check if running in Capacitor native app
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const isCapacitor = typeof window !== 'undefined' && !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
+// Helper function to check if running in Capacitor native app (must be called at runtime)
+function checkIsCapacitor(): boolean {
+  if (typeof window === 'undefined') return false;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const win = window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } };
+  return !!win.Capacitor?.isNativePlatform?.();
+}
 
 // Typewriter Effect Hook
 function useTypewriter(texts: string[], typingSpeed = 80, deletingSpeed = 40, pauseTime = 2000) {
@@ -261,17 +265,25 @@ export default function HomePage() {
 
   // Handle Google Sign-In (native for Capacitor, web for browser)
   const handleGoogleSignIn = useCallback(async () => {
-    if (isCapacitor) {
+    // Check at runtime if we're in Capacitor
+    const isNativeApp = checkIsCapacitor();
+    console.log('[TapTalk] Google Sign-In - isNativeApp:', isNativeApp);
+
+    if (isNativeApp) {
       try {
         setIsGoogleLoading(true);
+        console.log('[TapTalk] Starting native Google Sign-In...');
         // Dynamic import for Capacitor plugin (only in native app)
         const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
+        console.log('[TapTalk] GoogleAuth imported, initializing...');
         await GoogleAuth.initialize({
           clientId: '670234764770-sib307dj55oj4pg2d5cu1k27i7u5hith.apps.googleusercontent.com',
           scopes: ['profile', 'email'],
           grantOfflineAccess: true,
         });
+        console.log('[TapTalk] GoogleAuth initialized, signing in...');
         const result = await GoogleAuth.signIn();
+        console.log('[TapTalk] GoogleAuth signIn result:', result);
 
         // Sign in with NextAuth using the Google credential
         await signIn('google-native', {
@@ -285,7 +297,7 @@ export default function HomePage() {
         // Reload to update session
         window.location.reload();
       } catch (error) {
-        console.error('Google Sign-In error:', error);
+        console.error('[TapTalk] Google Sign-In error:', error);
         // Fallback to web sign-in
         signIn('google');
       } finally {
@@ -293,6 +305,7 @@ export default function HomePage() {
       }
     } else {
       // Web: use standard NextAuth
+      console.log('[TapTalk] Using web Google Sign-In');
       signIn('google');
     }
   }, []);
