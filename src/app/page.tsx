@@ -294,7 +294,12 @@ export default function HomePage() {
   const handleGoogleSignIn = useCallback(async () => {
     // Check at runtime if we're on Android (native app or mobile browser)
     const isAndroid = isAndroidWebView();
-    console.log('[TapTalk] Google Sign-In - isAndroid:', isAndroid);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const hasCap = !!(window as any).Capacitor;
+
+    // Update debug info to show button was clicked
+    setDebugInfo(`CLICKED! Android:${isAndroid} Cap:${hasCap}`);
+    console.log('[TapTalk] Google Sign-In - isAndroid:', isAndroid, 'hasCap:', hasCap);
 
     if (isAndroid) {
       try {
@@ -306,6 +311,7 @@ export default function HomePage() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const win = window as any;
         if (!win.Capacitor) {
+          setDebugInfo(`ERROR: No Capacitor bridge!`);
           throw new Error('Capacitor bridge not available');
         }
         console.log('[TapTalk] Capacitor bridge found');
