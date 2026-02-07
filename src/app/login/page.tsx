@@ -3,7 +3,6 @@
 import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useState, useEffect, useCallback } from 'react';
-import { Capacitor } from '@capacitor/core';
 import TapTalkLogo from '@/components/TapTalkLogo';
 
 // Check if running on Android
@@ -12,32 +11,46 @@ function isAndroidDevice(): boolean {
   return /Android/i.test(navigator.userAgent);
 }
 
+// Check Capacitor availability
+async function checkCapacitor(): Promise<{ isNative: boolean; platform: string }> {
+  try {
+    const { Capacitor } = await import('@capacitor/core');
+    return {
+      isNative: Capacitor.isNativePlatform(),
+      platform: Capacitor.getPlatform(),
+    };
+  } catch {
+    return { isNative: false, platform: 'web' };
+  }
+}
+
 function LoginContent() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/';
   const error = searchParams.get('error');
 
-  const [debugInfo, setDebugInfo] = useState('');
+  const [debugInfo, setDebugInfo] = useState('Loading...');
   const [nativeError, setNativeError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [capInfo, setCapInfo] = useState<{ isNative: boolean; platform: string } | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const isAndroid = isAndroidDevice();
-      const isNative = Capacitor.isNativePlatform();
-      const platform = Capacitor.getPlatform();
-      setDebugInfo(`LOGIN: Android:${isAndroid} Native:${isNative} Platform:${platform}`);
+      checkCapacitor().then((info) => {
+        setCapInfo(info);
+        setDebugInfo(`LOGIN: Android:${isAndroid} Native:${info.isNative} Platform:${info.platform}`);
+      });
     }
   }, []);
 
   const handleGoogleSignIn = useCallback(async () => {
     const isAndroid = isAndroidDevice();
-    const isNative = Capacitor.isNativePlatform();
-    const platform = Capacitor.getPlatform();
+    const info = capInfo || await checkCapacitor();
 
-    setDebugInfo(`CLICKED! Android:${isAndroid} Native:${isNative} Platform:${platform}`);
+    setDebugInfo(`CLICKED! Android:${isAndroid} Native:${info.isNative} Platform:${info.platform}`);
 
-    if (isAndroid && isNative) {
+    if (isAndroid && info.isNative) {
       // Native sign-in path
       try {
         setIsLoading(true);
