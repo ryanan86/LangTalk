@@ -1,6 +1,10 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import KakaoProvider from 'next-auth/providers/kakao';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { OAuth2Client } from 'google-auth-library';
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const handler = NextAuth({
   providers: [
@@ -16,6 +20,45 @@ const handler = NextAuth({
     KakaoProvider({
       clientId: process.env.KAKAO_CLIENT_ID!,
       clientSecret: process.env.KAKAO_CLIENT_SECRET!,
+    }),
+    // Native Google Sign-In for Capacitor apps
+    CredentialsProvider({
+      id: 'google-native',
+      name: 'Google Native',
+      credentials: {
+        idToken: { label: 'ID Token', type: 'text' },
+        email: { label: 'Email', type: 'email' },
+        name: { label: 'Name', type: 'text' },
+        image: { label: 'Image', type: 'text' },
+      },
+      async authorize(credentials) {
+        if (!credentials?.idToken || !credentials?.email) {
+          return null;
+        }
+
+        try {
+          // Verify the Google ID token
+          const ticket = await googleClient.verifyIdToken({
+            idToken: credentials.idToken,
+            audience: process.env.GOOGLE_CLIENT_ID,
+          });
+          const payload = ticket.getPayload();
+
+          if (!payload || payload.email !== credentials.email) {
+            return null;
+          }
+
+          return {
+            id: payload.sub || credentials.email,
+            email: credentials.email,
+            name: credentials.name || payload.name,
+            image: credentials.image || payload.picture,
+          };
+        } catch (error) {
+          console.error('Google token verification failed:', error);
+          return null;
+        }
+      },
     }),
   ],
   callbacks: {

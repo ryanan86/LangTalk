@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import Image from 'next/image';
@@ -8,6 +8,10 @@ import Link from 'next/link';
 import { useLanguage, LanguageToggle } from '@/lib/i18n';
 import { Flag } from '@/components/Icons';
 import TapTalkLogo from '@/components/TapTalkLogo';
+
+// Check if running in Capacitor native app
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const isCapacitor = typeof window !== 'undefined' && !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
 
 // Typewriter Effect Hook
 function useTypewriter(texts: string[], typingSpeed = 80, deletingSpeed = 40, pauseTime = 2000) {
@@ -252,6 +256,46 @@ export default function HomePage() {
 
   // Animation states
   const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  // Handle Google Sign-In (native for Capacitor, web for browser)
+  const handleGoogleSignIn = useCallback(async () => {
+    if (isCapacitor) {
+      try {
+        setIsGoogleLoading(true);
+        // Dynamic import for Capacitor plugin (only in native app)
+        const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
+        await GoogleAuth.initialize({
+          clientId: '670234764770-sib307dj55oj4pg2d5cu1k27i7u5hith.apps.googleusercontent.com',
+          scopes: ['profile', 'email'],
+          grantOfflineAccess: true,
+        });
+        const result = await GoogleAuth.signIn();
+
+        // Sign in with NextAuth using the Google credential
+        await signIn('google-native', {
+          idToken: result.authentication.idToken,
+          email: result.email,
+          name: result.name || result.givenName,
+          image: result.imageUrl,
+          redirect: false,
+        });
+
+        // Reload to update session
+        window.location.reload();
+      } catch (error) {
+        console.error('Google Sign-In error:', error);
+        // Fallback to web sign-in
+        signIn('google');
+      } finally {
+        setIsGoogleLoading(false);
+      }
+    } else {
+      // Web: use standard NextAuth
+      signIn('google');
+    }
+  }, []);
 
   // Typewriter texts
   const typewriterTextsKo = [
@@ -616,7 +660,7 @@ export default function HomePage() {
                   {/* Desktop: Google + Kakao buttons */}
                   <div className="hidden sm:flex items-center gap-3">
                     <button
-                      onClick={() => signIn('google')}
+                      onClick={handleGoogleSignIn}
                       className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white font-medium hover:bg-white/20 transition-all hover:scale-105 shadow-lg"
                     >
                       <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -988,7 +1032,7 @@ export default function HomePage() {
                   <p className="text-white/50 mb-6">{language === 'ko' ? '간편하게 시작하세요' : 'Get started easily'}</p>
                   <div className="flex flex-col gap-3">
                     <button
-                      onClick={() => signIn('google')}
+                      onClick={handleGoogleSignIn}
                       className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white text-black font-medium hover:bg-white/90 transition-all hover:scale-105"
                     >
                       <svg className="w-5 h-5" viewBox="0 0 24 24">

@@ -7,8 +7,8 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://taptalk.xyz',
     androidScheme: 'https',
-    // Only allow taptalk domains - Google OAuth will open in external browser (Chrome)
-    allowNavigation: ['taptalk.xyz', '*.taptalk.xyz'],
+    // Allow Google domains for OAuth within WebView (User-Agent modified to bypass restriction)
+    allowNavigation: ['taptalk.xyz', '*.taptalk.xyz', 'accounts.google.com', '*.google.com', '*.googleapis.com', '*.gstatic.com'],
   },
   plugins: {
     SplashScreen: {
@@ -16,6 +16,11 @@ const config: CapacitorConfig = {
       launchShowDuration: 0,
       backgroundColor: '#1a1a2e',
       showSpinner: false,
+    },
+    GoogleAuth: {
+      scopes: ['profile', 'email'],
+      serverClientId: '670234764770-sib307dj55oj4pg2d5cu1k27i7u5hith.apps.googleusercontent.com',
+      forceCodeForRefreshToken: true,
     },
   },
   android: {
