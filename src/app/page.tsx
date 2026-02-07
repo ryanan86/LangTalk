@@ -8,13 +8,16 @@ import Link from 'next/link';
 import { useLanguage, LanguageToggle } from '@/lib/i18n';
 import { Flag } from '@/components/Icons';
 import TapTalkLogo from '@/components/TapTalkLogo';
+import { Capacitor } from '@capacitor/core';
 
 // Helper function to check if running in Capacitor native app (must be called at runtime)
 function checkIsCapacitor(): boolean {
   if (typeof window === 'undefined') return false;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const win = window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } };
-  return !!win.Capacitor?.isNativePlatform?.();
+  try {
+    return Capacitor.isNativePlatform();
+  } catch {
+    return false;
+  }
 }
 
 // Typewriter Effect Hook
