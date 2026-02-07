@@ -18,6 +18,9 @@ export interface AgeGroupConfig {
   conjunctionExamples: string;
   grammarFocus: string[];
   correctionStyle: string;
+  // i+1 stretch learning: slightly above current level to promote growth
+  stretchTarget: string; // What to gradually introduce from the next level
+  stretchMaxWords: number; // Slightly higher word limit for stretching
 }
 
 const AGE_GROUPS: AgeGroupConfig[] = [
@@ -25,45 +28,53 @@ const AGE_GROUPS: AgeGroupConfig[] = [
     key: 'young_child',
     ageRange: [3, 8],
     maxCorrectionWords: 8,
-    vocabularyLevel: 'Basic 500 words (sight words, everyday objects, simple verbs)',
+    vocabularyLevel: '기초 500단어 (sight words, 일상 사물, 간단한 동사)',
     useIdioms: false,
     useConjunctions: false,
     conjunctionExamples: '',
     grammarFocus: ['simple present tense', 'singular/plural', 'basic pronouns', 'simple questions'],
-    correctionStyle: 'Very short and simple. Use only words a 5-8 year old would know. Example: "I goed" → "I went to school."',
+    correctionStyle: '매우 짧고 간단하게. 5-8세가 이해할 수 있는 단어만 사용. 예: "I goed" → "I went to school."',
+    stretchTarget: '다음 단계 맛보기: and, but 같은 기본 접속사를 한두 개 슬쩍 넣어서 문장 연결 시도',
+    stretchMaxWords: 10, // 기본 8 + 2 여유
   },
   {
     key: 'older_child',
     ageRange: [9, 12],
     maxCorrectionWords: 15,
-    vocabularyLevel: 'Basic + elementary academic words (describe, compare, explain)',
+    vocabularyLevel: '기초 + 초등 학술어휘 (describe, compare, explain)',
     useIdioms: false,
     useConjunctions: true,
     conjunctionExamples: 'and, but, because, so',
     grammarFocus: ['past tense', 'future tense', 'comparative/superlative', 'basic prepositions'],
-    correctionStyle: 'Clear and encouraging. Use simple connectors. Example: "I like it because is fun" → "I like it because it is really fun."',
+    correctionStyle: '명확하고 격려하는 톤. 간단한 접속사 사용. 예: "I like it because is fun" → "I like it because it is really fun."',
+    stretchTarget: '다음 단계 맛보기: 때때로 however, also 같은 중급 접속사 소개, 형용사를 2개 연결해서 표현력 강화',
+    stretchMaxWords: 18, // 기본 15 + 3 여유
   },
   {
     key: 'teenager',
     ageRange: [13, 17],
     maxCorrectionWords: 25,
-    vocabularyLevel: 'Intermediate + academic vocabulary (analyze, significant, perspective)',
+    vocabularyLevel: '중급 + 학술어휘 (analyze, significant, perspective)',
     useIdioms: true,
     useConjunctions: true,
     conjunctionExamples: 'however, although, therefore, moreover, while',
     grammarFocus: ['complex tenses', 'passive voice', 'conditional sentences', 'relative clauses'],
-    correctionStyle: 'Natural and slightly challenging. Include idiomatic expressions. Example: "I think is good idea" → "I genuinely think this is a great idea, especially because it addresses the main issue."',
+    correctionStyle: '자연스럽고 약간 도전적. 관용구 포함 가능. 예: "I think is good idea" → "I think this is a really good idea because it solves the main problem."',
+    stretchTarget: '다음 단계 맛보기: 가끔 고급 연결어(furthermore, consequently) 소개, 수동태나 가정법 활용',
+    stretchMaxWords: 30, // 기본 25 + 5 여유
   },
   {
     key: 'adult',
     ageRange: [18, 120],
     maxCorrectionWords: 35,
-    vocabularyLevel: 'Advanced + collocations + professional/academic register',
+    vocabularyLevel: '고급 + 콜로케이션 + 전문/학술적 표현',
     useIdioms: true,
     useConjunctions: true,
     conjunctionExamples: 'nevertheless, furthermore, consequently, notwithstanding, in light of',
     grammarFocus: ['all tenses', 'subjunctive mood', 'inversion', 'cleft sentences', 'advanced modals'],
-    correctionStyle: 'Native-level sophistication. Use rich collocations and nuanced expressions. Example: "I think is good" → "I genuinely believe this is an excellent approach, particularly given the current circumstances."',
+    correctionStyle: '원어민 수준의 정교함. 풍부한 콜로케이션과 뉘앙스 표현 사용. 예: "I think is good" → "I genuinely believe this is an excellent approach, particularly given the current circumstances."',
+    stretchTarget: '현재 최고 수준: 학술/비즈니스 고급 표현, 미묘한 뉘앙스 차이, 원어민도 감탄할 표현 추구',
+    stretchMaxWords: 40, // 기본 35 + 5 여유
   },
 ];
 

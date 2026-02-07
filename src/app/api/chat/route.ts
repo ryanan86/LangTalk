@@ -135,25 +135,32 @@ ANALYSIS FOCUS:
 ${ageGroup && adaptiveDifficulty ? `LEARNER AGE GROUP: ${ageGroup.key}
 EFFECTIVE DIFFICULTY: ${adaptiveDifficulty.difficulty}/5
 
-CORRECTION RULES FOR THIS LEARNER:
-- Maximum correction sentence length: ${ageGroup.maxCorrectionWords} words
-- Vocabulary level: ${ageGroup.vocabularyLevel}
-- Grammar focus: ${ageGroup.grammarFocus.join(', ')}
-- Use idioms: ${ageGroup.useIdioms ? 'Yes' : 'No'}
-- Use conjunctions: ${ageGroup.useConjunctions ? 'Yes' + (ageGroup.conjunctionExamples ? ' (' + ageGroup.conjunctionExamples + ')' : '') : 'No'}
+=== 교정 규칙 (i+1 원칙: 현재 수준보다 살짝 위로) ===
+- 교정 문장 길이: ${ageGroup.maxCorrectionWords}~${ageGroup.stretchMaxWords}단어 (약간의 스트레칭 허용)
+- 어휘 수준: ${ageGroup.vocabularyLevel}
+- 문법 초점: ${ageGroup.grammarFocus.join(', ')}
+- 관용구 사용: ${ageGroup.useIdioms ? '가능' : '아직 사용하지 않음'}
+- 접속사 사용: ${ageGroup.useConjunctions ? '사용 (' + ageGroup.conjunctionExamples + ')' : '아직 사용하지 않음'}
 
-${adaptiveDifficulty.weakAreas.length > 0 ? `PRIORITY WEAK AREAS (focus 60% of corrections here):
+=== 성장을 위한 스트레칭 (i+1) ===
+${ageGroup.stretchTarget}
+
+${adaptiveDifficulty.weakAreas.length > 0 ? `=== 우선 약점 영역 (교정의 60%를 여기에 집중) ===
 ${adaptiveDifficulty.weakAreas.map(w => '- ' + w).join('\n')}
 ` : ''}
-AGE-SPECIFIC CORRECTION STYLE:
+=== 연령별 교정 스타일 ===
 ${ageGroup.correctionStyle}
 
-IMPORTANT: Keep ALL corrected sentences within ${ageGroup.maxCorrectionWords} words. Do NOT use vocabulary or structures beyond the learner's level.
+핵심 원칙:
+1. 현재 수준과 동일한 교정 X → 배울 게 없음
+2. 너무 높은 수준의 교정 X → 이해 불가
+3. 현재보다 살짝 위 수준으로 교정 O → 성장 유도
+4. 교정 문장은 ${ageGroup.stretchMaxWords}단어 이내로 유지
 ` : ''}
 For EACH correction, provide:
 - What they said (even if grammatically correct but too short)
 - What they probably wanted to express (their intent)
-- A MUCH BETTER version that is ${ageGroup ? 'appropriate for their age group' : 'longer, more natural, and uses connectors (that, which, who, because, so, and then, especially when, which means)'}
+- A MUCH BETTER version that is ${ageGroup ? '학습자 수준보다 살짝 높은 i+1 수준 (성장 유도)' : 'longer, more natural, and uses connectors (that, which, who, because, so, and then, especially when, which means)'}
 - Clear explanation of WHY the improved version is better
 
 LEVEL EVALUATION (US Grade Equivalent):
