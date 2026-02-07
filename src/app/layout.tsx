@@ -62,8 +62,9 @@ export default function RootLayout({
   const lang = cookieStore.get('lang')?.value || 'ko';
 
   return (
-    <html lang={lang}>
+    <html lang={lang} translate="no">
       <head>
+        <meta name="google" content="notranslate" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
