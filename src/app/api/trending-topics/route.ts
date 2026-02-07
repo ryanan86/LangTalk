@@ -58,7 +58,8 @@ export async function POST(request: NextRequest) {
     } = body;
 
     const ageGroup = birthYear ? ageGroupFromBirthYear(birthYear) : 'high';
-    const isKorean = language === 'ko';
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _language = language; // Reserved for future localization
 
     // Get current date for context
     const today = new Date().toISOString().split('T')[0];
