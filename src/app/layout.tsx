@@ -59,7 +59,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const cookieStore = cookies();
-  const lang = cookieStore.get('lang')?.value || 'ko';
+  const lang = cookieStore.get('lang')?.value || 'en';
 
   return (
     <html lang={lang} translate="no">

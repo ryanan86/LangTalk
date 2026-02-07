@@ -536,7 +536,7 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language>('ko');
+  const [language, setLanguage] = useState<Language>('en');
 
   useEffect(() => {
     const saved = localStorage.getItem('taptalk-language') as Language;
@@ -544,8 +544,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       setLanguage(saved);
       document.cookie = `lang=${saved};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
     } else {
-      // Set default cookie
-      document.cookie = `lang=ko;path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
+      // Set default cookie (English for global service)
+      document.cookie = `lang=en;path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
     }
   }, []);
 

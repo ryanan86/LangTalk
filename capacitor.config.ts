@@ -7,6 +7,7 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://taptalk.xyz',
     androidScheme: 'https',
+    allowNavigation: ['taptalk.xyz', '*.taptalk.xyz', '*.google.com', '*.googleapis.com'],
   },
   plugins: {
     SplashScreen: {
@@ -16,10 +17,9 @@ const config: CapacitorConfig = {
     },
   },
   android: {
-    buildOptions: {
-      keystorePath: undefined,
-      keystoreAlias: undefined,
-    },
+    allowMixedContent: true,
+    captureInput: true,
+    webContentsDebuggingEnabled: false,
   },
 };
 
