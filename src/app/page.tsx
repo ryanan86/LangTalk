@@ -8,24 +8,23 @@ import Link from 'next/link';
 import { useLanguage, LanguageToggle } from '@/lib/i18n';
 import { Flag } from '@/components/Icons';
 import TapTalkLogo from '@/components/TapTalkLogo';
-// Helper function to check if running in Capacitor native app (must be called at runtime)
-function checkIsCapacitor(): boolean {
+// Helper function to check if running in Android WebView (Capacitor app)
+function isAndroidWebView(): boolean {
   if (typeof window === 'undefined') return false;
 
-  // Check multiple indicators for Capacitor WebView
-  const userAgent = navigator.userAgent.toLowerCase();
-  const isCapacitorUA = userAgent.includes('capacitor') ||
-                        (userAgent.includes('android') && !userAgent.includes('wv'));
-
-  // Also check for Capacitor global object
+  const userAgent = navigator.userAgent;
+  // Android WebView detection: has 'Android' and 'wv' in user agent, or has Capacitor bridge
+  const isAndroid = /Android/i.test(userAgent);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const win = window as any;
-  const hasCapacitorGlobal = !!(win.Capacitor?.isNativePlatform?.() || win.Capacitor?.getPlatform);
+  const hasCapacitor = !!(win.Capacitor);
 
-  console.log('[TapTalk] checkIsCapacitor - UA:', userAgent.substring(0, 100));
-  console.log('[TapTalk] checkIsCapacitor - isCapacitorUA:', isCapacitorUA, 'hasCapacitorGlobal:', hasCapacitorGlobal);
+  // If on Android and either has Capacitor or is in a WebView context (not standalone Chrome)
+  const isWebView = isAndroid && (hasCapacitor || !userAgent.includes('Chrome/'));
 
-  return isCapacitorUA || hasCapacitorGlobal;
+  console.log('[TapTalk] isAndroidWebView check - isAndroid:', isAndroid, 'hasCapacitor:', hasCapacitor, 'result:', isWebView);
+
+  return isAndroid; // Try native sign-in for ALL Android (WebView or browser on device)
 }
 
 // Typewriter Effect Hook
@@ -274,49 +273,54 @@ export default function HomePage() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-  // Handle Google Sign-In (native for Capacitor, web for browser)
+  // Handle Google Sign-In (native for Android, web for browser)
   const handleGoogleSignIn = useCallback(async () => {
-    // Check at runtime if we're in Capacitor
-    const isNativeApp = checkIsCapacitor();
-    console.log('[TapTalk] Google Sign-In - isNativeApp:', isNativeApp);
+    // Check at runtime if we're on Android (native app or mobile browser)
+    const isAndroid = isAndroidWebView();
+    console.log('[TapTalk] Google Sign-In - isAndroid:', isAndroid);
 
-    if (isNativeApp) {
+    if (isAndroid) {
       try {
         setIsGoogleLoading(true);
         console.log('[TapTalk] Starting native Google Sign-In...');
-        // Dynamic import for Capacitor plugin (only in native app)
+        // Dynamic import for Capacitor plugin
         const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
         console.log('[TapTalk] GoogleAuth imported, initializing...');
+
+        // Initialize with Android client ID
         await GoogleAuth.initialize({
           clientId: '670234764770-sib307dj55oj4pg2d5cu1k27i7u5hith.apps.googleusercontent.com',
           scopes: ['profile', 'email'],
           grantOfflineAccess: true,
         });
         console.log('[TapTalk] GoogleAuth initialized, signing in...');
+
         const result = await GoogleAuth.signIn();
-        console.log('[TapTalk] GoogleAuth signIn result:', result);
+        console.log('[TapTalk] GoogleAuth signIn result:', JSON.stringify(result));
 
         // Sign in with NextAuth using the Google credential
-        await signIn('google-native', {
+        const signInResult = await signIn('google-native', {
           idToken: result.authentication.idToken,
           email: result.email,
           name: result.name || result.givenName,
           image: result.imageUrl,
           redirect: false,
         });
+        console.log('[TapTalk] NextAuth signIn result:', signInResult);
 
         // Reload to update session
         window.location.reload();
       } catch (error) {
-        console.error('[TapTalk] Google Sign-In error:', error);
-        // Fallback to web sign-in
+        console.error('[TapTalk] Native Google Sign-In error:', error);
+        console.log('[TapTalk] Falling back to web sign-in...');
+        // Fallback to web sign-in only if native fails
         signIn('google');
       } finally {
         setIsGoogleLoading(false);
       }
     } else {
-      // Web: use standard NextAuth
-      console.log('[TapTalk] Using web Google Sign-In');
+      // Web (desktop): use standard NextAuth
+      console.log('[TapTalk] Using web Google Sign-In (desktop)');
       signIn('google');
     }
   }, []);
