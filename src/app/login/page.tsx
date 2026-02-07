@@ -5,33 +5,29 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense, useState, useEffect, useCallback } from 'react';
 import TapTalkLogo from '@/components/TapTalkLogo';
 
+// Check if running in TapTalk native app (via User-Agent)
+function isTapTalkNativeApp(): boolean {
+  if (typeof window === 'undefined') return false;
+  return navigator.userAgent.includes('TapTalkNative');
+}
+
 // Check if running on Android
 function isAndroidDevice(): boolean {
   if (typeof window === 'undefined') return false;
   return /Android/i.test(navigator.userAgent);
 }
 
-// Check Capacitor availability - check window.Capacitor directly (injected by WebView)
-function checkCapacitor(): { isNative: boolean; platform: string; source: string } {
+// Get platform info for debugging
+function getPlatformInfo(): { isNative: boolean; isAndroid: boolean; ua: string } {
   if (typeof window === 'undefined') {
-    return { isNative: false, platform: 'ssr', source: 'ssr' };
+    return { isNative: false, isAndroid: false, ua: 'ssr' };
   }
-
-  // Check for Capacitor object injected by the native WebView
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const windowCap = (window as unknown as { Capacitor?: any }).Capacitor;
-
-  if (windowCap) {
-    const isNative = typeof windowCap.isNativePlatform === 'function'
-      ? windowCap.isNativePlatform()
-      : !!windowCap.isNative;
-    const platform = typeof windowCap.getPlatform === 'function'
-      ? windowCap.getPlatform()
-      : (windowCap.platform || 'unknown');
-    return { isNative, platform, source: 'window' };
-  }
-
-  return { isNative: false, platform: 'web', source: 'none' };
+  const ua = navigator.userAgent;
+  return {
+    isNative: ua.includes('TapTalkNative'),
+    isAndroid: /Android/i.test(ua),
+    ua: ua.substring(0, 60),
+  };
 }
 
 function LoginContent() {
@@ -42,24 +38,21 @@ function LoginContent() {
   const [debugInfo, setDebugInfo] = useState('Loading...');
   const [nativeError, setNativeError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [capInfo, setCapInfo] = useState<{ isNative: boolean; platform: string; source: string } | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const isAndroid = isAndroidDevice();
-      const info = checkCapacitor();
-      setCapInfo(info);
-      setDebugInfo(`LOGIN v3: Android:${isAndroid} Native:${info.isNative} Plat:${info.platform} Src:${info.source}`);
+      const info = getPlatformInfo();
+      setDebugInfo(`LOGIN v4: Native:${info.isNative} Android:${info.isAndroid} UA:${info.ua}`);
     }
   }, []);
 
   const handleGoogleSignIn = useCallback(async () => {
+    const isNative = isTapTalkNativeApp();
     const isAndroid = isAndroidDevice();
-    const info = capInfo || checkCapacitor();
 
-    setDebugInfo(`CLICKED! Android:${isAndroid} Native:${info.isNative} Plat:${info.platform} Src:${info.source}`);
+    setDebugInfo(`CLICKED! Native:${isNative} Android:${isAndroid}`);
 
-    if (isAndroid && info.isNative) {
+    if (isNative && isAndroid) {
       // Native sign-in path
       try {
         setIsLoading(true);
@@ -97,10 +90,10 @@ function LoginContent() {
       }
     } else {
       // Web OAuth - not in native app
-      setDebugInfo(`Web OAuth: Android:${isAndroid} Native:${info.isNative}`);
+      setDebugInfo(`Web OAuth: Native:${isNative} Android:${isAndroid}`);
       signIn('google', { callbackUrl });
     }
-  }, [callbackUrl, capInfo]);
+  }, [callbackUrl]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
