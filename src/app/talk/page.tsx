@@ -121,6 +121,11 @@ function TalkContent() {
   const summaryRef = useRef<HTMLDivElement>(null);
   const [isSavingImage, setIsSavingImage] = useState(false);
 
+  // Comprehensive AI Evaluation state
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [comprehensiveEval, setComprehensiveEval] = useState<any>(null);
+  const [isLoadingEval, setIsLoadingEval] = useState(false);
+
   // Save summary as image
   const saveAsImage = async () => {
     if (!summaryRef.current) return;
@@ -302,6 +307,34 @@ function TalkContent() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, analysis, currentReviewIndex, hasPlayedReviewIntro, lastPlayedReviewIndex, isPlaying]);
+
+  // Fetch comprehensive AI evaluation when entering review phase
+  useEffect(() => {
+    if (phase === 'review' && messages.length > 0 && !comprehensiveEval && !isLoadingEval) {
+      const userMessages = messages.filter(m => m.role === 'user').map(m => m.content);
+      if (userMessages.length === 0) return;
+
+      setIsLoadingEval(true);
+      fetch('/api/ai-evaluate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userMessages,
+          birthYear,
+          language,
+        }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.evaluation) {
+            setComprehensiveEval(data.evaluation);
+          }
+        })
+        .catch(err => console.error('Comprehensive evaluation error:', err))
+        .finally(() => setIsLoadingEval(false));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, messages, birthYear, language]);
 
   // Auto-play summary feedback
   useEffect(() => {
@@ -1514,6 +1547,182 @@ function TalkContent() {
 
                     {analysis.levelDetails.summary && (
                       <p className="mt-3 text-xs sm:text-sm text-neutral-600 italic">{analysis.levelDetails.summary}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* International Standards Comprehensive Evaluation */}
+                {(isLoadingEval || comprehensiveEval) && (
+                  <div className="card-premium p-4 sm:p-6 mb-4 bg-gradient-to-br from-slate-50 to-blue-50">
+                    <h3 className="font-semibold text-neutral-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
+                      <span className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </span>
+                      {language === 'ko' ? '국제학교 표준 평가' : 'International Standards Assessment'}
+                    </h3>
+
+                    {isLoadingEval ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        <span className="ml-3 text-sm text-neutral-600">
+                          {language === 'ko' ? '종합 평가 분석 중...' : 'Analyzing with international standards...'}
+                        </span>
+                      </div>
+                    ) : comprehensiveEval && (
+                      <>
+                        {/* Equivalent Levels Summary */}
+                        {comprehensiveEval.summary?.equivalentLevel && (
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                            <div className="bg-white/80 rounded-lg p-2 text-center">
+                              <p className="text-[10px] text-neutral-500">US Grade</p>
+                              <p className="text-sm font-bold text-neutral-900">{comprehensiveEval.summary.equivalentLevel.usGrade}</p>
+                            </div>
+                            <div className="bg-white/80 rounded-lg p-2 text-center">
+                              <p className="text-[10px] text-neutral-500">UK Year</p>
+                              <p className="text-sm font-bold text-neutral-900">{comprehensiveEval.summary.equivalentLevel.ukYear}</p>
+                            </div>
+                            <div className="bg-white/80 rounded-lg p-2 text-center">
+                              <p className="text-[10px] text-neutral-500">CEFR</p>
+                              <p className="text-sm font-bold text-blue-600">{comprehensiveEval.summary.equivalentLevel.cefr}</p>
+                            </div>
+                            <div className="bg-white/80 rounded-lg p-2 text-center">
+                              <p className="text-[10px] text-neutral-500">Lexile</p>
+                              <p className="text-sm font-bold text-neutral-900">{comprehensiveEval.summary.equivalentLevel.lexile}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 6 Framework Scores Grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+                          {/* SR Score */}
+                          {comprehensiveEval.sr && (
+                            <div className="bg-white/80 rounded-lg p-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-medium text-indigo-600">SR</span>
+                                <span className="text-[10px] text-neutral-500">Star Reading</span>
+                              </div>
+                              <p className="text-lg font-bold text-neutral-900">GE {comprehensiveEval.sr.gradeEquivalent}</p>
+                              <p className="text-[10px] text-neutral-500">
+                                {language === 'ko' ? '스케일드 점수' : 'Scaled'}: {comprehensiveEval.sr.scaledScore}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* AR Score */}
+                          {comprehensiveEval.ar && (
+                            <div className="bg-white/80 rounded-lg p-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-medium text-green-600">AR</span>
+                                <span className="text-[10px] text-neutral-500">ATOS</span>
+                              </div>
+                              <p className="text-lg font-bold text-neutral-900">{comprehensiveEval.ar.level}</p>
+                              <p className="text-[10px] text-neutral-500">
+                                Lexile: {comprehensiveEval.ar.lexileEquivalent}L
+                              </p>
+                            </div>
+                          )}
+
+                          {/* IB Score */}
+                          {comprehensiveEval.ib && (
+                            <div className="bg-white/80 rounded-lg p-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-medium text-amber-600">IB</span>
+                                <span className="text-[10px] text-neutral-500">Language B</span>
+                              </div>
+                              <p className="text-lg font-bold text-neutral-900">
+                                Phase {comprehensiveEval.ib.phase} ({comprehensiveEval.ib.level})
+                              </p>
+                              <p className="text-[10px] text-neutral-500">
+                                {language === 'ko' ? '등급' : 'Grade'}: {comprehensiveEval.ib.gradeDescriptor}/7
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Cambridge CEFR */}
+                          {comprehensiveEval.cambridge && (
+                            <div className="bg-white/80 rounded-lg p-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-medium text-blue-600">Cambridge</span>
+                              </div>
+                              <p className="text-lg font-bold text-neutral-900">{comprehensiveEval.cambridge.cefrLevel}</p>
+                              <p className="text-[10px] text-neutral-500">
+                                {comprehensiveEval.cambridge.cambridgeExam}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* SAT Score */}
+                          {comprehensiveEval.sat && (
+                            <div className="bg-white/80 rounded-lg p-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-medium text-purple-600">SAT</span>
+                                <span className="text-[10px] text-neutral-500">Writing</span>
+                              </div>
+                              <p className="text-lg font-bold text-neutral-900">{comprehensiveEval.sat.estimatedScore}</p>
+                              <p className="text-[10px] text-neutral-500">
+                                {comprehensiveEval.sat.collegeReadiness}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* MAP RIT Score */}
+                          {comprehensiveEval.map && (
+                            <div className="bg-white/80 rounded-lg p-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-medium text-rose-600">MAP</span>
+                                <span className="text-[10px] text-neutral-500">NWEA</span>
+                              </div>
+                              <p className="text-lg font-bold text-neutral-900">RIT {comprehensiveEval.map.ritScore}</p>
+                              <p className="text-[10px] text-neutral-500">
+                                {comprehensiveEval.map.gradeLevel}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Gap Analysis */}
+                        {comprehensiveEval.gapAnalysis && (
+                          <div className="bg-white/60 rounded-lg p-3 mb-3">
+                            <p className="text-xs font-medium text-neutral-700 mb-1">
+                              {language === 'ko' ? '갭 분석 (텍스트 난이도 vs 학생 능력)' : 'Gap Analysis (Text vs Ability)'}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                comprehensiveEval.gapAnalysis.status === 'at-level' ? 'bg-green-100 text-green-700' :
+                                comprehensiveEval.gapAnalysis.status === 'challenging-self' ? 'bg-blue-100 text-blue-700' :
+                                'bg-amber-100 text-amber-700'
+                              }`}>
+                                {comprehensiveEval.gapAnalysis.status === 'at-level'
+                                  ? (language === 'ko' ? '적정 수준' : 'At Level')
+                                  : comprehensiveEval.gapAnalysis.status === 'challenging-self'
+                                  ? (language === 'ko' ? '도전 중' : 'Challenging Self')
+                                  : (language === 'ko' ? '잠재력 미만' : 'Below Potential')}
+                              </span>
+                              <span className="text-xs text-neutral-600">
+                                {comprehensiveEval.gapAnalysis.recommendation}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Priority Areas */}
+                        {comprehensiveEval.summary?.priorityImprovement && comprehensiveEval.summary.priorityImprovement.length > 0 && (
+                          <div className="bg-amber-50/50 rounded-lg p-3">
+                            <p className="text-xs font-medium text-amber-800 mb-2">
+                              {language === 'ko' ? '우선 개선 영역' : 'Priority Improvement Areas'}
+                            </p>
+                            <ul className="space-y-1">
+                              {comprehensiveEval.summary.priorityImprovement.slice(0, 3).map((area: string, idx: number) => (
+                                <li key={idx} className="text-xs text-amber-700 flex items-start gap-1">
+                                  <span>•</span> {area}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
