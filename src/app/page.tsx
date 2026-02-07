@@ -273,6 +273,9 @@ export default function HomePage() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
+  // State for native sign-in error debugging
+  const [nativeSignInError, setNativeSignInError] = useState<string | null>(null);
+
   // Handle Google Sign-In (native for Android, web for browser)
   const handleGoogleSignIn = useCallback(async () => {
     // Check at runtime if we're on Android (native app or mobile browser)
@@ -282,7 +285,17 @@ export default function HomePage() {
     if (isAndroid) {
       try {
         setIsGoogleLoading(true);
+        setNativeSignInError(null);
         console.log('[TapTalk] Starting native Google Sign-In...');
+
+        // Check if Capacitor bridge is available
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const win = window as any;
+        if (!win.Capacitor) {
+          throw new Error('Capacitor bridge not available');
+        }
+        console.log('[TapTalk] Capacitor bridge found');
+
         // Dynamic import for Capacitor plugin
         const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
         console.log('[TapTalk] GoogleAuth imported, initializing...');
@@ -311,10 +324,10 @@ export default function HomePage() {
         // Reload to update session
         window.location.reload();
       } catch (error) {
-        console.error('[TapTalk] Native Google Sign-In error:', error);
-        console.log('[TapTalk] Falling back to web sign-in...');
-        // Fallback to web sign-in only if native fails
-        signIn('google');
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error('[TapTalk] Native Google Sign-In error:', errorMessage);
+        setNativeSignInError(errorMessage);
+        // Don't auto-fallback - show the error to user for debugging
       } finally {
         setIsGoogleLoading(false);
       }
@@ -323,6 +336,12 @@ export default function HomePage() {
       console.log('[TapTalk] Using web Google Sign-In (desktop)');
       signIn('google');
     }
+  }, []);
+
+  // Force web sign-in (for when native fails)
+  const handleWebSignIn = useCallback(() => {
+    setNativeSignInError(null);
+    signIn('google');
   }, []);
 
   // Typewriter texts
@@ -1680,6 +1699,41 @@ export default function HomePage() {
           <p className="text-white/30 text-sm">{t.footer}</p>
         </div>
       </footer>
+
+      {/* Native Sign-In Error Display (for debugging) */}
+      {nativeSignInError && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-red-900/95 border-t border-red-500/50 backdrop-blur-sm">
+          <div className="max-w-lg mx-auto">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
+                <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-red-200">
+                  {language === 'ko' ? 'Native 로그인 오류:' : 'Native Sign-In Error:'}
+                </p>
+                <p className="text-xs text-red-300/80 mt-1 break-all">{nativeSignInError}</p>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={handleWebSignIn}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                {language === 'ko' ? '웹 로그인 사용' : 'Use Web Sign-In'}
+              </button>
+              <button
+                onClick={() => setNativeSignInError(null)}
+                className="px-4 py-2 text-sm font-medium text-red-300 hover:text-red-200 transition-colors"
+              >
+                {language === 'ko' ? '닫기' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
