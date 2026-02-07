@@ -53,39 +53,51 @@ function LoginContent() {
     setDebugInfo(`CLICKED! Native:${isNative} Android:${isAndroid}`);
 
     if (isNative && isAndroid) {
-      // Native sign-in path
+      // Native sign-in path using TapTalkAuth interface
       try {
         setIsLoading(true);
         setNativeError(null);
 
-        const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
-
-        await GoogleAuth.initialize({
-          clientId: '670234764770-sib307dj55oj4pg2d5cu1k27i7u5hith.apps.googleusercontent.com',
-          scopes: ['profile', 'email'],
-          grantOfflineAccess: true,
-        });
-
-        const result = await GoogleAuth.signIn();
-
-        const signInResult = await signIn('google-native', {
-          idToken: result.authentication.idToken,
-          email: result.email,
-          name: result.name || result.givenName,
-          image: result.imageUrl,
-          redirect: false,
-        });
-
-        if (signInResult?.ok) {
-          window.location.href = callbackUrl;
-        } else {
-          setNativeError('로그인 실패');
+        // Check if TapTalkAuth interface is available
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const TapTalkAuth = (window as any).TapTalkAuth;
+        if (!TapTalkAuth) {
+          throw new Error('TapTalkAuth interface not available');
         }
+
+        // Set up callbacks for native auth result
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (window as any).onTapTalkAuthSuccess = async (result: { idToken: string; email: string; name: string; photoUrl: string }) => {
+          setDebugInfo(`Auth success: ${result.email}`);
+          const signInResult = await signIn('google-native', {
+            idToken: result.idToken,
+            email: result.email,
+            name: result.name,
+            image: result.photoUrl,
+            redirect: false,
+          });
+
+          if (signInResult?.ok) {
+            window.location.href = callbackUrl;
+          } else {
+            setNativeError('로그인 실패');
+            setIsLoading(false);
+          }
+        };
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (window as any).onTapTalkAuthError = (error: string) => {
+          setNativeError(error);
+          setDebugInfo(`ERROR: ${error}`);
+          setIsLoading(false);
+        };
+
+        // Call native sign-in
+        TapTalkAuth.signInWithGoogle();
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         setNativeError(msg);
         setDebugInfo(`ERROR: ${msg}`);
-      } finally {
         setIsLoading(false);
       }
     } else {
