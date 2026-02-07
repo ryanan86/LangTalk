@@ -6,11 +6,12 @@ import { LanguageProvider } from "@/lib/i18n";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 
 export const viewport: Viewport = {
-  themeColor: '#2563eb',
+  themeColor: '#1a1a2e',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: 'cover',
 };
 
 export const metadata: Metadata = {

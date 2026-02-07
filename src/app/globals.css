@@ -363,11 +363,47 @@ body {
   }
 }
 
-/* Safe Area for Mobile */
-@supports (padding-bottom: env(safe-area-inset-bottom)) {
+/* Safe Area for Mobile - Edge to Edge Display */
+@supports (padding: env(safe-area-inset-top)) {
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right);
+  }
+  .safe-area-all {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* For full-screen content that needs safe area margins */
+  .min-h-screen-safe {
+    min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    min-height: 100dvh;
+  }
+}
+
+/* Dynamic viewport height for mobile browsers */
+html, body {
+  height: 100%;
+}
+
+.h-screen-dynamic {
+  height: 100vh;
+  height: 100dvh;
+}
+
+.min-h-screen-dynamic {
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* Prevent Text Selection on UI Elements */
