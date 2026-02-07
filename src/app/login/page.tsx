@@ -11,17 +11,26 @@ function isAndroidDevice(): boolean {
   return /Android/i.test(navigator.userAgent);
 }
 
-// Check Capacitor availability
-async function checkCapacitor(): Promise<{ isNative: boolean; platform: string }> {
-  try {
-    const { Capacitor } = await import('@capacitor/core');
-    return {
-      isNative: Capacitor.isNativePlatform(),
-      platform: Capacitor.getPlatform(),
-    };
-  } catch {
-    return { isNative: false, platform: 'web' };
+// Check Capacitor availability - check window.Capacitor directly (injected by WebView)
+function checkCapacitor(): { isNative: boolean; platform: string; source: string } {
+  if (typeof window === 'undefined') {
+    return { isNative: false, platform: 'ssr', source: 'ssr' };
   }
+
+  // Check for Capacitor object injected by the native WebView
+  const windowCap = (window as any).Capacitor;
+
+  if (windowCap) {
+    const isNative = typeof windowCap.isNativePlatform === 'function'
+      ? windowCap.isNativePlatform()
+      : !!windowCap.isNative;
+    const platform = typeof windowCap.getPlatform === 'function'
+      ? windowCap.getPlatform()
+      : (windowCap.platform || 'unknown');
+    return { isNative, platform, source: 'window' };
+  }
+
+  return { isNative: false, platform: 'web', source: 'none' };
 }
 
 function LoginContent() {
@@ -32,23 +41,22 @@ function LoginContent() {
   const [debugInfo, setDebugInfo] = useState('Loading...');
   const [nativeError, setNativeError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [capInfo, setCapInfo] = useState<{ isNative: boolean; platform: string } | null>(null);
+  const [capInfo, setCapInfo] = useState<{ isNative: boolean; platform: string; source: string } | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const isAndroid = isAndroidDevice();
-      checkCapacitor().then((info) => {
-        setCapInfo(info);
-        setDebugInfo(`LOGIN: Android:${isAndroid} Native:${info.isNative} Platform:${info.platform}`);
-      });
+      const info = checkCapacitor();
+      setCapInfo(info);
+      setDebugInfo(`LOGIN v3: Android:${isAndroid} Native:${info.isNative} Plat:${info.platform} Src:${info.source}`);
     }
   }, []);
 
   const handleGoogleSignIn = useCallback(async () => {
     const isAndroid = isAndroidDevice();
-    const info = capInfo || await checkCapacitor();
+    const info = capInfo || checkCapacitor();
 
-    setDebugInfo(`CLICKED! Android:${isAndroid} Native:${info.isNative} Platform:${info.platform}`);
+    setDebugInfo(`CLICKED! Android:${isAndroid} Native:${info.isNative} Plat:${info.platform} Src:${info.source}`);
 
     if (isAndroid && info.isNative) {
       // Native sign-in path
