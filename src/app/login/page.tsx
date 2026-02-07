@@ -18,7 +18,8 @@ function checkCapacitor(): { isNative: boolean; platform: string; source: string
   }
 
   // Check for Capacitor object injected by the native WebView
-  const windowCap = (window as any).Capacitor;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const windowCap = (window as unknown as { Capacitor?: any }).Capacitor;
 
   if (windowCap) {
     const isNative = typeof windowCap.isNativePlatform === 'function'
