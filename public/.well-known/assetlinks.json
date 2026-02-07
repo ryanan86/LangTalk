@@ -5,7 +5,8 @@
       "namespace": "android_app",
       "package_name": "com.taptalk.app",
       "sha256_cert_fingerprints": [
-        "CF:ED:62:74:E8:6D:34:7B:B5:0C:8A:AA:20:BC:8C:41:D7:D7:AA:3B:4A:B8:D2:3E:9E:B7:39:D4:4F:9B:DC:56"
+        "CF:ED:62:74:E8:6D:34:7B:B5:0C:8A:AA:20:BC:8C:41:D7:D7:AA:3B:4A:B8:D2:3E:9E:B7:39:D4:4F:9B:DC:56",
+        "9D:C6:E5:A0:25:E2:0B:CE:13:BB:DF:3B:A9:4D:CC:76:C0:BA:1D:66:90:36:5C:5C:8A:E7:ED:BB:C7:2B:D2:30"
       ]
     }
   }
