@@ -7,7 +7,8 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://taptalk.xyz',
     androidScheme: 'https',
-    allowNavigation: ['taptalk.xyz', '*.taptalk.xyz', '*.google.com', '*.googleapis.com'],
+    // Only allow taptalk domains - Google OAuth will open in external browser (Chrome)
+    allowNavigation: ['taptalk.xyz', '*.taptalk.xyz'],
   },
   plugins: {
     SplashScreen: {
