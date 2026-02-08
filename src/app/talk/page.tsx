@@ -970,14 +970,28 @@ function TalkContent() {
     return <div className="min-h-screen flex items-center justify-center">Invalid tutor</div>;
   }
 
+  // Dynamic theme based on phase
+  const isDarkPhase = phase === 'interview' || phase === 'recording';
+
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col">
+    <div className={`min-h-screen flex flex-col transition-colors duration-500 ${
+      isDarkPhase ? 'bg-neutral-950' : 'bg-neutral-50'
+    }`}>
       <audio ref={audioRef} onEnded={() => setIsPlaying(false)} />
 
-      {/* Header - pt-12 for Android status bar + notch clearance */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-neutral-200 px-4 sm:px-6 pb-3 sm:pb-4 sticky top-0 z-50 pt-12">
+      {/* Header - Premium Glass Effect */}
+      <header className={`px-4 sm:px-6 pb-3 sm:pb-4 sticky top-0 z-50 pt-12 transition-colors duration-500 ${
+        isDarkPhase
+          ? 'bg-neutral-950/80 backdrop-blur-xl border-b border-white/5'
+          : 'bg-white/80 backdrop-blur-md border-b border-neutral-200'
+      }`}>
         <div className="max-w-2xl mx-auto flex justify-between items-center">
-          <button onClick={() => router.push('/')} className="text-neutral-500 hover:text-neutral-700 p-1">
+          <button
+            onClick={() => router.push('/')}
+            className={`p-2 rounded-xl transition-colors ${
+              isDarkPhase ? 'text-white/60 hover:text-white hover:bg-white/5' : 'text-neutral-500 hover:text-neutral-700'
+            }`}
+          >
             <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -990,13 +1004,18 @@ function TalkContent() {
               speaking={isPlaying}
             />
             <div>
-              <h2 className="font-semibold text-neutral-900 text-sm sm:text-base">{persona.name}</h2>
-              <p className="text-xs text-neutral-500">{getPhaseText()}</p>
+              <h2 className={`font-semibold text-sm sm:text-base ${isDarkPhase ? 'text-white' : 'text-neutral-900'}`}>
+                {persona.name}
+              </h2>
+              <p className={`text-xs ${isDarkPhase ? 'text-white/50' : 'text-neutral-500'}`}>{getPhaseText()}</p>
             </div>
           </div>
 
           {phase === 'interview' && conversationTime >= 60 && (
-            <button onClick={getAnalysis} className="text-xs sm:text-sm text-primary-600 font-medium hover:text-primary-700">
+            <button
+              onClick={getAnalysis}
+              className="text-xs sm:text-sm text-primary-400 font-semibold hover:text-primary-300 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+            >
               {t.done}
             </button>
           )}
@@ -1004,17 +1023,19 @@ function TalkContent() {
         </div>
       </header>
 
-      {/* Progress Bar */}
-      <div className="bg-white border-b border-neutral-100 px-4 sm:px-6 py-2">
+      {/* Progress Bar - Adaptive Theme */}
+      <div className={`px-4 sm:px-6 py-3 transition-colors duration-500 ${
+        isDarkPhase ? 'bg-neutral-950' : 'bg-white border-b border-neutral-100'
+      }`}>
         <div className="max-w-2xl mx-auto">
-          <div className="flex gap-1">
+          <div className="flex gap-1.5">
             {['recording', 'interview', 'review', 'shadowing', 'summary'].map((step, idx) => (
               <div
                 key={step}
-                className={`h-1 flex-1 rounded-full transition-colors ${
+                className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
                   ['ready', 'recording', 'interview', 'analysis', 'review', 'shadowing', 'summary'].indexOf(phase) > idx
                     ? 'bg-primary-500'
-                    : 'bg-neutral-200'
+                    : isDarkPhase ? 'bg-white/10' : 'bg-neutral-200'
                 }`}
               />
             ))}
@@ -1078,54 +1099,87 @@ function TalkContent() {
           </div>
         )}
 
-        {/* ========== RECORDING PHASE ========== */}
+        {/* ========== RECORDING PHASE - Dark Premium UI ========== */}
         {phase === 'recording' && (
-          <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
-            <div className="relative mb-6 sm:mb-8">
-              <svg className="w-32 h-32 sm:w-40 sm:h-40 timer-circle" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="45" stroke="#E5E5E5" />
-                <circle
-                  cx="50" cy="50" r="45"
-                  stroke={timeLeft >= 30 ? '#22C55E' : '#4F46E5'}
-                  strokeDasharray={`${Math.min(timeLeft / 30, 1) * 283} 283`}
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className={`text-3xl sm:text-4xl font-bold ${timeLeft >= 30 ? 'text-green-600' : 'text-neutral-900'}`}>
-                  {formatTime(timeLeft)}
-                </span>
+          <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 relative">
+            {/* Ambient Glow */}
+            <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[300px] h-[300px] rounded-full bg-primary-500/10 blur-3xl" />
+
+            <div className="relative mb-8 sm:mb-10 z-10">
+              {/* Timer Ring */}
+              <div className="relative">
+                <svg className="w-36 h-36 sm:w-44 sm:h-44 timer-circle" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="45" stroke="rgba(255,255,255,0.1)" />
+                  <circle
+                    cx="50" cy="50" r="45"
+                    stroke={timeLeft >= 30 ? '#22C55E' : '#7C3AED'}
+                    strokeDasharray={`${Math.min(timeLeft / 30, 1) * 283} 283`}
+                    className="transition-all duration-300"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className={`text-4xl sm:text-5xl font-bold ${timeLeft >= 30 ? 'text-green-400' : 'text-white'}`}>
+                    {formatTime(timeLeft)}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-1 h-8 mb-4 sm:mb-6">
-              {[...Array(5)].map((_, i) => (<div key={i} className="voice-bar" />))}
+            {/* Voice Visualizer */}
+            <div className="flex items-center justify-center gap-1.5 h-12 mb-6 relative z-10">
+              {[1,2,3,4,5,4,3,2,1].map((h, i) => (
+                <div
+                  key={i}
+                  className="w-1 bg-primary-400 rounded-full animate-pulse"
+                  style={{
+                    height: `${h * 8}px`,
+                    animationDelay: `${i * 0.05}s`,
+                    animationDuration: '0.6s'
+                  }}
+                />
+              ))}
             </div>
 
             {timeLeft < 30 ? (
               <>
-                <p className="text-neutral-600 mb-2 text-base sm:text-lg">{t.speakFreely}</p>
-                <p className="text-neutral-400 text-xs sm:text-sm mb-6 sm:mb-8">{t.keepGoing30}</p>
+                <p className="text-white/80 mb-2 text-base sm:text-lg font-medium relative z-10">{t.speakFreely}</p>
+                <p className="text-white/40 text-xs sm:text-sm mb-8 relative z-10">{t.keepGoing30}</p>
               </>
             ) : (
               <>
-                <p className="text-green-600 mb-2 text-base sm:text-lg font-medium">{t.greatKeepGoing}</p>
-                <p className="text-neutral-400 text-xs sm:text-sm mb-6 sm:mb-8">{t.moreYouShare}</p>
+                <p className="text-green-400 mb-2 text-base sm:text-lg font-semibold relative z-10">{t.greatKeepGoing}</p>
+                <p className="text-white/40 text-xs sm:text-sm mb-8 relative z-10">{t.moreYouShare}</p>
               </>
             )}
 
             <button
               onClick={() => stopRecording()}
-              className="px-6 sm:px-8 py-3 rounded-2xl font-medium transition-colors bg-green-500 text-white hover:bg-green-600 text-sm sm:text-base"
+              className="relative z-10 px-8 py-4 rounded-2xl font-semibold transition-all bg-green-500 text-white hover:bg-green-400 shadow-lg shadow-green-500/30 hover:shadow-green-500/40 hover:-translate-y-0.5 text-base"
             >
               {t.doneSpeaking} ({formatTime(timeLeft)})
             </button>
           </div>
         )}
 
-        {/* ========== INTERVIEW PHASE ========== */}
+        {/* ========== INTERVIEW PHASE - Premium Dark UI ========== */}
         {phase === 'interview' && (
           <>
-            <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
+            {/* Ambient Background Glow */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <div
+                className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[400px] h-[400px] rounded-full opacity-20"
+                style={{
+                  background: `radial-gradient(circle, ${
+                    isRecordingReply ? 'rgba(239,68,68,0.4)' :
+                    isPlaying ? 'rgba(124,58,237,0.4)' :
+                    'rgba(124,58,237,0.2)'
+                  } 0%, transparent 70%)`,
+                  transition: 'background 0.5s ease',
+                }}
+              />
+            </div>
+
+            <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 relative z-10">
               {/* Tutor Avatar with Status */}
               <TutorAvatarLarge
                 tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
@@ -1137,19 +1191,19 @@ function TalkContent() {
                 }
               />
 
-              <div className="text-center mt-4 mb-6 sm:mb-8">
+              <div className="text-center mt-6 mb-8">
                 {/* Show transcript toggle button when AI is speaking */}
                 {(streamingText || isPlaying) && (
                   <div className="mb-4 px-4">
                     {showTranscript ? (
-                      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-sm max-w-sm mx-auto">
-                        <p className="text-neutral-800 text-sm sm:text-base leading-relaxed">
+                      <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 border border-white/10 max-w-sm mx-auto">
+                        <p className="text-white/90 text-sm sm:text-base leading-relaxed">
                           {streamingText || messages[messages.length - 1]?.content}
-                          {streamingText && <span className="inline-block w-1.5 h-4 bg-primary-500 ml-0.5 animate-pulse" />}
+                          {streamingText && <span className="inline-block w-1.5 h-4 bg-primary-400 ml-0.5 animate-pulse" />}
                         </p>
                         <button
                           onClick={() => setShowTranscript(false)}
-                          className="mt-2 text-xs text-neutral-400 hover:text-neutral-600"
+                          className="mt-3 text-xs text-white/40 hover:text-white/60 transition-colors"
                         >
                           {language === 'ko' ? '텍스트 숨기기' : 'Hide text'}
                         </button>
@@ -1157,7 +1211,7 @@ function TalkContent() {
                     ) : (
                       <button
                         onClick={() => setShowTranscript(true)}
-                        className="text-xs text-neutral-400 hover:text-neutral-600 flex items-center gap-1 mx-auto"
+                        className="text-xs text-white/40 hover:text-white/60 flex items-center gap-1.5 mx-auto transition-colors"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -1170,65 +1224,84 @@ function TalkContent() {
                 )}
 
                 {isPlaying && (
-                  <p className="text-neutral-600 font-medium text-sm sm:text-base">{persona.name}{t.speaking}</p>
+                  <p className="text-white/70 font-medium text-sm sm:text-base">{persona.name}{t.speaking}</p>
                 )}
                 {isProcessing && !isPlaying && !streamingText && (
                   <div className="flex flex-col items-center">
                     <div className="flex gap-2 mb-3">
-                      <div className="loading-dot" />
-                      <div className="loading-dot" />
-                      <div className="loading-dot" />
+                      {[1,2,3].map(i => (
+                        <div key={i} className="w-2 h-2 bg-primary-400 rounded-full animate-pulse" style={{ animationDelay: `${i * 0.15}s` }} />
+                      ))}
                     </div>
-                    <p className="text-neutral-500 text-sm sm:text-base">{t.thinking}</p>
+                    <p className="text-white/50 text-sm sm:text-base">{t.thinking}</p>
                   </div>
                 )}
                 {isRecordingReply && (
                   <div className="flex flex-col items-center">
-                    <div className="flex items-center gap-1 h-8 mb-3">
-                      {[...Array(5)].map((_, i) => (<div key={i} className="voice-bar" style={{ backgroundColor: '#EF4444' }} />))}
+                    <div className="flex items-center gap-1 h-10 mb-3">
+                      {[1,2,3,4,5].map((i) => (
+                        <div
+                          key={i}
+                          className="w-1 bg-red-500 rounded-full animate-pulse"
+                          style={{
+                            height: `${12 + Math.random() * 20}px`,
+                            animationDelay: `${i * 0.1}s`,
+                            animationDuration: '0.4s'
+                          }}
+                        />
+                      ))}
                     </div>
-                    <p className="text-red-500 font-medium text-sm sm:text-base">{t.recordingVoice}</p>
+                    <p className="text-red-400 font-medium text-sm sm:text-base">{t.recordingVoice}</p>
                   </div>
                 )}
                 {!isPlaying && !isProcessing && !isRecordingReply && !streamingText && (
-                  <p className="text-neutral-500 text-sm sm:text-base">{t.tapToSpeak}</p>
+                  <p className="text-white/40 text-sm sm:text-base">{t.tapToSpeak}</p>
                 )}
               </div>
 
               <div ref={messagesEndRef} className="hidden" />
             </div>
 
-            <div className="p-4 sm:p-6 bg-white border-t border-neutral-200">
-              <div className="flex gap-2 sm:gap-3">
-                <button
-                  onClick={recordReply}
-                  disabled={isProcessing || isPlaying}
-                  className={`flex-1 py-3 sm:py-4 rounded-2xl font-medium flex items-center justify-center gap-2 transition-all text-sm sm:text-base ${
-                    isRecordingReply
-                      ? 'bg-red-500 text-white recording-active'
-                      : isProcessing || isPlaying
-                        ? 'bg-neutral-100 text-neutral-400'
-                        : 'btn-primary'
-                  }`}
-                >
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                  </svg>
-                  {isRecordingReply ? t.stop : isPlaying ? t.listening : isProcessing ? t.processing : t.reply}
-                </button>
+            {/* Bottom Control Panel - Premium Glass */}
+            <div className="p-4 sm:p-6 bg-neutral-900/80 backdrop-blur-xl border-t border-white/5">
+              <div className="max-w-md mx-auto">
+                <div className="flex gap-3">
+                  {/* Main Record Button */}
+                  <button
+                    onClick={recordReply}
+                    disabled={isProcessing || isPlaying}
+                    className={`flex-1 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2.5 transition-all text-base ${
+                      isRecordingReply
+                        ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 recording-active'
+                        : isProcessing || isPlaying
+                          ? 'bg-white/5 text-white/30 cursor-not-allowed'
+                          : 'bg-primary-600 text-white hover:bg-primary-500 shadow-lg shadow-primary-500/20 hover:shadow-primary-500/30 hover:-translate-y-0.5'
+                    }`}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                    {isRecordingReply ? t.stop : isPlaying ? t.listening : isProcessing ? t.processing : t.reply}
+                  </button>
 
-                <button
-                  onClick={getAnalysis}
-                  disabled={isProcessing || isPlaying || isRecordingReply}
-                  className="px-4 sm:px-6 py-3 sm:py-4 rounded-2xl font-medium bg-neutral-800 text-white hover:bg-neutral-900 transition-all disabled:bg-neutral-300 disabled:text-neutral-500 text-sm sm:text-base"
-                >
-                  {t.done}
-                </button>
+                  {/* Done Button */}
+                  <button
+                    onClick={getAnalysis}
+                    disabled={isProcessing || isPlaying || isRecordingReply}
+                    className="px-6 py-4 rounded-2xl font-semibold bg-white/10 text-white hover:bg-white/15 border border-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed text-base"
+                  >
+                    {t.done}
+                  </button>
+                </div>
+
+                {/* Timer */}
+                <div className="flex items-center justify-center gap-2 mt-4">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                  <p className="text-white/40 text-sm font-medium tracking-wide">
+                    {formatTime(conversationTime)} / {formatTime(maxConversationTime)}
+                  </p>
+                </div>
               </div>
-
-              <p className="text-center text-neutral-400 text-xs sm:text-sm mt-3">
-                {formatTime(conversationTime)} / {formatTime(maxConversationTime)}
-              </p>
             </div>
           </>
         )}
