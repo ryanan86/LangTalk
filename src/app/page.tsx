@@ -191,8 +191,12 @@ export default function HomePage() {
   const audioChunksRef = useRef<Blob[]>([]);
 
   // Voice preview states
-  const [playingVoice, setPlayingVoice] = useState<string | null>(null);
-  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Video hover states
+  const [hoveredTutor, setHoveredTutor] = useState<string | null>(null);
+  const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
+  const tutorFileNameMap: Record<string, string> = { henly: 'henry' };
+  const getTutorFileName = (id: string) => tutorFileNameMap[id] || id;
 
   // Animation states
   const [mounted, setMounted] = useState(false);
@@ -467,57 +471,6 @@ export default function HomePage() {
       setSignupMessage(language === 'ko' ? '신청 중 오류가 발생했습니다.' : 'An error occurred during signup.');
     } finally {
       setIsSigningUp(false);
-    }
-  };
-
-  const playVoicePreview = async (persona: Persona, e: React.MouseEvent) => {
-    e.stopPropagation();
-
-    if (playingVoice === persona.id) {
-      if (previewAudioRef.current) {
-        previewAudioRef.current.pause();
-        previewAudioRef.current = null;
-      }
-      setPlayingVoice(null);
-      return;
-    }
-
-    if (previewAudioRef.current) {
-      previewAudioRef.current.pause();
-    }
-
-    setPlayingVoice(persona.id);
-
-    try {
-      const response = await fetch('/api/text-to-speech', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: persona.sampleText,
-          voice: persona.voice,
-        }),
-      });
-
-      if (!response.ok) throw new Error('TTS failed');
-
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
-      previewAudioRef.current = audio;
-
-      audio.onended = () => {
-        setPlayingVoice(null);
-        URL.revokeObjectURL(audioUrl);
-      };
-
-      audio.onerror = () => {
-        setPlayingVoice(null);
-        URL.revokeObjectURL(audioUrl);
-      };
-
-      await audio.play();
-    } catch {
-      setPlayingVoice(null);
     }
   };
 
@@ -1009,7 +962,44 @@ export default function HomePage() {
                         return (
                           <button
                             key={persona.id}
-                            onClick={() => setSelectedPersona(persona.id)}
+                            onClick={() => {
+                              setSelectedPersona(persona.id);
+                              // Mobile: toggle video on tap
+                              if ('ontouchstart' in window) {
+                                if (hoveredTutor === persona.id) {
+                                  setHoveredTutor(null);
+                                  const video = videoRefs.current[persona.id];
+                                  if (video) { video.pause(); video.currentTime = 0; }
+                                } else {
+                                  // Stop previous video
+                                  if (hoveredTutor) {
+                                    const prev = videoRefs.current[hoveredTutor];
+                                    if (prev) { prev.pause(); prev.currentTime = 0; }
+                                  }
+                                  setHoveredTutor(persona.id);
+                                  const video = videoRefs.current[persona.id];
+                                  if (video) { video.currentTime = 0; video.play().catch(() => {}); }
+                                }
+                              }
+                            }}
+                            onMouseEnter={() => {
+                              if ('ontouchstart' in window) return;
+                              setHoveredTutor(persona.id);
+                              const video = videoRefs.current[persona.id];
+                              if (video) {
+                                video.currentTime = 0;
+                                video.play().catch(() => {});
+                              }
+                            }}
+                            onMouseLeave={() => {
+                              if ('ontouchstart' in window) return;
+                              setHoveredTutor(null);
+                              const video = videoRefs.current[persona.id];
+                              if (video) {
+                                video.pause();
+                                video.currentTime = 0;
+                              }
+                            }}
                             className={`group relative text-center transition-all duration-300 ${
                               isSelected ? 'scale-[1.02]' : 'hover:scale-[1.02]'
                             }`}
@@ -1017,27 +1007,38 @@ export default function HomePage() {
                             {/* Card Container */}
                             <div className={`relative rounded-3xl overflow-hidden transition-all duration-300 ${
                               isSelected
-                                ? 'bg-gradient-to-b from-purple-500/20 to-transparent ring-2 ring-purple-500'
-                                : 'bg-gradient-to-b from-neutral-100 dark:from-white/5 to-transparent hover:from-neutral-200 dark:hover:from-white/10'
+                                ? 'bg-white dark:bg-neutral-800 ring-2 ring-purple-500'
+                                : 'bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700'
                             }`}>
-                              {/* Large Profile Image - No circular frame */}
-                              <div className="relative h-44 sm:h-56 lg:h-72 overflow-hidden">
-                                {/* Background Glow */}
-                                <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-2/3 bg-gradient-to-t ${persona.gradient} rounded-full blur-3xl opacity-30 group-hover:opacity-50 transition-opacity`} />
+                              {/* Video / Image Area */}
+                              <div className="relative h-44 sm:h-56 lg:h-72 overflow-hidden bg-white">
+                                {/* Tutor Video */}
+                                <video
+                                  ref={(el) => { videoRefs.current[persona.id] = el; }}
+                                  src={`/tutors/${getTutorFileName(persona.id)}_greeting.mp4`}
+                                  muted
+                                  playsInline
+                                  preload="metadata"
+                                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                                    hoveredTutor === persona.id ? 'opacity-100' : 'opacity-0'
+                                  }`}
+                                />
 
-                                {/* Tutor Image - Large cutout style filling the card */}
-                                <div className="absolute inset-0">
+                                {/* Tutor Image (default, hidden on hover) */}
+                                <div className={`absolute inset-0 transition-opacity duration-300 ${
+                                  hoveredTutor === persona.id ? 'opacity-0' : 'opacity-100'
+                                }`}>
                                   <Image
-                                    src={`/tutors/${persona.id}.png`}
+                                    src={`/tutors/${getTutorFileName(persona.id)}.png`}
                                     alt={persona.name}
                                     fill
-                                    className={`object-cover transition-transform duration-500 contrast-[1.02] ${
-                                      persona.id === 'emma' ? 'scale-110 group-hover:scale-115 object-top' :
-                                      persona.id === 'james' ? 'scale-105 group-hover:scale-110 object-top' :
-                                      persona.id === 'charlotte' ? 'scale-110 group-hover:scale-115 object-top' :
-                                      persona.id === 'alina' ? 'scale-110 group-hover:scale-115 object-top' :
-                                      persona.id === 'henly' ? 'scale-110 group-hover:scale-115 object-top' :
-                                      'scale-90 group-hover:scale-95 object-center'
+                                    className={`object-cover contrast-[1.02] ${
+                                      persona.id === 'emma' ? 'scale-110 object-top' :
+                                      persona.id === 'james' ? 'scale-105 object-top' :
+                                      persona.id === 'charlotte' ? 'scale-110 object-top' :
+                                      persona.id === 'alina' ? 'scale-110 object-top' :
+                                      persona.id === 'henly' ? 'scale-110 object-top' :
+                                      'scale-90 object-center'
                                     }`}
                                     style={{
                                       filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.3))',
@@ -1045,7 +1046,7 @@ export default function HomePage() {
                                     }}
                                     onError={(e) => {
                                       const target = e.target as HTMLImageElement;
-                                      target.src = `/tutors/${persona.id}.jpg`;
+                                      target.src = `/tutors/${getTutorFileName(persona.id)}.jpg`;
                                     }}
                                   />
                                 </div>
@@ -1063,40 +1064,22 @@ export default function HomePage() {
                                 <div className="absolute top-3 left-3 z-10 bg-white/90 backdrop-blur-sm rounded-md p-1 shadow-sm">
                                   <Flag country={persona.flag as 'US' | 'UK'} size={24} />
                                 </div>
+
+                                {/* Play indicator on hover */}
+                                {hoveredTutor !== persona.id && (
+                                  <div className="absolute bottom-3 right-3 z-10 bg-black/50 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M8 5v14l11-7z" />
+                                    </svg>
+                                  </div>
+                                )}
                               </div>
 
                               {/* Info Section */}
-                              <div className="relative p-4 sm:p-5 bg-gradient-to-t from-white/80 dark:from-black/40 to-transparent -mt-8 pt-12">
+                              <div className="relative p-4 sm:p-5">
                                 <h3 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white mb-1">{persona.name}</h3>
                                 <p className="text-neutral-500 dark:text-white/60 text-sm mb-1">{desc}</p>
-                                <p className="text-neutral-400 dark:text-white/40 text-xs mb-4">{style}</p>
-
-                                {/* Voice Preview Button */}
-                                <button
-                                  onClick={(e) => playVoicePreview(persona, e)}
-                                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                                    playingVoice === persona.id
-                                      ? 'bg-purple-500 text-white'
-                                      : 'bg-neutral-100 dark:bg-white/10 text-neutral-600 dark:text-white/70 hover:bg-neutral-200 dark:hover:bg-white/20 hover:text-neutral-900 dark:hover:text-white'
-                                  }`}
-                                >
-                                  {playingVoice === persona.id ? (
-                                    <>
-                                      <svg className="w-4 h-4 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
-                                        <rect x="6" y="4" width="4" height="16" rx="1" />
-                                        <rect x="14" y="4" width="4" height="16" rx="1" />
-                                      </svg>
-                                      {t.playing}
-                                    </>
-                                  ) : (
-                                    <>
-                                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M8 5v14l11-7z" />
-                                      </svg>
-                                      {t.previewVoice}
-                                    </>
-                                  )}
-                                </button>
+                                <p className="text-neutral-400 dark:text-white/40 text-xs">{style}</p>
                               </div>
                             </div>
                           </button>
