@@ -1,6 +1,6 @@
 'use client';
 
-import { reviewRow1, reviewRow2, reviewRow3, type Review } from './reviewData';
+import { reviews, type Review } from './reviewData';
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -8,7 +8,7 @@ function StarRating({ rating }: { rating: number }) {
       {Array.from({ length: 5 }).map((_, i) => (
         <svg
           key={i}
-          className={`w-3 h-3 ${i < rating ? 'text-yellow-400' : 'text-white/10'}`}
+          className={`w-2.5 h-2.5 ${i < rating ? 'text-yellow-400' : 'text-white/10'}`}
           fill="currentColor"
           viewBox="0 0 20 20"
         >
@@ -21,101 +21,72 @@ function StarRating({ rating }: { rating: number }) {
 
 function ReviewCard({ review }: { review: Review }) {
   return (
-    <div className="flex-shrink-0 w-[280px] sm:w-[300px] p-4 rounded-2xl bg-white/[0.03] dark:bg-white/[0.03] border border-white/[0.06] dark:border-white/[0.06] backdrop-blur-sm
-      light:bg-neutral-50 light:border-neutral-200
-      hover:bg-white/[0.06] dark:hover:bg-white/[0.06] transition-colors">
-      <div className="flex items-center gap-3 mb-2">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500/80 to-pink-500/80 flex items-center justify-center text-xs text-white font-bold">
+    <div className="flex-shrink-0 w-[260px] p-3 rounded-xl bg-neutral-100 dark:bg-white/[0.07] border border-neutral-200 dark:border-white/10 hover:bg-neutral-150 dark:hover:bg-white/10 transition-colors">
+      <div className="flex items-center gap-2 mb-1.5">
+        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-[10px] text-white font-bold">
           {review.initial}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium text-white/90 dark:text-white/90">{review.name}</div>
-          <div className="text-xs text-white/40 dark:text-white/40">{review.role}</div>
+          <div className="text-xs font-medium text-neutral-800 dark:text-white/90">{review.name}</div>
         </div>
         <StarRating rating={review.rating} />
       </div>
-      <p className="text-xs leading-relaxed text-white/60 dark:text-white/60">&ldquo;{review.text}&rdquo;</p>
-    </div>
-  );
-}
-
-function ScrollingRow({
-  reviews,
-  direction,
-  duration,
-}: {
-  reviews: Review[];
-  direction: 'left' | 'right';
-  duration: string;
-}) {
-  const animClass = direction === 'left' ? 'animate-[scroll-left_var(--duration)_linear_infinite]' : 'animate-[scroll-right_var(--duration)_linear_infinite]';
-
-  return (
-    <div className="relative overflow-hidden">
-      {/* Fade edges */}
-      <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-[var(--background)] to-transparent z-10 pointer-events-none" />
-      <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[var(--background)] to-transparent z-10 pointer-events-none" />
-
-      <div
-        className={`flex gap-4 ${animClass}`}
-        style={{ '--duration': duration } as React.CSSProperties}
-      >
-        {/* Duplicate for infinite loop */}
-        {[...reviews, ...reviews].map((review, i) => (
-          <ReviewCard key={`${review.name}-${i}`} review={review} />
-        ))}
-      </div>
+      <p className="text-[11px] leading-relaxed text-neutral-500 dark:text-white/60">&ldquo;{review.text}&rdquo;</p>
     </div>
   );
 }
 
 export default function TrustBadges({ language }: { language: 'ko' | 'en' }) {
   return (
-    <div className="mt-16 sm:mt-20">
+    <div className="mt-12 sm:mt-16">
       {/* Stats badges */}
-      <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 mb-10 sm:mb-14">
+      <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 mb-8">
         <div className="flex items-center gap-2">
           <div className="flex -space-x-1.5">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 border-2 border-[var(--background)] flex items-center justify-center text-[10px]">👩🏼</div>
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 border-2 border-[var(--background)] flex items-center justify-center text-[10px]">👨🏻</div>
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-400 to-purple-400 border-2 border-[var(--background)] flex items-center justify-center text-[10px]">👩🏽</div>
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 border-2 border-[var(--background)] flex items-center justify-center text-[9px]">👩🏼</div>
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 border-2 border-[var(--background)] flex items-center justify-center text-[9px]">👨🏻</div>
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-400 to-purple-400 border-2 border-[var(--background)] flex items-center justify-center text-[9px]">👩🏽</div>
           </div>
           <div>
-            <div className="text-sm font-bold text-[var(--text-primary)]">3{language === 'ko' ? '명의 AI 튜터' : ' AI Tutors'}</div>
-            <div className="text-xs text-[var(--text-muted)]">{language === 'ko' ? '원어민 수준 대화' : 'Native-level conversation'}</div>
+            <div className="text-xs font-bold text-[var(--text-primary)]">3{language === 'ko' ? '명의 AI 튜터' : ' AI Tutors'}</div>
           </div>
         </div>
 
-        <div className="w-px h-8 bg-[var(--border)] hidden sm:block" />
+        <div className="w-px h-6 bg-[var(--border)] hidden sm:block" />
 
         <div className="text-center">
-          <div className="text-sm font-bold text-[var(--text-primary)]">
+          <div className="text-xs font-bold text-[var(--text-primary)]">
             <span className="text-yellow-500">★</span> 4.9
           </div>
-          <div className="text-xs text-[var(--text-muted)]">{language === 'ko' ? '평균 만족도' : 'Avg. rating'}</div>
         </div>
 
-        <div className="w-px h-8 bg-[var(--border)] hidden sm:block" />
+        <div className="w-px h-6 bg-[var(--border)] hidden sm:block" />
 
         <div className="text-center">
-          <div className="text-sm font-bold text-[var(--text-primary)]">50K+</div>
-          <div className="text-xs text-[var(--text-muted)]">{language === 'ko' ? '대화 세션' : 'Conversations'}</div>
+          <div className="text-xs font-bold text-[var(--text-primary)]">50K+</div>
+          <div className="text-[10px] text-[var(--text-muted)]">{language === 'ko' ? '대화 세션' : 'Conversations'}</div>
         </div>
 
-        <div className="w-px h-8 bg-[var(--border)] hidden sm:block" />
+        <div className="w-px h-6 bg-[var(--border)] hidden sm:block" />
 
         <div className="text-center">
-          <div className="text-sm font-bold text-[var(--text-primary)]">24/7</div>
-          <div className="text-xs text-[var(--text-muted)]">{language === 'ko' ? '언제든 연습' : 'Practice anytime'}</div>
+          <div className="text-xs font-bold text-[var(--text-primary)]">24/7</div>
         </div>
       </div>
 
-      {/* Review carousel - 3 rows */}
-      <div className="space-y-4">
-        <ScrollingRow reviews={reviewRow1} direction="left" duration="30s" />
-        <ScrollingRow reviews={reviewRow2} direction="right" duration="35s" />
-        <div className="hidden md:block">
-          <ScrollingRow reviews={reviewRow3} direction="left" duration="40s" />
+      {/* Single row review carousel */}
+      <div className="relative overflow-hidden">
+        {/* Fade edges */}
+        <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[var(--background)] to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[var(--background)] to-transparent z-10 pointer-events-none" />
+
+        <div
+          className="flex gap-3 animate-[scroll-left_60s_linear_infinite]"
+        >
+          {/* All 21 reviews duplicated once for seamless loop — 60s duration ensures no visible repetition */}
+          {[...reviews, ...reviews].map((review, i) => (
+            <ReviewCard key={`${review.name}-${i}`} review={review} />
+          ))}
         </div>
       </div>
     </div>

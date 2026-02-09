@@ -1,181 +1,262 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { conversations, type ChatMessage } from './conversationScript';
-import MockupTypingIndicator from './MockupTypingIndicator';
+import { useState, useEffect, useCallback } from 'react';
 
-interface DisplayMessage extends ChatMessage {
-  id: string;
-  visible: boolean;
-}
+const TUTORS = [
+  {
+    name: 'Emma',
+    nationality: 'American',
+    gradient: 'from-rose-400 to-pink-500',
+    ringColor: 'ring-rose-400',
+    imagePath: '/tutors/emma.png',
+    flag: '🇺🇸',
+  },
+  {
+    name: 'James',
+    nationality: 'American',
+    gradient: 'from-blue-400 to-indigo-500',
+    ringColor: 'ring-blue-400',
+    imagePath: '/tutors/james.png',
+    flag: '🇺🇸',
+  },
+  {
+    name: 'Charlotte',
+    nationality: 'British',
+    gradient: 'from-violet-400 to-purple-500',
+    ringColor: 'ring-violet-400',
+    imagePath: '/tutors/charlotte.png',
+    flag: '🇬🇧',
+  },
+];
 
+type MockStatus = 'idle' | 'speaking' | 'listening' | 'thinking';
+
+/**
+ * 실제 TapTalk 대화 화면을 재현하는 목업
+ * - 큰 튜터 아바타 (중앙)
+ * - 상태 표시 (speaking / listening / thinking)
+ * - 음성 파형 애니메이션
+ * - 하단 마이크 버튼
+ */
 export default function MockupChat() {
-  const [displayMessages, setDisplayMessages] = useState<DisplayMessage[]>([]);
-  const [showTyping, setShowTyping] = useState(false);
-  const [conversationIndex, setConversationIndex] = useState(0);
-  const [currentTutor, setCurrentTutor] = useState(conversations[0]);
+  const [tutorIndex, setTutorIndex] = useState(0);
+  const [status, setStatus] = useState<MockStatus>('idle');
   const [transitioning, setTransitioning] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const timeoutRef = useRef<NodeJS.Timeout[]>([]);
+  const [timer, setTimer] = useState('0:42');
 
-  const clearTimeouts = useCallback(() => {
-    timeoutRef.current.forEach(clearTimeout);
-    timeoutRef.current = [];
-  }, []);
+  const tutor = TUTORS[tutorIndex];
 
-  const addTimeout = useCallback((fn: () => void, ms: number) => {
-    const id = setTimeout(fn, ms);
-    timeoutRef.current.push(id);
-    return id;
-  }, []);
-
-  const scrollToBottom = useCallback(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({
-        top: scrollRef.current.scrollHeight,
-        behavior: 'smooth',
-      });
-    }
-  }, []);
-
-  const playConversation = useCallback(
-    (convoIdx: number) => {
-      const convo = conversations[convoIdx % conversations.length];
-      setCurrentTutor(convo);
+  const playSequence = useCallback(() => {
+    // AI speaks
+    const t1 = setTimeout(() => setStatus('speaking'), 500);
+    // AI done, idle
+    const t2 = setTimeout(() => setStatus('idle'), 3000);
+    // User speaks (listening)
+    const t3 = setTimeout(() => setStatus('listening'), 4000);
+    // Processing user speech
+    const t4 = setTimeout(() => setStatus('thinking'), 6000);
+    // AI responds
+    const t5 = setTimeout(() => setStatus('speaking'), 7500);
+    // Done, idle
+    const t6 = setTimeout(() => setStatus('idle'), 10000);
+    // Transition to next tutor
+    const t7 = setTimeout(() => setTransitioning(true), 11500);
+    const t8 = setTimeout(() => {
+      setTutorIndex((prev) => (prev + 1) % TUTORS.length);
       setTransitioning(false);
-      setDisplayMessages([]);
-      setShowTyping(false);
+      setStatus('idle');
+    }, 12200);
 
-      let delay = 600;
-
-      convo.messages.forEach((msg, i) => {
-        // show typing indicator for AI messages
-        if (msg.role === 'ai') {
-          addTimeout(() => {
-            setShowTyping(true);
-            scrollToBottom();
-          }, delay);
-          delay += 1200;
-        }
-
-        // show the message
-        addTimeout(() => {
-          setShowTyping(false);
-          setDisplayMessages((prev) => [
-            ...prev,
-            { ...msg, id: `${convoIdx}-${i}`, visible: true },
-          ]);
-          setTimeout(scrollToBottom, 50);
-        }, delay);
-
-        delay += msg.role === 'correction' ? 800 : 1000;
-      });
-
-      // transition to next conversation
-      addTimeout(() => {
-        setTransitioning(true);
-      }, delay + 2000);
-
-      addTimeout(() => {
-        const nextIdx = (convoIdx + 1) % conversations.length;
-        setConversationIndex(nextIdx);
-      }, delay + 2600);
-    },
-    [addTimeout, scrollToBottom]
-  );
+    return [t1, t2, t3, t4, t5, t6, t7, t8];
+  }, []);
 
   useEffect(() => {
-    clearTimeouts();
-    playConversation(conversationIndex);
-    return clearTimeouts;
-  }, [conversationIndex, playConversation, clearTimeouts]);
+    const timers = playSequence();
+    const loop = setInterval(() => {
+      timers.push(...playSequence());
+    }, 12500);
+
+    return () => {
+      timers.forEach(clearTimeout);
+      clearInterval(loop);
+    };
+  }, [tutorIndex, playSequence]);
+
+  // Fake timer count
+  useEffect(() => {
+    let seconds = 42;
+    const interval = setInterval(() => {
+      seconds++;
+      if (seconds >= 60) seconds = 42;
+      setTimer(`0:${seconds.toString().padStart(2, '0')}`);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const isSpeaking = status === 'speaking';
+  const isListening = status === 'listening';
+  const isThinking = status === 'thinking';
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Chat header */}
-      <div
-        className={`flex items-center gap-3 px-4 py-3 border-b border-white/10 transition-opacity duration-500 ${
-          transitioning ? 'opacity-0' : 'opacity-100'
-        }`}
-      >
-        <div
-          className={`w-8 h-8 rounded-full bg-gradient-to-br ${currentTutor.tutorColor} flex items-center justify-center text-sm`}
-        >
-          {currentTutor.tutorEmoji}
+    <div className={`flex flex-col h-full transition-opacity duration-500 ${transitioning ? 'opacity-0' : 'opacity-100'}`}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-white/10">
+        <div className="flex items-center gap-1.5">
+          <svg className="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          <span className="text-xs text-white/50">Back</span>
         </div>
-        <div>
-          <div className="text-sm font-semibold text-white">{currentTutor.tutorName}</div>
-          <div className="text-xs text-white/50">AI Tutor · Online</div>
-        </div>
-        <div className="ml-auto flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-          <span className="text-xs text-green-400/70">Active</span>
-        </div>
+        <span className="text-xs text-white/40 font-medium">TapTalk</span>
+        <div className="w-8" />
       </div>
 
-      {/* Messages area */}
-      <div
-        ref={scrollRef}
-        className={`flex-1 overflow-y-auto px-3 py-3 space-y-2.5 transition-opacity duration-500 ${
-          transitioning ? 'opacity-0' : 'opacity-100'
-        }`}
-        style={{ scrollbarWidth: 'none' }}
-      >
-        {displayMessages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-[msg-appear_0.3s_ease-out]`}
-          >
-            {msg.role === 'correction' ? (
-              <div className="max-w-[85%] px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                <div className="flex items-center gap-1 mb-1">
-                  <svg className="w-3 h-3 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="text-[10px] text-amber-400 font-medium">Correction</span>
-                </div>
-                <p className="text-xs text-white/80">
-                  <span className="line-through text-red-400/80">{msg.correctionOriginal}</span>
-                  {' → '}
-                  <span className="text-green-400 font-medium">{msg.correctionFixed}</span>
-                </p>
-                <p className="text-[10px] text-white/40 mt-1">{msg.correctionExplanation}</p>
-              </div>
-            ) : (
-              <div
-                className={`max-w-[80%] px-3 py-2 rounded-2xl text-xs leading-relaxed ${
-                  msg.role === 'user'
-                    ? 'bg-gradient-to-br from-purple-600 to-indigo-600 text-white rounded-br-md'
-                    : 'bg-white/10 text-white/90 rounded-bl-md'
-                }`}
-              >
-                {msg.text}
-              </div>
-            )}
-          </div>
-        ))}
+      {/* Main content - Tutor avatar centered */}
+      <div className="flex-1 flex flex-col items-center justify-center relative px-4">
+        {/* Ambient glow */}
+        <div
+          className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[200px] h-[200px] rounded-full opacity-25 transition-all duration-500"
+          style={{
+            background: `radial-gradient(circle, ${
+              isListening ? 'rgba(239,68,68,0.5)' :
+              isSpeaking ? 'rgba(124,58,237,0.5)' :
+              isThinking ? 'rgba(245,158,11,0.4)' :
+              'rgba(124,58,237,0.2)'
+            } 0%, transparent 70%)`,
+          }}
+        />
 
-        {showTyping && (
-          <div className="flex justify-start animate-[msg-appear_0.3s_ease-out]">
-            <div className="bg-white/10 rounded-2xl rounded-bl-md">
-              <MockupTypingIndicator />
+        {/* Tutor avatar */}
+        <div className="relative mb-3">
+          {/* Animated ring for active states */}
+          {status !== 'idle' && (
+            <div
+              className={`absolute inset-0 rounded-full bg-gradient-to-br ${tutor.gradient} opacity-25 blur-lg`}
+              style={{ transform: 'scale(1.25)' }}
+            />
+          )}
+          {isSpeaking && (
+            <div
+              className={`absolute inset-0 rounded-full bg-gradient-to-br ${tutor.gradient} opacity-20 animate-ping`}
+              style={{ transform: 'scale(1.15)' }}
+            />
+          )}
+
+          <div
+            className={`relative w-24 h-24 rounded-full overflow-hidden ring-3 transition-all duration-500 ${
+              isSpeaking ? `${tutor.ringColor} shadow-lg` :
+              isListening ? 'ring-green-400 shadow-green-500/30' :
+              isThinking ? 'ring-amber-400 shadow-amber-500/30' :
+              'ring-white/20'
+            }`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={tutor.imagePath}
+              alt={tutor.name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+                (e.target as HTMLImageElement).parentElement!.classList.add(`bg-gradient-to-br`, ...tutor.gradient.split(' '));
+              }}
+            />
+            <div className={`absolute inset-0 ${tutor.gradient.replace('from-', 'bg-gradient-to-br from-').split(' ').join(' ')} flex items-center justify-center`} style={{ zIndex: -1 }}>
+              <span className="text-2xl font-bold text-white">{tutor.name[0]}</span>
             </div>
           </div>
-        )}
+
+          {/* Flag */}
+          <div className="absolute -bottom-0.5 -right-0.5 text-sm bg-[#0a0a0a] rounded-md px-0.5">
+            {tutor.flag}
+          </div>
+        </div>
+
+        {/* Tutor name */}
+        <h3 className="text-sm font-bold text-white mb-0.5">{tutor.name}</h3>
+        <p className="text-[10px] text-white/40 mb-3">{tutor.nationality} Tutor</p>
+
+        {/* Status indicator */}
+        <div className="h-12 flex items-center justify-center">
+          {isSpeaking && (
+            <div className="flex flex-col items-center">
+              <div className="flex items-end justify-center gap-[3px] h-6 mb-1.5">
+                {[...Array(7)].map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-[3px] rounded-full bg-gradient-to-t ${tutor.gradient}`}
+                    style={{
+                      animation: 'voice-wave 0.3s ease-in-out infinite',
+                      animationDelay: `${i * 0.05}s`,
+                    }}
+                  />
+                ))}
+              </div>
+              <p className="text-[10px] text-purple-400 font-medium">{tutor.name} is speaking...</p>
+            </div>
+          )}
+          {isListening && (
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-[3px] h-6 mb-1.5">
+                {[1,2,3,4,5].map((i) => (
+                  <div
+                    key={i}
+                    className="w-[3px] bg-red-500 rounded-full animate-pulse"
+                    style={{
+                      height: `${8 + Math.sin(i * 1.2) * 10}px`,
+                      animationDelay: `${i * 0.1}s`,
+                      animationDuration: '0.4s',
+                    }}
+                  />
+                ))}
+              </div>
+              <p className="text-[10px] text-red-400 font-medium">Recording...</p>
+            </div>
+          )}
+          {isThinking && (
+            <div className="flex flex-col items-center">
+              <div className="flex gap-1.5 mb-1.5">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse"
+                    style={{ animationDelay: `${i * 0.15}s` }}
+                  />
+                ))}
+              </div>
+              <p className="text-[10px] text-amber-400 font-medium">Thinking...</p>
+            </div>
+          )}
+          {status === 'idle' && (
+            <p className="text-[10px] text-white/30">Tap to speak...</p>
+          )}
+        </div>
       </div>
 
-      {/* Decorative input bar */}
+      {/* Bottom control panel */}
       <div className="px-3 pb-3 pt-1">
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-full bg-white/5 border border-white/10">
-          <svg className="w-4 h-4 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-          </svg>
-          <span className="text-xs text-white/30">Tap to speak...</span>
-          <div className="ml-auto w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center">
-            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+        <div className="flex gap-2 mb-2">
+          {/* Main mic button */}
+          <div
+            className={`flex-1 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-1.5 text-[11px] transition-all ${
+              isListening
+                ? 'bg-red-500 text-white shadow-lg shadow-red-500/30'
+                : 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+            }`}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
             </svg>
+            {isListening ? 'Stop' : 'Reply'}
           </div>
+          {/* Done button */}
+          <div className="px-4 py-2.5 rounded-xl text-[11px] bg-white/10 text-white border border-white/10 flex items-center">
+            Done
+          </div>
+        </div>
+        {/* Timer */}
+        <div className="flex items-center justify-center gap-1.5">
+          <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />
+          <span className="text-[10px] text-white/30 font-medium">{timer} / 10:00</span>
         </div>
       </div>
     </div>
