@@ -190,8 +190,6 @@ export default function HomePage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
-  // Voice preview states
-
   // Video hover states
   const [hoveredTutor, setHoveredTutor] = useState<string | null>(null);
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
@@ -1017,8 +1015,9 @@ export default function HomePage() {
                                   ref={(el) => { videoRefs.current[persona.id] = el; }}
                                   src={`/tutors/${getTutorFileName(persona.id)}_greeting.mp4`}
                                   muted
+                                  loop
                                   playsInline
-                                  preload="metadata"
+                                  preload="auto"
                                   className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
                                     hoveredTutor === persona.id ? 'opacity-100' : 'opacity-0'
                                   }`}
