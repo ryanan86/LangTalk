@@ -243,6 +243,21 @@ class ClaudeCodeRelay {
     // 프롬프트만 전달 (모드 키워드는 --append-system-prompt로 지시)
     const fullPrompt = prompt;
 
+    // Initialize session logger
+    const LOG_DIR = join(homedir(), 'Projects', 'langtalk', 'logs', 'telegram-sessions');
+    mkdirSync(LOG_DIR, { recursive: true });
+    const now = new Date();
+    const dateStr = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    this.logFile = join(LOG_DIR, `${dateStr}_v2_${mode}.log`);
+    const logHeader = [
+      `=== Telegram Bot v2 Session Log ===`,
+      `Date: ${now.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}`,
+      `Mode: ${mode}`,
+      `Prompt: ${prompt}`,
+      `${'='.repeat(50)}\n`,
+    ].join('\n');
+    appendFileSync(this.logFile, logHeader);
+
     await this.liveMsg.addLine(`\n👨‍✈️ *클이사*: "${prompt}"`);
     await this.liveMsg.addLine(`🚀 모드: ${mode}`);
     await this.liveMsg.addLine(`⏱️ 에이전트 작업 시작...\n`);
@@ -270,20 +285,36 @@ class ClaudeCodeRelay {
       this.process.stdin.end();
 
       this.process.stdout.on('data', async (data) => {
-        await this.processOutput(data.toString());
+        const text = data.toString();
+        if (this.logFile) {
+          const ts = new Date().toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false });
+          appendFileSync(this.logFile, `[${ts}] [STDOUT] ${text.trimEnd()}\n`);
+        }
+        await this.processOutput(text);
       });
 
       this.process.stderr.on('data', async (data) => {
-        await this.processOutput(data.toString(), true);
+        const text = data.toString();
+        if (this.logFile) {
+          const ts = new Date().toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false });
+          appendFileSync(this.logFile, `[${ts}] [STDERR] ${text.trimEnd()}\n`);
+        }
+        await this.processOutput(text, true);
       });
 
       this.process.on('close', async (code) => {
+        if (this.logFile) {
+          appendFileSync(this.logFile, `\n${'='.repeat(50)}\nSession ended with exit code: ${code}\n`);
+        }
         console.log(`Claude 프로세스 종료 (exit: ${code})`);
         await this.liveMsg.finalize(`✅ 작업 완료 (exit: ${code})`);
         resolve(code);
       });
 
       this.process.on('error', async (err) => {
+        if (this.logFile) {
+          appendFileSync(this.logFile, `[ERROR] ${err.message}\n`);
+        }
         console.log('[error]', err.message);
         await this.liveMsg.addLine(`❌ 에러: ${err.message}`);
         reject(err);
@@ -1279,6 +1310,14 @@ class RoundDiscussionUI {
 function runClaudeRound(chatId, prompt, mode, opts = {}) {
   const { maxTurns = 20, captureOutput = false } = opts;
 
+  // Session logging
+  const ROUND_LOG_DIR = join(homedir(), 'Projects', 'langtalk', 'logs', 'telegram-sessions');
+  mkdirSync(ROUND_LOG_DIR, { recursive: true });
+  const roundNow = new Date();
+  const roundDateStr = roundNow.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const roundLogFile = join(ROUND_LOG_DIR, `${roundDateStr}_v2round_${mode}.log`);
+  appendFileSync(roundLogFile, `=== Round Session Log ===\nDate: ${roundNow.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}\nMode: ${mode}\nPrompt: ${prompt.substring(0, 500)}\n${'='.repeat(50)}\n\n`);
+
   return new Promise((resolve, reject) => {
     const args = ['-p', '--verbose', '--output-format', 'stream-json', '--max-turns', String(maxTurns), '--append-system-prompt', DECISION_SYSTEM_PROMPT];
     const proc = spawn('/Users/taewoongan/.local/bin/claude', args, {
@@ -1301,7 +1340,11 @@ function runClaudeRound(chatId, prompt, mode, opts = {}) {
     const result = { output: '', summary: '', cost: 0 };
 
     proc.stdout.on('data', (data) => {
-      buffer += data.toString();
+      const text = data.toString();
+      const ts = new Date().toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false });
+      appendFileSync(roundLogFile, `[${ts}] [STDOUT] ${text.trimEnd()}\n`);
+
+      buffer += text;
       const lines = buffer.split('\n');
       buffer = lines.pop() || '';
       for (const line of lines) {
@@ -1322,15 +1365,20 @@ function runClaudeRound(chatId, prompt, mode, opts = {}) {
       }
     });
 
-    proc.stderr.on('data', () => {});
+    proc.stderr.on('data', (data) => {
+      const ts = new Date().toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false });
+      appendFileSync(roundLogFile, `[${ts}] [STDERR] ${data.toString().trimEnd()}\n`);
+    });
 
-    proc.on('close', () => {
+    proc.on('close', (code) => {
+      appendFileSync(roundLogFile, `\n${'='.repeat(50)}\nSession ended with exit code: ${code}\n`);
       activeSessions.delete(chatId);
       result.output = captured.join('\n').substring(0, 3000);
       resolve(result);
     });
 
     proc.on('error', (err) => {
+      appendFileSync(roundLogFile, `[ERROR] ${err.message}\n`);
       activeSessions.delete(chatId);
       reject(err);
     });

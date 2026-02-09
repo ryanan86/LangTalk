@@ -9,11 +9,46 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { spawn, exec } from 'child_process';
 import { promisify } from 'util';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, mkdirSync, appendFileSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
 
 const execAsync = promisify(exec);
+
+// ========== Session Logger ==========
+const LOG_DIR = join(homedir(), 'Projects', 'langtalk', 'logs', 'telegram-sessions');
+
+class SessionLogger {
+  constructor(command, mode) {
+    // Ensure log directory exists
+    mkdirSync(LOG_DIR, { recursive: true });
+
+    const now = new Date();
+    const dateStr = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    this.filename = join(LOG_DIR, `${dateStr}_${mode}.log`);
+
+    this.write(`=== Telegram Bot Session Log ===`);
+    this.write(`Date: ${now.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}`);
+    this.write(`Mode: ${mode}`);
+    this.write(`Command: ${command}`);
+    this.write(`${'='.repeat(50)}\n`);
+  }
+
+  write(line) {
+    const timestamp = new Date().toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false });
+    appendFileSync(this.filename, `[${timestamp}] ${line}\n`);
+  }
+
+  writeRaw(text) {
+    appendFileSync(this.filename, text);
+  }
+
+  finalize(exitCode) {
+    this.write(`\n${'='.repeat(50)}`);
+    this.write(`Session ended with exit code: ${exitCode}`);
+    this.write(`Log file: ${this.filename}`);
+  }
+}
 
 // ~/.claude/.env 로드
 function loadEnv() {
@@ -127,6 +162,10 @@ class ClaudeCodeRelay {
   async run(prompt, mode = 'autopilot') {
     const fullPrompt = `${mode}: ${prompt}`;
 
+    // Initialize session logger
+    this.logger = new SessionLogger(fullPrompt, mode);
+    this.logger.write(`[USER] ${prompt}`);
+
     await this.liveMsg.addLine(`\n👨‍✈️ *노이사*: "${prompt}"`);
     await this.liveMsg.addLine(`🚀 모드: ${mode}`);
     await this.liveMsg.addLine(`⏱️ 에이전트 작업 시작...\n`);
@@ -148,21 +187,25 @@ class ClaudeCodeRelay {
       // stdout 실시간 리스닝
       this.process.stdout.on('data', async (data) => {
         const text = data.toString();
+        if (this.logger) this.logger.write(`[STDOUT] ${text.trimEnd()}`);
         await this.processOutput(text);
       });
 
       // stderr도 캡처
       this.process.stderr.on('data', async (data) => {
         const text = data.toString();
+        if (this.logger) this.logger.write(`[STDERR] ${text.trimEnd()}`);
         await this.processOutput(text, true);
       });
 
       this.process.on('close', async (code) => {
+        if (this.logger) this.logger.finalize(code);
         await this.liveMsg.finalize(`✅ 작업 완료 (exit: ${code})`);
         resolve(code);
       });
 
       this.process.on('error', async (err) => {
+        if (this.logger) this.logger.write(`[ERROR] ${err.message}`);
         await this.liveMsg.addLine(`❌ 에러: ${err.message}`);
         reject(err);
       });
