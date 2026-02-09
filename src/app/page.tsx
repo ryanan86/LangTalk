@@ -967,16 +967,16 @@ export default function HomePage() {
                                 if (hoveredTutor === persona.id) {
                                   setHoveredTutor(null);
                                   const video = videoRefs.current[persona.id];
-                                  if (video) { video.pause(); video.currentTime = 0; }
+                                  if (video) { video.pause(); video.currentTime = 0; video.muted = true; }
                                 } else {
                                   // Stop previous video
                                   if (hoveredTutor) {
                                     const prev = videoRefs.current[hoveredTutor];
-                                    if (prev) { prev.pause(); prev.currentTime = 0; }
+                                    if (prev) { prev.pause(); prev.currentTime = 0; prev.muted = true; }
                                   }
                                   setHoveredTutor(persona.id);
                                   const video = videoRefs.current[persona.id];
-                                  if (video) { video.currentTime = 0; video.play().catch(() => {}); }
+                                  if (video) { video.muted = false; video.currentTime = 0; video.play().catch(() => {}); }
                                 }
                               }
                             }}
@@ -985,6 +985,7 @@ export default function HomePage() {
                               setHoveredTutor(persona.id);
                               const video = videoRefs.current[persona.id];
                               if (video) {
+                                video.muted = false;
                                 video.currentTime = 0;
                                 video.play().catch(() => {});
                               }
@@ -996,6 +997,7 @@ export default function HomePage() {
                               if (video) {
                                 video.pause();
                                 video.currentTime = 0;
+                                video.muted = true;
                               }
                             }}
                             className={`group relative text-center transition-all duration-300 ${
@@ -1011,20 +1013,8 @@ export default function HomePage() {
                               {/* Video / Image Area */}
                               <div className="relative h-44 sm:h-56 lg:h-72 overflow-hidden bg-white">
                                 {/* Tutor Video */}
-                                <video
-                                  ref={(el) => { videoRefs.current[persona.id] = el; }}
-                                  src={`/tutors/${getTutorFileName(persona.id)}_greeting.mp4`}
-                                  muted
-                                  loop
-                                  playsInline
-                                  preload="auto"
-                                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
-                                    hoveredTutor === persona.id ? 'opacity-100' : 'opacity-0'
-                                  }`}
-                                />
-
-                                {/* Tutor Image (default, hidden on hover) */}
-                                <div className={`absolute inset-0 transition-opacity duration-300 ${
+                                {/* Tutor Image (default, visible before hover) */}
+                                <div className={`absolute inset-0 z-10 transition-opacity duration-300 ${
                                   hoveredTutor === persona.id ? 'opacity-0' : 'opacity-100'
                                 }`}>
                                   <Image
@@ -1049,6 +1039,17 @@ export default function HomePage() {
                                     }}
                                   />
                                 </div>
+
+                                {/* Tutor Video (behind image, shown on hover) */}
+                                <video
+                                  ref={(el) => { videoRefs.current[persona.id] = el; }}
+                                  src={`/tutors/${getTutorFileName(persona.id)}_greeting.mp4`}
+                                  muted
+                                  loop
+                                  playsInline
+                                  preload="auto"
+                                  className="absolute inset-0 w-full h-full object-cover z-0"
+                                />
 
                                 {/* Selection Check */}
                                 {isSelected && (
