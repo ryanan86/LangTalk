@@ -600,89 +600,47 @@ export default function HomePage() {
   const currentLevel = evaluatedGrade && gradeMapping[evaluatedGrade] ? gradeMapping[evaluatedGrade] : null;
 
   return (
-    <div className="min-h-screen bg-[#030014] text-white overflow-hidden">
-      {/* DRAMATIC Background - Vibrant Animated Gradients */}
+    <div className="min-h-screen bg-neutral-950 text-white overflow-hidden">
+      {/* Premium Background - Simplified & Elegant */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {/* Main Aurora Gradient - Top */}
+        {/* Primary Gradient Orb - Subtle, slow movement */}
         <div
-          className="absolute top-[-50%] left-[-20%] w-[140%] h-[100%]"
+          className="absolute top-[-30%] left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full opacity-40"
           style={{
-            background: 'conic-gradient(from 90deg at 50% 50%, #7C3AED 0deg, #EC4899 90deg, #F97316 180deg, #10B981 270deg, #7C3AED 360deg)',
-            filter: 'blur(120px)',
-            opacity: 0.4,
-            animation: 'spin-slow 30s linear infinite',
+            background: 'radial-gradient(circle, rgba(124,58,237,0.3) 0%, rgba(124,58,237,0.1) 40%, transparent 70%)',
+            animation: 'gentle-float 20s ease-in-out infinite',
           }}
         />
 
-        {/* Pulsing Purple Orb - Center */}
+        {/* Secondary Accent - Bottom right */}
         <div
-          className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full"
+          className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full opacity-30"
           style={{
-            background: 'radial-gradient(circle, rgba(139,92,246,0.8) 0%, rgba(139,92,246,0.3) 40%, transparent 70%)',
-            filter: 'blur(60px)',
-            animation: 'glow-pulse 4s ease-in-out infinite',
+            background: 'radial-gradient(circle, rgba(236,72,153,0.25) 0%, transparent 60%)',
+            animation: 'gentle-float 25s ease-in-out infinite reverse',
           }}
         />
 
-        {/* Pink Accent Orb - Right */}
+        {/* Subtle Grid - Less visible */}
         <div
-          className="absolute top-1/4 right-[-10%] w-[500px] h-[500px] rounded-full"
+          className="absolute inset-0 opacity-[0.03]"
           style={{
-            background: 'radial-gradient(circle, rgba(236,72,153,0.7) 0%, rgba(236,72,153,0.2) 50%, transparent 70%)',
-            filter: 'blur(80px)',
-            animation: 'gentle-float 8s ease-in-out infinite',
+            backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
+            backgroundSize: '80px 80px',
           }}
         />
 
-        {/* Cyan Accent Orb - Bottom Left */}
-        <div
-          className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(6,182,212,0.6) 0%, rgba(6,182,212,0.15) 50%, transparent 70%)',
-            filter: 'blur(100px)',
-            animation: 'gentle-float 10s ease-in-out infinite reverse',
-          }}
-        />
+        {/* Top fade */}
+        <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-neutral-950 to-transparent" />
 
-        {/* Animated Stars/Particles */}
-        <div className="absolute inset-0">
-          {[...Array(30)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-1 h-1 rounded-full bg-white"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                opacity: Math.random() * 0.5 + 0.2,
-                animation: `twinkle ${2 + Math.random() * 3}s ease-in-out infinite`,
-                animationDelay: `${Math.random() * 2}s`,
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Grid Overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.08]"
-          style={{
-            backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-            backgroundSize: '60px 60px',
-          }}
-        />
-
-        {/* Noise texture for premium feel */}
-        <div
-          className="absolute inset-0 opacity-[0.15]"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-          }}
-        />
+        {/* Bottom fade */}
+        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-neutral-950 to-transparent" />
       </div>
 
-      {/* Header - Premium Glass Effect with Glow */}
-      <header className="relative z-50 pt-8 sm:pt-12">
+      {/* Header - Premium Glass Effect */}
+      <header className="relative z-50 pt-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-16 sm:h-20 px-4 sm:px-6 -mx-4 sm:-mx-6 rounded-2xl glass-premium animate-rainbow-border">
+          <div className="flex items-center justify-between h-16 sm:h-20 px-4 sm:px-6 -mx-4 sm:-mx-6 rounded-2xl bg-white/[0.02] backdrop-blur-xl border border-white/[0.05]">
             {/* Logo */}
             <TapTalkLogo size="md" theme="dark" />
 
@@ -784,33 +742,36 @@ export default function HomePage() {
         <section className={`pt-16 sm:pt-24 pb-12 sm:pb-16 transition-all duration-700 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <div className="text-center max-w-4xl mx-auto">
-              {/* Floating Premium Badge */}
+              {/* Premium Badge */}
               <div
-                className={`badge-floating mb-8 sm:mb-10 transition-all duration-500 delay-100 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                className={`inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full mb-8 sm:mb-10 transition-all duration-500 delay-100 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                style={{
+                  background: 'linear-gradient(135deg, rgba(124,58,237,0.15) 0%, rgba(236,72,153,0.1) 100%)',
+                  border: '1px solid rgba(124,58,237,0.2)',
+                }}
               >
-                <span className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-green-400"></span>
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-500 opacity-60"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-500"></span>
                 </span>
-                <span className="text-sm font-bold text-white uppercase tracking-wider">AI English Tutor</span>
-                <span className="px-2 py-0.5 rounded-full bg-white/10 text-xs font-medium text-purple-300">LIVE</span>
+                <span className="text-sm font-medium text-white/90">AI English Tutor</span>
               </div>
 
-              {/* Main Heading - DRAMATIC Typography */}
-              <h1 className={`font-display font-black tracking-tight mb-6 transition-all duration-700 delay-200 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-                <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-white mb-3 text-glow">
+              {/* Main Heading - Clean Typography */}
+              <h1 className={`font-display font-extrabold tracking-tight mb-6 transition-all duration-700 delay-200 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+                <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-white mb-2">
                   {t.heroTitle}
                 </span>
-                <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-gradient-animated">
+                <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-gradient-primary">
                   {t.heroSubtitle}
                 </span>
               </h1>
 
-              {/* Typewriter Effect - More Visible */}
-              <div className={`h-12 sm:h-16 flex items-center justify-center mb-10 sm:mb-12 transition-all duration-700 delay-300 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-                <p className="text-xl sm:text-2xl text-white/70 font-medium">
+              {/* Typewriter Effect - Subtle */}
+              <div className={`h-10 sm:h-12 flex items-center justify-center mb-10 sm:mb-12 transition-all duration-700 delay-300 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+                <p className="text-lg sm:text-xl text-white/50 font-medium">
                   {typingText}
-                  <span className="inline-block w-1 h-6 bg-gradient-to-b from-purple-400 to-pink-400 ml-1 animate-pulse rounded-full"></span>
+                  <span className="inline-block w-0.5 h-5 bg-primary-500 ml-1 animate-pulse"></span>
                 </p>
               </div>
 
@@ -1288,8 +1249,8 @@ export default function HomePage() {
                             onClick={() => setSelectedPersona(persona.id)}
                             className="group relative text-left focus-ring rounded-3xl"
                           >
-                            {/* Premium 3D Card */}
-                            <div className={`persona-card-3d ${isSelected ? 'selected' : ''}`}>
+                            {/* Premium Card */}
+                            <div className={`persona-card ${isSelected ? 'selected' : ''}`}>
                               {/* Image Container */}
                               <div className="relative h-40 sm:h-48 lg:h-56 mb-4 rounded-2xl overflow-hidden">
                                 {/* Gradient Glow Background */}
@@ -1376,30 +1337,25 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  {/* Start Button - DRAMATIC Premium CTA */}
+                  {/* Start Button - Premium CTA */}
                   <div className="text-center">
                     <button
                       onClick={handleStart}
                       disabled={!selectedPersona}
-                      className={`group relative inline-flex items-center gap-4 transition-all duration-300 overflow-hidden ${
+                      className={`group relative inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-bold text-lg transition-all duration-300 overflow-hidden ${
                         selectedPersona
-                          ? 'btn-cta-premium animate-dramatic-glow'
-                          : 'px-10 py-5 rounded-2xl bg-white/5 text-white/30 cursor-not-allowed border border-white/10 font-bold text-lg'
+                          ? 'bg-primary-600 text-white hover:bg-primary-500 shadow-glow-md hover:shadow-glow-lg hover:-translate-y-1'
+                          : 'bg-white/5 text-white/30 cursor-not-allowed border border-white/10'
                       }`}
                     >
-                      {/* Animated shine effect */}
+                      {/* Shine effect */}
                       {selectedPersona && (
-                        <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+                        <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                       )}
-                      <svg className="w-7 h-7 relative" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-6 h-6 relative" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                       </svg>
-                      <span className="relative text-xl">{t.startConversation}</span>
-                      {selectedPersona && (
-                        <svg className="w-5 h-5 relative group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                      )}
+                      <span className="relative">{t.startConversation}</span>
                     </button>
                     {!selectedPersona && (
                       <p className="text-white/30 text-sm mt-5">{t.selectTutorPrompt}</p>
