@@ -976,7 +976,7 @@ export default function HomePage() {
                                   }
                                   setHoveredTutor(persona.id);
                                   const video = videoRefs.current[persona.id];
-                                  if (video) { video.muted = false; video.currentTime = 0; video.play().catch(() => {}); }
+                                  if (video) { video.currentTime = 0; video.muted = true; video.play().then(() => { video.muted = false; }).catch(() => {}); }
                                 }
                               }
                             }}
@@ -985,9 +985,11 @@ export default function HomePage() {
                               setHoveredTutor(persona.id);
                               const video = videoRefs.current[persona.id];
                               if (video) {
-                                video.muted = false;
                                 video.currentTime = 0;
-                                video.play().catch(() => {});
+                                video.muted = true;
+                                video.play().then(() => {
+                                  video.muted = false;
+                                }).catch(() => {});
                               }
                             }}
                             onMouseLeave={() => {
@@ -1195,9 +1197,11 @@ export default function HomePage() {
                         onMouseEnter={() => {
                           const video = videoRefs.current[`demo-${tutor.id}`];
                           if (video) {
-                            video.muted = false;
                             video.currentTime = 0;
-                            video.play().catch(() => {});
+                            video.muted = true;
+                            video.play().then(() => {
+                              video.muted = false;
+                            }).catch(() => {});
                           }
                         }}
                         onMouseLeave={() => {
@@ -1212,9 +1216,11 @@ export default function HomePage() {
                           const video = videoRefs.current[`demo-${tutor.id}`];
                           if (video) {
                             if (video.paused) {
-                              video.muted = false;
                               video.currentTime = 0;
-                              video.play().catch(() => {});
+                              video.muted = true;
+                              video.play().then(() => {
+                                video.muted = false;
+                              }).catch(() => {});
                             } else {
                               video.muted = true;
                               video.pause();
