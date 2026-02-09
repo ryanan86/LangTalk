@@ -43,9 +43,9 @@ export default function TrustBadges({ language }: { language: 'ko' | 'en' }) {
       <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 mb-8">
         <div className="flex items-center gap-2">
           <div className="flex -space-x-1.5">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 border-2 border-[var(--background)] flex items-center justify-center text-[9px]">👩🏼</div>
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 border-2 border-[var(--background)] flex items-center justify-center text-[9px]">👨🏻</div>
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-400 to-purple-400 border-2 border-[var(--background)] flex items-center justify-center text-[9px]">👩🏽</div>
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 border-2 border-[var(--background)] flex items-center justify-center text-[9px] font-bold text-white">E</div>
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 border-2 border-[var(--background)] flex items-center justify-center text-[9px] font-bold text-white">J</div>
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 border-2 border-[var(--background)] flex items-center justify-center text-[9px] font-bold text-white">C</div>
           </div>
           <div>
             <div className="text-xs font-bold text-[var(--text-primary)]">3{language === 'ko' ? '명의 AI 튜터' : ' AI Tutors'}</div>

@@ -8,7 +8,7 @@ export interface ChatMessage {
 
 export interface ConversationScenario {
   tutorName: string;
-  tutorEmoji: string;
+  tutorInitial: string;
   tutorColor: string; // tailwind gradient classes
   messages: ChatMessage[];
 }
@@ -16,10 +16,10 @@ export interface ConversationScenario {
 export const conversations: ConversationScenario[] = [
   {
     tutorName: 'Emma',
-    tutorEmoji: '👩🏼',
+    tutorInitial: 'E',
     tutorColor: 'from-pink-500 to-rose-500',
     messages: [
-      { role: 'ai', text: 'Hey! What did you do this weekend? 😊' },
+      { role: 'ai', text: 'Hey! What did you do this weekend?' },
       { role: 'user', text: 'I was go to the beach with my friends.' },
       {
         role: 'correction',
@@ -33,7 +33,7 @@ export const conversations: ConversationScenario[] = [
   },
   {
     tutorName: 'James',
-    tutorEmoji: '👨🏻',
+    tutorInitial: 'J',
     tutorColor: 'from-blue-500 to-cyan-500',
     messages: [
       { role: 'ai', text: "What's your favorite way to relax after work?" },
@@ -50,7 +50,7 @@ export const conversations: ConversationScenario[] = [
   },
   {
     tutorName: 'Charlotte',
-    tutorEmoji: '👩🏽',
+    tutorInitial: 'C',
     tutorColor: 'from-violet-500 to-purple-500',
     messages: [
       { role: 'ai', text: "What's been keeping you busy lately?" },
@@ -60,9 +60,9 @@ export const conversations: ConversationScenario[] = [
         text: '',
         correctionOriginal: 'more better',
         correctionFixed: 'better',
-        correctionExplanation: '"Better" is already comparative — no need for "more"',
+        correctionExplanation: '"Better" is already comparative -- no need for "more"',
       },
-      { role: 'ai', text: 'Great goal! Just say "speak English better." You\'re doing great! 💪' },
+      { role: 'ai', text: 'Great goal! Just say "speak English better." You\'re doing great!' },
     ],
   },
 ];

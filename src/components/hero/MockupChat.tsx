@@ -2,6 +2,32 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
+function FlagSvg({ country }: { country: 'US' | 'UK' }) {
+  if (country === 'US') {
+    return (
+      <svg viewBox="0 0 24 16" className="w-4 h-3 rounded-sm overflow-hidden">
+        <rect width="24" height="16" fill="#B22234" />
+        <rect y="1.23" width="24" height="1.23" fill="white" />
+        <rect y="3.69" width="24" height="1.23" fill="white" />
+        <rect y="6.15" width="24" height="1.23" fill="white" />
+        <rect y="8.62" width="24" height="1.23" fill="white" />
+        <rect y="11.08" width="24" height="1.23" fill="white" />
+        <rect y="13.54" width="24" height="1.23" fill="white" />
+        <rect width="9.6" height="8.62" fill="#3C3B6E" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 16" className="w-4 h-3 rounded-sm overflow-hidden">
+      <rect width="24" height="16" fill="#012169" />
+      <path d="M0 0L24 16M24 0L0 16" stroke="white" strokeWidth="2.4" />
+      <path d="M0 0L24 16M24 0L0 16" stroke="#C8102E" strokeWidth="1.2" />
+      <path d="M12 0V16M0 8H24" stroke="white" strokeWidth="4" />
+      <path d="M12 0V16M0 8H24" stroke="#C8102E" strokeWidth="2.4" />
+    </svg>
+  );
+}
+
 const TUTORS = [
   {
     name: 'Emma',
@@ -9,7 +35,7 @@ const TUTORS = [
     gradient: 'from-rose-400 to-pink-500',
     ringColor: 'ring-rose-400',
     imagePath: '/tutors/emma.png',
-    flag: '🇺🇸',
+    flagCountry: 'US' as const,
   },
   {
     name: 'James',
@@ -17,7 +43,7 @@ const TUTORS = [
     gradient: 'from-blue-400 to-indigo-500',
     ringColor: 'ring-blue-400',
     imagePath: '/tutors/james.png',
-    flag: '🇺🇸',
+    flagCountry: 'US' as const,
   },
   {
     name: 'Charlotte',
@@ -25,7 +51,7 @@ const TUTORS = [
     gradient: 'from-violet-400 to-purple-500',
     ringColor: 'ring-violet-400',
     imagePath: '/tutors/charlotte.png',
-    flag: '🇬🇧',
+    flagCountry: 'UK' as const,
   },
 ];
 
@@ -166,8 +192,8 @@ export default function MockupChat() {
           </div>
 
           {/* Flag */}
-          <div className="absolute -bottom-0.5 -right-0.5 text-sm bg-[#0a0a0a] rounded-md px-0.5">
-            {tutor.flag}
+          <div className="absolute -bottom-0.5 -right-0.5 bg-[#0a0a0a] rounded-sm p-0.5">
+            <FlagSvg country={tutor.flagCountry} />
           </div>
         </div>
 
