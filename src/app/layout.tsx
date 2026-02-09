@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import "./globals.css";
 import AuthProvider from "@/components/AuthProvider";
 import { LanguageProvider } from "@/lib/i18n";
+import { ThemeProvider } from "@/lib/theme";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 
 export const viewport: Viewport = {
@@ -54,6 +55,25 @@ export const metadata: Metadata = {
   },
 };
 
+// Inline script to prevent flash of wrong theme
+const themeScript = `
+  (function() {
+    try {
+      var theme = localStorage.getItem('taptalk-theme');
+      if (!theme) {
+        theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'dark';
+      }
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    } catch(e) {
+      document.documentElement.classList.add('dark');
+    }
+  })();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -63,16 +83,19 @@ export default function RootLayout({
   const lang = cookieStore.get('lang')?.value || 'en';
 
   return (
-    <html lang={lang} translate="no">
+    <html lang={lang} translate="no" className="dark" suppressHydrationWarning>
       <head>
         <meta name="google" content="notranslate" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="antialiased min-h-screen bg-neutral-50">
+      <body className="antialiased min-h-screen bg-theme">
         <GoogleAnalytics />
         <AuthProvider>
-          <LanguageProvider>{children}</LanguageProvider>
+          <ThemeProvider>
+            <LanguageProvider>{children}</LanguageProvider>
+          </ThemeProvider>
         </AuthProvider>
       </body>
     </html>

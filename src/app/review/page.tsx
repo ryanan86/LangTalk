@@ -123,7 +123,7 @@ export default function ReviewPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-dark-bg">
         <div className="flex gap-2">
           <div className="loading-dot" />
           <div className="loading-dot" />
@@ -136,34 +136,34 @@ export default function ReviewPage() {
   // All corrections reviewed
   if (corrections.length === 0) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex flex-col">
-        <header className="bg-white/80 backdrop-blur-md border-b border-neutral-200 px-4 py-4">
+      <div className="min-h-screen bg-neutral-50 dark:bg-dark-bg flex flex-col">
+        <header className="bg-white/80 dark:bg-dark-surface/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800 px-4 py-4">
           <div className="max-w-2xl mx-auto flex justify-between items-center">
-            <button onClick={() => router.push('/')} className="text-neutral-500 hover:text-neutral-700">
+            <button onClick={() => router.push('/')} className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <h1 className="text-lg font-semibold">{language === 'ko' ? '복습' : 'Review'}</h1>
+            <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">{language === 'ko' ? '복습' : 'Review'}</h1>
             <div className="w-6" />
           </div>
         </header>
 
         <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
-            <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-20 h-20 bg-green-100 dark:bg-green-500/20 rounded-full flex items-center justify-center mb-6">
+            <svg className="w-10 h-10 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
 
-          <h2 className="text-2xl font-bold text-neutral-900 mb-2">
+          <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">
             {completedCount > 0
               ? (language === 'ko' ? '복습 완료!' : 'Review Complete!')
               : (language === 'ko' ? '복습할 항목이 없습니다' : 'No items to review')}
           </h2>
 
           {completedCount > 0 && (
-            <p className="text-neutral-600 mb-8">
+            <p className="text-neutral-600 dark:text-neutral-400 mb-8">
               {language === 'ko'
                 ? `${completedCount}개 항목을 복습했습니다.`
                 : `You reviewed ${completedCount} items.`}
@@ -181,20 +181,20 @@ export default function ReviewPage() {
   const labels = language === 'ko' ? qualityLabels.ko : qualityLabels.en;
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col">
+    <div className="min-h-screen bg-neutral-50 dark:bg-dark-bg flex flex-col">
       <audio ref={audioRef} onEnded={() => setIsPlaying(false)} />
 
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-neutral-200 px-4 py-4">
+      <header className="bg-white/80 dark:bg-dark-surface/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800 px-4 py-4">
         <div className="max-w-2xl mx-auto flex justify-between items-center">
-          <button onClick={() => router.push('/')} className="text-neutral-500 hover:text-neutral-700">
+          <button onClick={() => router.push('/')} className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
           <div className="text-center">
-            <h1 className="text-lg font-semibold">{language === 'ko' ? '복습' : 'Review'}</h1>
-            <p className="text-xs text-neutral-500">
+            <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">{language === 'ko' ? '복습' : 'Review'}</h1>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
               {currentIndex + 1} / {corrections.length}
             </p>
           </div>
@@ -203,9 +203,9 @@ export default function ReviewPage() {
       </header>
 
       {/* Progress Bar */}
-      <div className="bg-white border-b border-neutral-100 px-4 py-2">
+      <div className="bg-white dark:bg-dark-surface border-b border-neutral-100 dark:border-neutral-800 px-4 py-2">
         <div className="max-w-2xl mx-auto">
-          <div className="h-1 bg-neutral-200 rounded-full overflow-hidden">
+          <div className="h-1 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
             <div
               className="h-full bg-primary-500 transition-all duration-300"
               style={{ width: `${((currentIndex + 1) / corrections.length) * 100}%` }}
@@ -218,19 +218,19 @@ export default function ReviewPage() {
       <main className="flex-1 flex flex-col max-w-2xl mx-auto w-full p-4">
         <div className="flex-1 flex flex-col justify-center">
           {/* Card */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+          <div className="bg-white dark:bg-dark-surface rounded-2xl shadow-lg dark:shadow-none dark:border dark:border-neutral-800 p-6 mb-6">
             {/* Question - What user said */}
             <div className="mb-6">
-              <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+              <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {language === 'ko' ? '당신이 말한 것' : 'What you said'}
               </span>
-              <p className="text-xl text-neutral-800 mt-2 font-medium">
+              <p className="text-xl text-neutral-800 dark:text-white mt-2 font-medium">
                 {currentCorrection.original}
               </p>
             </div>
 
             {/* Category Badge */}
-            <span className="inline-block px-3 py-1 bg-neutral-100 text-neutral-600 text-xs rounded-full mb-6">
+            <span className="inline-block px-3 py-1 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 text-xs rounded-full mb-6">
               {currentCorrection.category}
             </span>
 
@@ -238,43 +238,43 @@ export default function ReviewPage() {
             {!showAnswer ? (
               <button
                 onClick={() => setShowAnswer(true)}
-                className="w-full py-4 border-2 border-dashed border-neutral-300 rounded-xl text-neutral-500 hover:border-primary-400 hover:text-primary-600 transition-colors"
+                className="w-full py-4 border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-xl text-neutral-500 dark:text-neutral-400 hover:border-primary-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
               >
                 {language === 'ko' ? '정답 보기' : 'Show Answer'}
               </button>
             ) : (
               <div className="space-y-4">
                 {/* Correct Way */}
-                <div className="p-4 bg-green-50 rounded-xl">
+                <div className="p-4 bg-green-50 dark:bg-green-500/10 rounded-xl">
                   <div className="flex justify-between items-start mb-2">
-                    <span className="text-xs font-medium text-green-600 uppercase tracking-wider">
+                    <span className="text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wider">
                       {language === 'ko' ? '올바른 표현' : 'Correct way'}
                     </span>
                     <button
                       onClick={() => playTTS(currentCorrection.corrected)}
                       disabled={isPlaying}
-                      className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center hover:bg-green-200 transition-colors"
+                      className="w-8 h-8 bg-green-100 dark:bg-green-500/20 rounded-full flex items-center justify-center hover:bg-green-200 dark:hover:bg-green-500/30 transition-colors"
                     >
                       {isPlaying ? (
-                        <div className="w-3 h-3 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                        <div className="w-3 h-3 border-2 border-green-600 dark:border-green-400 border-t-transparent rounded-full animate-spin" />
                       ) : (
-                        <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M8 5v14l11-7z" />
                         </svg>
                       )}
                     </button>
                   </div>
-                  <p className="text-lg text-green-800 font-medium">
+                  <p className="text-lg text-green-800 dark:text-green-300 font-medium">
                     {currentCorrection.corrected}
                   </p>
                 </div>
 
                 {/* Explanation */}
-                <div className="p-4 bg-blue-50 rounded-xl">
-                  <span className="text-xs font-medium text-blue-600 uppercase tracking-wider">
+                <div className="p-4 bg-blue-50 dark:bg-blue-500/10 rounded-xl">
+                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider">
                     {language === 'ko' ? '설명' : 'Explanation'}
                   </span>
-                  <p className="text-sm text-blue-800 mt-2">
+                  <p className="text-sm text-blue-800 dark:text-blue-300 mt-2">
                     {currentCorrection.explanation}
                   </p>
                 </div>
@@ -286,7 +286,7 @@ export default function ReviewPage() {
         {/* Quality Rating */}
         {showAnswer && (
           <div className="pb-6">
-            <p className="text-center text-sm text-neutral-500 mb-3">
+            <p className="text-center text-sm text-neutral-500 dark:text-neutral-400 mb-3">
               {language === 'ko' ? '얼마나 잘 알고 있었나요?' : 'How well did you know this?'}
             </p>
             <div className="grid grid-cols-6 gap-2">

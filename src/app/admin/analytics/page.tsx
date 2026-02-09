@@ -179,27 +179,27 @@ export default function AnalyticsPage() {
               <h2 className="text-lg font-semibold text-neutral-900 mb-4">주요 지표 가이드</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="p-4 bg-neutral-50 rounded-lg">
-                  <h3 className="font-medium text-neutral-800 mb-1">👥 방문자 수</h3>
+                  <h3 className="font-medium text-neutral-800 mb-1 flex items-center gap-1.5"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> 방문자 수</h3>
                   <p className="text-sm text-neutral-600">일/주/월별 활성 사용자 수. 서비스 성장 지표.</p>
                 </div>
                 <div className="p-4 bg-neutral-50 rounded-lg">
-                  <h3 className="font-medium text-neutral-800 mb-1">🌍 국가별 접속</h3>
+                  <h3 className="font-medium text-neutral-800 mb-1 flex items-center gap-1.5"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> 국가별 접속</h3>
                   <p className="text-sm text-neutral-600">어느 국가에서 접속하는지. 글로벌 확장 지표.</p>
                 </div>
                 <div className="p-4 bg-neutral-50 rounded-lg">
-                  <h3 className="font-medium text-neutral-800 mb-1">📱 디바이스 분류</h3>
+                  <h3 className="font-medium text-neutral-800 mb-1 flex items-center gap-1.5"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> 디바이스 분류</h3>
                   <p className="text-sm text-neutral-600">모바일/데스크탑/태블릿 비율. UX 우선순위 결정.</p>
                 </div>
                 <div className="p-4 bg-neutral-50 rounded-lg">
-                  <h3 className="font-medium text-neutral-800 mb-1">📄 페이지별 조회수</h3>
+                  <h3 className="font-medium text-neutral-800 mb-1 flex items-center gap-1.5"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> 페이지별 조회수</h3>
                   <p className="text-sm text-neutral-600">인기 페이지와 이탈 지점 파악.</p>
                 </div>
                 <div className="p-4 bg-neutral-50 rounded-lg">
-                  <h3 className="font-medium text-neutral-800 mb-1">⏱️ 평균 세션 시간</h3>
+                  <h3 className="font-medium text-neutral-800 mb-1 flex items-center gap-1.5"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 평균 세션 시간</h3>
                   <p className="text-sm text-neutral-600">사용자 참여도 측정. 길수록 좋은 서비스.</p>
                 </div>
                 <div className="p-4 bg-neutral-50 rounded-lg">
-                  <h3 className="font-medium text-neutral-800 mb-1">📈 전환율</h3>
+                  <h3 className="font-medium text-neutral-800 mb-1 flex items-center gap-1.5"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> 전환율</h3>
                   <p className="text-sm text-neutral-600">방문 → 회원가입 → 세션 시작 비율.</p>
                 </div>
               </div>

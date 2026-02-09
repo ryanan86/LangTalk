@@ -1039,7 +1039,7 @@ export function generateImprovementGuide(
     const gap = benchmark.vocabularyProfile.tier2Min - metrics.vocabulary.tier2Percentage;
     guide.push({
       area: isKo ? '학술 어휘력' : 'Academic Vocabulary',
-      icon: '📚',
+      icon: 'book',
       currentLevel: isKo
         ? `학술 어휘 ${metrics.vocabulary.tier2Percentage}%`
         : `Academic words: ${metrics.vocabulary.tier2Percentage}%`,
@@ -1071,7 +1071,7 @@ export function generateImprovementGuide(
   if (metrics.sentenceComplexity.complexRatio < benchmark.sentenceComplexity.complexRatio[0]) {
     guide.push({
       area: isKo ? '문장 복잡도' : 'Sentence Complexity',
-      icon: '🔗',
+      icon: 'link',
       currentLevel: isKo
         ? `복문 비율 ${metrics.sentenceComplexity.complexRatio}%`
         : `Complex sentences: ${metrics.sentenceComplexity.complexRatio}%`,
@@ -1103,7 +1103,7 @@ export function generateImprovementGuide(
   if (metrics.discourseMarkers.intermediatePer100 < benchmark.discourseMarkers.intermediateMin) {
     guide.push({
       area: isKo ? '연결어 사용' : 'Discourse Markers',
-      icon: '🔀',
+      icon: 'shuffle',
       currentLevel: isKo
         ? `중급 연결어 ${metrics.discourseMarkers.intermediatePer100}/100단어`
         : `Intermediate markers: ${metrics.discourseMarkers.intermediatePer100}/100 words`,
@@ -1143,7 +1143,7 @@ export function generateImprovementGuide(
 
     guide.push({
       area: isKo ? '문법 정확도' : 'Grammar Accuracy',
-      icon: '✏️',
+      icon: 'pencil',
       currentLevel: isKo
         ? `오류율 ${metrics.grammarIndicators.estimatedErrorsPer100}/100단어`
         : `Error rate: ${metrics.grammarIndicators.estimatedErrorsPer100}/100 words`,
@@ -1187,7 +1187,7 @@ export function generateImprovementGuide(
   if (metrics.avgWordsPerTurn < benchmark.avgWordsPerTurn[0]) {
     guide.push({
       area: isKo ? '응답 길이' : 'Response Length',
-      icon: '📏',
+      icon: 'ruler',
       currentLevel: isKo
         ? `평균 ${metrics.avgWordsPerTurn}단어/응답`
         : `Avg ${metrics.avgWordsPerTurn} words/response`,

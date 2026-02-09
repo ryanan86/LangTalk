@@ -42,11 +42,11 @@ const openai = new OpenAI({ apiKey: API_KEY });
 async function askGPT(prompt) {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o-mini",
       messages: [
         { role: "user", content: prompt }
       ],
-      max_tokens: 2048,
+      max_tokens: parseInt(process.env.MAX_TOKENS || "2048", 10),
     });
     return response.choices[0].message.content;
   } catch (error) {

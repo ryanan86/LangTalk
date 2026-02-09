@@ -12,39 +12,6 @@ interface TutorAvatarProps {
   showName?: boolean;
 }
 
-// ============================================================
-// AI IMAGE GENERATION PROMPTS (for Midjourney/Leonardo AI/DALL-E)
-// ============================================================
-//
-// Emma (American Female, 25-28):
-// "Professional headshot portrait of a friendly young American woman,
-//  age 25-28, warm genuine smile, light brown wavy shoulder-length hair,
-//  bright green eyes, light makeup, wearing a casual pink blouse,
-//  soft diffused studio lighting, clean white background,
-//  looking directly at camera, photorealistic, high detail, 8k quality --ar 1:1 --v 6"
-//
-// James (American Male, 26-30):
-// "Professional headshot portrait of a relaxed confident young American man,
-//  age 26-30, friendly genuine smile, short dark brown hair with modern fade,
-//  warm brown eyes, light stubble, wearing casual blue henley shirt,
-//  soft diffused studio lighting, clean white background,
-//  looking directly at camera, photorealistic, high detail, 8k quality --ar 1:1 --v 6"
-//
-// Charlotte (British Female, 28-32):
-// "Professional headshot portrait of an elegant sophisticated British woman,
-//  age 28-32, warm intellectual smile, blonde bob haircut,
-//  blue-grey eyes, wearing stylish round glasses and lavender blouse,
-//  soft diffused studio lighting, clean white background,
-//  looking directly at camera, photorealistic, high detail, 8k quality --ar 1:1 --v 6"
-//
-// Oliver (British Male, 30-35):
-// "Professional headshot portrait of a friendly approachable British man,
-//  age 30-35, warm genuine smile, brown hair with classic side part,
-//  well-groomed short beard, hazel-green eyes, wearing sage green casual shirt,
-//  soft diffused studio lighting, clean white background,
-//  looking directly at camera, photorealistic, high detail, 8k quality --ar 1:1 --v 6"
-// ============================================================
-
 export const tutorData = {
   emma: {
     name: 'Emma',
@@ -54,7 +21,6 @@ export const tutorData = {
     bgGradient: 'from-rose-500/20 to-pink-500/20',
     ringColor: 'ring-rose-400',
     glowColor: 'shadow-rose-500/50',
-    // Place your AI-generated image in public/tutors/emma.png
     imagePath: '/tutors/emma.png',
     fallbackColor: 'bg-gradient-to-br from-rose-400 to-pink-500',
   },
@@ -202,10 +168,7 @@ export default function TutorAvatar({
 
         {/* Flag indicator */}
         <div
-          className={`
-            absolute -bottom-1 -right-1
-            bg-white/90 backdrop-blur-sm rounded-md p-0.5 shadow-lg
-          `}
+          className="absolute -bottom-1 -right-1 bg-white dark:bg-neutral-800 backdrop-blur-sm rounded-md p-0.5 shadow-lg"
         >
           <Flag country={tutor.flag as 'US' | 'UK'} size={size === 'sm' ? 14 : size === 'md' ? 18 : 24} />
         </div>
@@ -228,14 +191,14 @@ export default function TutorAvatar({
         )}
       </div>
 
-      {/* Name label */}
+      {/* Name label - theme aware */}
       {showName && (
         <div className="text-center">
-          <p className={`font-semibold text-white ${size === 'sm' ? 'text-xs' : size === 'md' ? 'text-sm' : 'text-base'}`}>
+          <p className={`font-semibold text-neutral-900 dark:text-white ${size === 'sm' ? 'text-xs' : size === 'md' ? 'text-sm' : 'text-base'}`}>
             {tutor.name}
           </p>
           {size !== 'sm' && (
-            <p className="text-xs text-white/50">{tutor.nationality}</p>
+            <p className="text-xs text-neutral-500 dark:text-white/50">{tutor.nationality}</p>
           )}
         </div>
       )}
@@ -257,7 +220,7 @@ export function TutorAvatarLarge({
   const [imageError, setImageError] = useState(false);
 
   const statusColors = {
-    idle: 'ring-white/20',
+    idle: 'ring-neutral-300 dark:ring-white/20',
     listening: 'ring-green-400 shadow-green-500/30',
     thinking: 'ring-amber-400 shadow-amber-500/30',
     speaking: `${tutor.ringColor} ${tutor.glowColor}`,
@@ -316,15 +279,15 @@ export function TutorAvatarLarge({
         </div>
 
         {/* Flag */}
-        <div className="absolute -bottom-2 -right-2 bg-white/90 backdrop-blur-sm rounded-md p-1 shadow-lg">
+        <div className="absolute -bottom-2 -right-2 bg-white dark:bg-neutral-800 backdrop-blur-sm rounded-md p-1 shadow-lg">
           <Flag country={tutor.flag as 'US' | 'UK'} size={32} />
         </div>
       </div>
 
       {/* Name and Status */}
       <div className="mt-4 text-center">
-        <h2 className="text-xl font-bold text-white">{tutor.name}</h2>
-        <p className="text-sm text-white/50">{tutor.nationality} Tutor</p>
+        <h2 className="text-xl font-bold text-neutral-900 dark:text-white">{tutor.name}</h2>
+        <p className="text-sm text-neutral-500 dark:text-white/50">{tutor.nationality} Tutor</p>
         {status !== 'idle' && (
           <p className={`
             mt-2 text-sm font-medium

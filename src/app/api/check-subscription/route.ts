@@ -106,6 +106,11 @@ export async function GET(_request: NextRequest) {
       longestStreak: stats.longestStreak,
       evaluatedGrade: stats.currentLevel || null,
       levelDetails: stats.levelDetails || null,
+      // Gamification data
+      xp: stats.xp || 0,
+      level: stats.level || 1,
+      achievements: stats.achievements || [],
+      weeklyXp: stats.weeklyXp || [0, 0, 0, 0, 0, 0, 0],
       profile,
       // Dashboard extras
       dueCorrectionsCount: dueCorrections.length,

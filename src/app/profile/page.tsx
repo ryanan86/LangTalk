@@ -142,7 +142,7 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-dark-bg">
         <div className="flex gap-2">
           <div className="loading-dot" />
           <div className="loading-dot" />
@@ -153,19 +153,19 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-neutral-50 dark:bg-dark-bg">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-neutral-200 px-4 sm:px-6 py-4 sticky top-0 z-50">
+      <header className="bg-white/80 dark:bg-dark-surface/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800 px-4 sm:px-6 py-4 sticky top-0 z-50">
         <div className="max-w-2xl mx-auto flex justify-between items-center">
           <button
             onClick={() => router.push('/')}
-            className="text-neutral-500 hover:text-neutral-700 p-1"
+            className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 p-1"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 className="text-lg font-semibold text-neutral-900">
+          <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">
             {language === 'ko' ? '학습 프로필 설정' : 'Learning Profile'}
           </h1>
           <div className="w-8" />
@@ -174,8 +174,8 @@ export default function ProfilePage() {
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-8">
         {/* Notice */}
-        <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-          <p className="text-sm text-blue-800">
+        <div className="p-4 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl">
+          <p className="text-sm text-blue-800 dark:text-blue-300">
             {language === 'ko'
               ? '개인화된 맞춤 학습을 위해 계정당 하나의 프로필만 지원합니다.'
               : 'Only one profile per account is supported for personalized learning.'}
@@ -184,10 +184,10 @@ export default function ProfilePage() {
 
         {/* Profile Type Section */}
         <section>
-          <h2 className="text-lg font-semibold text-neutral-900 mb-2">
+          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
             {language === 'ko' ? '나는 어떤 사람인가요?' : 'What describes you best?'}
           </h2>
-          <p className="text-sm text-neutral-500 mb-4">
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
             {language === 'ko'
               ? '선택하신 유형에 맞는 어휘와 상황을 우선 학습합니다.'
               : 'We\'ll prioritize vocabulary and scenarios relevant to you.'}
@@ -200,14 +200,14 @@ export default function ProfilePage() {
                 onClick={() => setSelectedType(type.id)}
                 className={`p-4 rounded-xl border-2 transition-all text-left ${
                   selectedType === type.id
-                    ? 'border-primary-500 bg-primary-50'
-                    : 'border-neutral-200 bg-white hover:border-neutral-300'
+                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10'
+                    : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-dark-surface hover:border-neutral-300 dark:hover:border-neutral-600'
                 }`}
               >
-                <span className="font-medium text-neutral-900 block text-sm">
+                <span className="font-medium text-neutral-900 dark:text-white block text-sm">
                   {language === 'ko' ? type.labelKo : type.labelEn}
                 </span>
-                <span className="text-xs text-neutral-500 mt-1 block">
+                <span className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 block">
                   {language === 'ko' ? type.descKo : type.descEn}
                 </span>
               </button>
@@ -217,10 +217,10 @@ export default function ProfilePage() {
 
         {/* Interests Section */}
         <section>
-          <h2 className="text-lg font-semibold text-neutral-900 mb-2">
+          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
             {language === 'ko' ? '관심사 선택' : 'Select Your Interests'}
           </h2>
-          <p className="text-sm text-neutral-500 mb-4">
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
             {language === 'ko'
               ? '대화 주제를 맞춤화하는 데 사용됩니다. (복수 선택 가능)'
               : 'Used to personalize conversation topics. (Select multiple)'}
@@ -234,7 +234,7 @@ export default function ProfilePage() {
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                   selectedInterests.includes(interest.id)
                     ? 'bg-primary-500 text-white'
-                    : 'bg-white border border-neutral-200 text-neutral-700 hover:border-neutral-300'
+                    : 'bg-white dark:bg-dark-surface border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
                 }`}
               >
                 {language === 'ko' ? interest.labelKo : interest.labelEn}
@@ -245,10 +245,10 @@ export default function ProfilePage() {
 
         {/* Custom Context Section */}
         <section>
-          <h2 className="text-lg font-semibold text-neutral-900 mb-2">
+          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
             {language === 'ko' ? '추가 정보 (선택)' : 'Additional Context (Optional)'}
           </h2>
-          <p className="text-sm text-neutral-500 mb-4">
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
             {language === 'ko'
               ? '더 구체적인 상황이나 목표가 있다면 알려주세요.'
               : 'Tell us about specific situations or goals you have.'}
@@ -262,7 +262,7 @@ export default function ProfilePage() {
                 ? '예: 미국 회사와 협업 중이며, 화상 회의를 자주 합니다.'
                 : 'e.g., I work with US clients and have frequent video calls.'
             }
-            className="w-full p-4 rounded-xl border border-neutral-200 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+            className="w-full p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-dark-surface text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
             rows={3}
           />
         </section>
@@ -280,7 +280,7 @@ export default function ProfilePage() {
           </button>
 
           {!selectedType && (
-            <p className="text-center text-sm text-neutral-500 mt-3">
+            <p className="text-center text-sm text-neutral-500 dark:text-neutral-400 mt-3">
               {language === 'ko' ? '프로필 유형을 선택해주세요.' : 'Please select a profile type.'}
             </p>
           )}

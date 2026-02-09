@@ -533,21 +533,21 @@ function DebateContent() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col">
+    <div className="min-h-screen bg-neutral-50 dark:bg-dark-bg flex flex-col">
       <audio ref={audioRef} onEnded={() => setIsPlaying(false)} />
 
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-neutral-200 px-4 sm:px-6 py-3 sm:py-4 sticky top-0 z-50">
+      <header className="bg-white/80 dark:bg-dark-surface/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800 px-4 sm:px-6 py-3 sm:py-4 sticky top-0 z-50">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <button onClick={() => router.push('/')} className="text-neutral-500 hover:text-neutral-700 p-1">
+          <button onClick={() => router.push('/')} className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 p-1">
             <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
 
           <div className="text-center">
-            <h2 className="font-semibold text-neutral-900 text-sm sm:text-base">{t.debateMode}</h2>
-            <p className="text-xs text-neutral-500">{getPhaseText()}</p>
+            <h2 className="font-semibold text-neutral-900 dark:text-white text-sm sm:text-base">{t.debateMode}</h2>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">{getPhaseText()}</p>
           </div>
 
           <div className="w-8" />
@@ -561,32 +561,32 @@ function DebateContent() {
         {phase === 'topic' && topic && (
           <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-8 text-center">
             <div className="animate-bounce-soft mb-6">
-              <span className="px-4 py-2 bg-amber-100 text-amber-700 rounded-full text-sm font-medium">
+              <span className="px-4 py-2 bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full text-sm font-medium">
                 {getCategoryText(topic.category)}
               </span>
             </div>
 
-            <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-lg max-w-lg mx-auto border border-neutral-100">
-              <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-4 leading-tight">
+            <div className="bg-white dark:bg-dark-surface rounded-3xl p-6 sm:p-8 shadow-lg dark:shadow-none dark:border dark:border-neutral-800 max-w-lg mx-auto border border-neutral-100">
+              <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white mb-4 leading-tight">
                 {language === 'ko' ? topic.title.ko : topic.title.en}
               </h2>
-              <p className="text-neutral-600 text-sm sm:text-base">
+              <p className="text-neutral-600 dark:text-neutral-400 text-sm sm:text-base">
                 {language === 'ko' ? topic.description.ko : topic.description.en}
               </p>
             </div>
 
-            <p className="text-neutral-400 text-sm mt-6">{t.revealingTopic}</p>
+            <p className="text-neutral-400 dark:text-neutral-500 text-sm mt-6">{t.revealingTopic}</p>
           </div>
         )}
 
         {/* ========== TEAM ASSIGNMENT PHASE ========== */}
         {phase === 'team' && participants.length > 0 && (
           <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
-            <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-8 text-center">{t.teamAssignment}</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white mb-8 text-center">{t.teamAssignment}</h2>
 
             <div className="flex items-center justify-center gap-4 sm:gap-8 w-full max-w-3xl">
               {/* Pro Team */}
-              <div className={`flex-1 p-4 sm:p-6 rounded-2xl ${userTeam === 'pro' ? 'bg-green-50 border-2 border-green-400' : 'bg-neutral-50 border border-neutral-200'}`}>
+              <div className={`flex-1 p-4 sm:p-6 rounded-2xl ${userTeam === 'pro' ? 'bg-green-50 dark:bg-green-500/10 border-2 border-green-400 dark:border-green-500/40' : 'bg-neutral-50 dark:bg-dark-surface border border-neutral-200 dark:border-neutral-700'}`}>
                 <h3 className="text-center font-semibold text-green-600 mb-4">{t.proTeam}</h3>
                 <div className="space-y-3">
                   {participants.filter(p => p.team === 'pro').map((p) => (
@@ -595,7 +595,7 @@ function DebateContent() {
                         <span className="text-white font-bold">{p.name[0]}</span>
                       </div>
                       <div>
-                        <p className="font-medium text-neutral-900">{p.name}</p>
+                        <p className="font-medium text-neutral-900 dark:text-white">{p.name}</p>
                         {p.isUser && <span className="text-xs text-green-600">{t.yourTeam}</span>}
                         {!p.isUser && p.team === userTeam && <span className="text-xs text-neutral-500">{t.teamPartner}</span>}
                       </div>
@@ -610,7 +610,7 @@ function DebateContent() {
               </div>
 
               {/* Con Team */}
-              <div className={`flex-1 p-4 sm:p-6 rounded-2xl ${userTeam === 'con' ? 'bg-red-50 border-2 border-red-400' : 'bg-neutral-50 border border-neutral-200'}`}>
+              <div className={`flex-1 p-4 sm:p-6 rounded-2xl ${userTeam === 'con' ? 'bg-red-50 dark:bg-red-500/10 border-2 border-red-400 dark:border-red-500/40' : 'bg-neutral-50 dark:bg-dark-surface border border-neutral-200 dark:border-neutral-700'}`}>
                 <h3 className="text-center font-semibold text-red-600 mb-4">{t.conTeam}</h3>
                 <div className="space-y-3">
                   {participants.filter(p => p.team === 'con').map((p) => (
@@ -619,7 +619,7 @@ function DebateContent() {
                         <span className="text-white font-bold">{p.name[0]}</span>
                       </div>
                       <div>
-                        <p className="font-medium text-neutral-900">{p.name}</p>
+                        <p className="font-medium text-neutral-900 dark:text-white">{p.name}</p>
                         {p.isUser && <span className="text-xs text-red-600">{t.yourTeam}</span>}
                         {!p.isUser && p.team === userTeam && <span className="text-xs text-neutral-500">{t.teamPartner}</span>}
                       </div>
@@ -631,12 +631,12 @@ function DebateContent() {
 
             {/* Moderator */}
             <div className="mt-8 text-center">
-              <p className="text-xs text-neutral-500 mb-2">Moderator</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Moderator</p>
               <div className="flex items-center justify-center gap-2">
                 <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${moderator.gradient} flex items-center justify-center`}>
                   <span className="text-white font-bold text-sm">{moderator.name[0]}</span>
                 </div>
-                <span className="text-neutral-700 font-medium">{moderator.name}</span>
+                <span className="text-neutral-700 dark:text-neutral-300 font-medium">{moderator.name}</span>
               </div>
             </div>
           </div>
@@ -646,7 +646,7 @@ function DebateContent() {
         {(phase === 'opening' || phase === 'debate' || phase === 'closing') && (
           <>
             {/* Team Display */}
-            <div className="px-4 py-3 bg-white border-b border-neutral-100">
+            <div className="px-4 py-3 bg-white dark:bg-dark-surface border-b border-neutral-100 dark:border-neutral-800">
               <div className="max-w-3xl mx-auto flex items-center justify-between">
                 {/* Pro Team Avatars */}
                 <div className="flex items-center gap-2">
@@ -691,7 +691,7 @@ function DebateContent() {
                   </div>
 
                   <div className="text-center mb-6">
-                    <h3 className="text-lg font-semibold text-neutral-900">{getCurrentSpeaker()!.name}</h3>
+                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">{getCurrentSpeaker()!.name}</h3>
                     <span className={`text-sm ${getCurrentSpeaker()!.team === 'pro' ? 'text-green-600' : getCurrentSpeaker()!.team === 'con' ? 'text-red-600' : 'text-neutral-500'}`}>
                       {getCurrentSpeaker()!.team === 'moderator' ? 'Moderator' : getCurrentSpeaker()!.team === 'pro' ? t.proTeam : t.conTeam}
                     </span>
@@ -699,8 +699,8 @@ function DebateContent() {
 
                   {/* Current Message Display */}
                   {currentMessage && !isUserTurn && (
-                    <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm max-w-lg mx-auto mb-6">
-                      <p className="text-neutral-800 text-sm sm:text-base leading-relaxed">{currentMessage}</p>
+                    <div className="bg-white dark:bg-dark-surface rounded-2xl p-4 sm:p-6 shadow-sm dark:shadow-none dark:border dark:border-neutral-800 max-w-lg mx-auto mb-6">
+                      <p className="text-neutral-800 dark:text-neutral-200 text-sm sm:text-base leading-relaxed">{currentMessage}</p>
                     </div>
                   )}
 
@@ -724,7 +724,7 @@ function DebateContent() {
 
             {/* User Input Area */}
             {isUserTurn && (
-              <div className="p-4 sm:p-6 bg-white border-t border-neutral-200">
+              <div className="p-4 sm:p-6 bg-white dark:bg-dark-surface border-t border-neutral-200 dark:border-neutral-800">
                 <div className="max-w-lg mx-auto text-center">
                   <p className="text-amber-600 font-semibold mb-4">{t.yourTurn}</p>
                   <button
@@ -753,8 +753,8 @@ function DebateContent() {
             <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${moderator.gradient} flex items-center justify-center mb-4`}>
               <span className="text-white text-2xl font-bold">{moderator.name[0]}</span>
             </div>
-            <h2 className="text-lg sm:text-xl font-bold text-neutral-900 mb-2">{t.debateAnalysis}</h2>
-            <p className="text-neutral-500 mb-6">{t.preparingDebate}</p>
+            <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white mb-2">{t.debateAnalysis}</h2>
+            <p className="text-neutral-500 dark:text-neutral-400 mb-6">{t.preparingDebate}</p>
             <div className="flex gap-2">
               <div className="loading-dot" />
               <div className="loading-dot" />
@@ -772,16 +772,16 @@ function DebateContent() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                 </svg>
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-neutral-900">{t.debateComplete}</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">{t.debateComplete}</h2>
             </div>
 
             {analysis && (
               <>
                 {/* User Performance */}
-                <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm mb-4">
-                  <h3 className="font-semibold text-neutral-900 mb-4 flex items-center gap-2">
-                    <span className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                      <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-white dark:bg-dark-surface rounded-2xl p-4 sm:p-6 shadow-sm dark:shadow-none dark:border dark:border-neutral-800 mb-4">
+                  <h3 className="font-semibold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
+                    <span className="w-6 h-6 bg-green-100 dark:bg-green-500/20 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                     </span>
@@ -790,10 +790,10 @@ function DebateContent() {
 
                   {/* Strengths */}
                   <div className="mb-4">
-                    <p className="text-sm text-neutral-500 mb-2">{t.whatYouDidWell}</p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-2">{t.whatYouDidWell}</p>
                     <ul className="space-y-1">
                       {analysis.userPerformance.strengths.map((s, i) => (
-                        <li key={i} className="text-neutral-700 text-sm flex items-start gap-2">
+                        <li key={i} className="text-neutral-700 dark:text-neutral-300 text-sm flex items-start gap-2">
                           <span className="text-green-500">•</span>{s}
                         </li>
                       ))}
@@ -802,10 +802,10 @@ function DebateContent() {
 
                   {/* Improvements */}
                   <div>
-                    <p className="text-sm text-neutral-500 mb-2">{t.areasToFocus}</p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-2">{t.areasToFocus}</p>
                     <ul className="space-y-1">
                       {analysis.userPerformance.improvements.map((s, i) => (
-                        <li key={i} className="text-neutral-700 text-sm flex items-start gap-2">
+                        <li key={i} className="text-neutral-700 dark:text-neutral-300 text-sm flex items-start gap-2">
                           <span className="text-amber-500">•</span>{s}
                         </li>
                       ))}
@@ -815,14 +815,14 @@ function DebateContent() {
 
                 {/* Grammar Feedback */}
                 {analysis.userPerformance.grammarCorrections.length > 0 && (
-                  <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm mb-4">
-                    <h3 className="font-semibold text-neutral-900 mb-4">{t.grammarFeedback}</h3>
+                  <div className="bg-white dark:bg-dark-surface rounded-2xl p-4 sm:p-6 shadow-sm dark:shadow-none dark:border dark:border-neutral-800 mb-4">
+                    <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">{t.grammarFeedback}</h3>
                     <div className="space-y-4">
                       {analysis.userPerformance.grammarCorrections.map((c, i) => (
-                        <div key={i} className="p-3 bg-neutral-50 rounded-xl">
-                          <p className="text-red-600 text-sm line-through">{c.original}</p>
-                          <p className="text-green-600 text-sm font-medium mt-1">{c.corrected}</p>
-                          <p className="text-neutral-500 text-xs mt-1">{c.explanation}</p>
+                        <div key={i} className="p-3 bg-neutral-50 dark:bg-neutral-800 rounded-xl">
+                          <p className="text-red-600 dark:text-red-400 text-sm line-through">{c.original}</p>
+                          <p className="text-green-600 dark:text-green-400 text-sm font-medium mt-1">{c.corrected}</p>
+                          <p className="text-neutral-500 dark:text-neutral-400 text-xs mt-1">{c.explanation}</p>
                         </div>
                       ))}
                     </div>
@@ -830,11 +830,11 @@ function DebateContent() {
                 )}
 
                 {/* Key Expressions */}
-                <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm mb-4">
-                  <h3 className="font-semibold text-neutral-900 mb-4">{t.keyExpressions}</h3>
+                <div className="bg-white dark:bg-dark-surface rounded-2xl p-4 sm:p-6 shadow-sm dark:shadow-none dark:border dark:border-neutral-800 mb-4">
+                  <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">{t.keyExpressions}</h3>
                   <div className="flex flex-wrap gap-2">
                     {analysis.expressionsToLearn.map((exp, i) => (
-                      <span key={i} className="px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-sm">
+                      <span key={i} className="px-3 py-1 bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300 rounded-full text-sm">
                         {exp}
                       </span>
                     ))}
@@ -842,9 +842,9 @@ function DebateContent() {
                 </div>
 
                 {/* Overall Feedback */}
-                <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-4 sm:p-6 mb-6">
-                  <p className="text-neutral-800 italic">&ldquo;{analysis.overallFeedback}&rdquo;</p>
-                  <p className="text-sm text-amber-600 mt-2">— {moderator.name}</p>
+                <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/10 rounded-2xl p-4 sm:p-6 mb-6">
+                  <p className="text-neutral-800 dark:text-neutral-200 italic">&ldquo;{analysis.overallFeedback}&rdquo;</p>
+                  <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">— {moderator.name}</p>
                 </div>
               </>
             )}
@@ -879,7 +879,7 @@ function DebateContent() {
 export default function DebatePage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-dark-bg">
         <div className="flex gap-2">
           <div className="loading-dot" />
           <div className="loading-dot" />

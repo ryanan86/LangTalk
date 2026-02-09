@@ -546,6 +546,13 @@ function getDefaultStats(): StatsData {
     debateCount: 0,
     currentStreak: 0,
     longestStreak: 0,
+    xp: 0,
+    level: 1,
+    achievements: [],
+    tutorsUsed: [],
+    perfectSessions: 0,
+    dailyChallengeStreak: 0,
+    weeklyXp: [0, 0, 0, 0, 0, 0, 0],
   };
 }
 

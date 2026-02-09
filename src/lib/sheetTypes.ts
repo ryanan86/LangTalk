@@ -55,6 +55,16 @@ export interface StatsData {
   currentStreak: number;
   longestStreak: number;
   lastActiveDate?: string;
+
+  // Gamification
+  xp: number;                    // Cumulative XP
+  level: number;                 // Level 1-50
+  achievements: string[];        // Achievement ID array
+  tutorsUsed: string[];          // Tutors the user has practiced with
+  perfectSessions: number;       // Sessions with 0 corrections
+  dailyChallengeStreak: number;
+  dailyChallengeLastDate?: string;
+  weeklyXp: number[];            // Last 7 days XP [Sun..Sat]
 }
 
 export interface UserRow {

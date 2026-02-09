@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { getServerSession } from 'next-auth';
 import { MIN_SESSIONS_FOR_DEBATE } from '@/lib/debateTypes';
+import { calculateXP, checkLevelUp, checkAchievements } from '@/lib/gamification';
+import type { GamificationState } from '@/lib/gamification';
+import { getUserData, updateUserFields } from '@/lib/sheetHelper';
 
 // GET: Retrieve current session count
 export async function GET() {
@@ -168,11 +171,109 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // === Gamification: Update XP, streak, achievements ===
+    let xpEarned = 0;
+    let newAchievements: string[] = [];
+    let newLevel = 0;
+    let leveledUp = false;
+
+    try {
+      const userData = await getUserData(email);
+      const stats = userData?.stats || {
+        sessionCount: 0, totalMinutes: 0, debateCount: 0,
+        currentStreak: 0, longestStreak: 0,
+        xp: 0, level: 1, achievements: [], tutorsUsed: [],
+        perfectSessions: 0, dailyChallengeStreak: 0,
+        weeklyXp: [0, 0, 0, 0, 0, 0, 0],
+      };
+
+      // Calculate XP for this session
+      xpEarned += calculateXP('session_complete');
+      if (newCount === 1) xpEarned += calculateXP('first_session');
+
+      // Parse body for additional gamification data
+      let tutorId: string | undefined;
+      let correctionsCount: number | undefined;
+      try {
+        const bodyText = await request.text();
+        if (bodyText) {
+          const bodyData = JSON.parse(bodyText);
+          tutorId = bodyData.tutorId;
+          correctionsCount = bodyData.correctionsCount;
+        }
+      } catch { /* body already consumed or empty */ }
+
+      // No corrections bonus
+      if (correctionsCount === 0) {
+        xpEarned += calculateXP('no_corrections');
+      }
+
+      // Streak bonus
+      const streakDays = stats.currentStreak + 1;
+      xpEarned += calculateXP('streak_bonus', { streakDays });
+
+      // Check level up
+      const totalXP = (stats.xp || 0) + xpEarned;
+      const levelCheck = checkLevelUp(stats.xp || 0, xpEarned);
+      newLevel = levelCheck.newLevel;
+      leveledUp = levelCheck.leveled;
+
+      // Update tutors used
+      const tutorsUsed = [...(stats.tutorsUsed || [])];
+      if (tutorId && !tutorsUsed.includes(tutorId)) {
+        tutorsUsed.push(tutorId);
+      }
+
+      // Update weekly XP (shift and add today's XP)
+      const weeklyXp = [...(stats.weeklyXp || [0, 0, 0, 0, 0, 0, 0])];
+      weeklyXp[new Date().getDay()] = (weeklyXp[new Date().getDay()] || 0) + xpEarned;
+
+      // Check achievements
+      const gamificationState: GamificationState = {
+        totalXP,
+        level: newLevel,
+        xpForNextLevel: 0,
+        currentLevelXP: 0,
+        streakDays,
+        sessionsCompleted: newCount,
+        reviewsCompleted: 0,
+        debatesCompleted: stats.debateCount || 0,
+        perfectSessions: (stats.perfectSessions || 0) + (correctionsCount === 0 ? 1 : 0),
+        tutorsUsed,
+        unlockedAchievements: stats.achievements || [],
+        xpHistory: [],
+      };
+
+      const unlockedAchievements = checkAchievements(gamificationState);
+      newAchievements = unlockedAchievements.map(a => a.id);
+
+      // Save to user data
+      await updateUserFields(email, {
+        stats: {
+          sessionCount: newCount,
+          xp: totalXP,
+          level: newLevel,
+          currentStreak: streakDays,
+          longestStreak: Math.max(stats.longestStreak || 0, streakDays),
+          achievements: [...(stats.achievements || []), ...newAchievements],
+          tutorsUsed,
+          perfectSessions: gamificationState.perfectSessions,
+          weeklyXp,
+        },
+      });
+    } catch (gamError) {
+      console.error('Gamification update error (non-blocking):', gamError);
+    }
+
     return NextResponse.json({
       success: true,
       newCount,
       evaluatedGrade: levelToStore,
       canDebate: newCount >= MIN_SESSIONS_FOR_DEBATE,
+      xpEarned,
+      newLevel,
+      leveledUp,
+      newAchievements,
     });
   } catch (error) {
     console.error('Session count increment error:', error);

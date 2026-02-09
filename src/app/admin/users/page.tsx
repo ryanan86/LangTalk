@@ -539,7 +539,7 @@ export default function AdminUsersPage() {
                       {user.correctionStats && (
                         <span>교정: {user.correctionStats.total}개 (대기: {user.correctionStats.due})</span>
                       )}
-                      {user.stats.currentStreak ? <span>🔥 {user.stats.currentStreak}일</span> : null}
+                      {user.stats.currentStreak ? <span className="flex items-center gap-0.5"><svg className="w-3 h-3 text-orange-500" viewBox="0 0 24 24" fill="currentColor"><path d="M12 23c-3.6 0-8-3.1-8-8.5C4 9.3 10 1 12 1c2 0 8 8.3 8 13.5 0 5.4-4.4 8.5-8 8.5zm0-20C10.3 5.2 6 11.3 6 14.5 6 18.6 9 21 12 21s6-2.4 6-6.5C18 11.3 13.7 5.2 12 3z"/></svg> {user.stats.currentStreak}일</span> : null}
                     </div>
                     {/* Expiry date section */}
                     {user.subscription.status === 'active' && (

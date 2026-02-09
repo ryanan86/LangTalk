@@ -178,6 +178,35 @@ interface Translations {
   selectDecade: string;
   selectYear: string;
   birthYear: string;
+
+  // Gamification
+  xpEarned: string;
+  levelUp: string;
+  levelUpMessage: string;
+  achievementUnlocked: string;
+  dailyChallenge: string;
+  dailyChallengeComplete: string;
+  streak: string;
+  streakDays: string;
+  xpLabel: string;
+  levelLabel: string;
+  achievements: string;
+  viewAll: string;
+  locked: string;
+  progress: string;
+
+  // Onboarding
+  welcomeTitle: string;
+  welcomeSubtitle: string;
+  getStarted: string;
+  selectProfile: string;
+  selectInterests: string;
+  testYourMic: string;
+  meetTutors: string;
+  readyToGo: string;
+  next: string;
+  skip: string;
+  letsStart: string;
 }
 
 const translations: Record<Language, Translations> = {
@@ -355,6 +384,35 @@ const translations: Record<Language, Translations> = {
     selectDecade: '연대를 선택하세요',
     selectYear: '연도를 선택하세요',
     birthYear: '출생연도',
+
+    // Gamification
+    xpEarned: 'XP 획득!',
+    levelUp: '레벨 업!',
+    levelUpMessage: '축하합니다! 레벨 {level}에 도달했습니다!',
+    achievementUnlocked: '업적 달성!',
+    dailyChallenge: '오늘의 챌린지',
+    dailyChallengeComplete: '챌린지 완료!',
+    streak: '연속 학습',
+    streakDays: '{n}일 연속',
+    xpLabel: '경험치',
+    levelLabel: '레벨',
+    achievements: '업적',
+    viewAll: '전체 보기',
+    locked: '잠금',
+    progress: '진행률',
+
+    // Onboarding
+    welcomeTitle: 'TapTalk에 오신 것을 환영합니다!',
+    welcomeSubtitle: 'AI 튜터와 함께 영어 실력을 키워보세요',
+    getStarted: '시작하기',
+    selectProfile: '프로필을 선택해주세요',
+    selectInterests: '관심사를 선택해주세요',
+    testYourMic: '마이크를 테스트해보세요',
+    meetTutors: 'AI 튜터를 만나보세요',
+    readyToGo: '준비 완료!',
+    next: '다음',
+    skip: '건너뛰기',
+    letsStart: '대화 시작하기',
   },
   en: {
     // Common
@@ -530,6 +588,35 @@ const translations: Record<Language, Translations> = {
     selectDecade: 'Select a decade',
     selectYear: 'Select a year',
     birthYear: 'Birth Year',
+
+    // Gamification
+    xpEarned: 'XP Earned!',
+    levelUp: 'Level Up!',
+    levelUpMessage: 'Congratulations! You reached Level {level}!',
+    achievementUnlocked: 'Achievement Unlocked!',
+    dailyChallenge: "Today's Challenge",
+    dailyChallengeComplete: 'Challenge Complete!',
+    streak: 'Streak',
+    streakDays: '{n} day streak',
+    xpLabel: 'Experience',
+    levelLabel: 'Level',
+    achievements: 'Achievements',
+    viewAll: 'View All',
+    locked: 'Locked',
+    progress: 'Progress',
+
+    // Onboarding
+    welcomeTitle: 'Welcome to TapTalk!',
+    welcomeSubtitle: 'Improve your English with AI tutors',
+    getStarted: 'Get Started',
+    selectProfile: 'Select your profile',
+    selectInterests: 'Choose your interests',
+    testYourMic: 'Test your microphone',
+    meetTutors: 'Meet the AI tutors',
+    readyToGo: "You're all set!",
+    next: 'Next',
+    skip: 'Skip',
+    letsStart: "Let's Start Talking",
   },
 };
 
@@ -545,20 +632,22 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>('en');
 
   useEffect(() => {
-    const saved = localStorage.getItem('taptalk-language') as Language;
-    if (saved && (saved === 'ko' || saved === 'en')) {
-      setLanguage(saved);
-      document.cookie = `lang=${saved};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
-    } else {
-      // Set default cookie (English for global service)
+    try {
+      const saved = localStorage?.getItem('taptalk-language') as Language;
+      if (saved && (saved === 'ko' || saved === 'en')) {
+        setLanguage(saved);
+        document.cookie = `lang=${saved};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
+      } else {
+        document.cookie = `lang=en;path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
+      }
+    } catch {
       document.cookie = `lang=en;path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
     }
   }, []);
 
   const handleSetLanguage = (lang: Language) => {
     setLanguage(lang);
-    localStorage.setItem('taptalk-language', lang);
-    // Also set cookie for server-side access (layout.tsx html lang)
+    try { localStorage?.setItem('taptalk-language', lang); } catch {}
     document.cookie = `lang=${lang};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
   };
 
@@ -581,13 +670,13 @@ export function LanguageToggle() {
   const { language, setLanguage } = useLanguage();
 
   return (
-    <div className="flex items-center rounded-full bg-white/10 backdrop-blur-sm border border-white/20 p-1">
+    <div className="flex items-center rounded-full bg-neutral-100 dark:bg-white/10 backdrop-blur-sm border border-neutral-200 dark:border-white/20 p-1">
       <button
         onClick={() => setLanguage('ko')}
         className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
           language === 'ko'
-            ? 'bg-white text-black shadow-sm'
-            : 'text-white/70 hover:text-white'
+            ? 'bg-white dark:bg-white text-black shadow-sm'
+            : 'text-neutral-500 dark:text-white/70 hover:text-neutral-700 dark:hover:text-white'
         }`}
       >
         한국어
@@ -596,8 +685,8 @@ export function LanguageToggle() {
         onClick={() => setLanguage('en')}
         className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
           language === 'en'
-            ? 'bg-white text-black shadow-sm'
-            : 'text-white/70 hover:text-white'
+            ? 'bg-white dark:bg-white text-black shadow-sm'
+            : 'text-neutral-500 dark:text-white/70 hover:text-neutral-700 dark:hover:text-white'
         }`}
       >
         EN

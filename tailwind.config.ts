@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: 'class',
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -18,9 +19,14 @@ const config: Config = {
           400: '#C084FC',
           500: '#A855F7',
           600: '#9333EA',
-          700: '#7C3AED',  // Main brand color
+          700: '#7C3AED',  // Main brand color (dark)
           800: '#6B21A8',
           900: '#581C87',
+        },
+        // Brand color for light mode
+        brand: {
+          light: '#4F46E5',
+          dark: '#7C3AED',
         },
         // Neutral - Refined zinc scale
         neutral: {
@@ -79,6 +85,7 @@ const config: Config = {
         'bounce-soft': 'bounce-soft 2s ease-in-out infinite',
         'shimmer': 'shimmer 2s linear infinite',
         'glow': 'glow 2s ease-in-out infinite',
+        'phone-float': 'phone-float 6s ease-in-out infinite',
       },
       keyframes: {
         'pulse-ring': {
@@ -124,6 +131,10 @@ const config: Config = {
         'glow-lg': '0 0 60px rgba(124, 58, 237, 0.25)',
         'premium': '0 8px 32px rgba(0, 0, 0, 0.12)',
         'premium-lg': '0 16px 48px rgba(0, 0, 0, 0.16)',
+        'card': '0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02)',
+        'card-hover': '0 10px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04)',
+        'soft': '0 2px 8px rgba(0, 0, 0, 0.06)',
+        'soft-lg': '0 4px 20px rgba(0, 0, 0, 0.08)',
       },
       backdropBlur: {
         'xs': '2px',

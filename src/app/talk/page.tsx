@@ -975,7 +975,7 @@ function TalkContent() {
 
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-500 ${
-      isDarkPhase ? 'bg-neutral-950' : 'bg-neutral-50'
+      isDarkPhase ? 'bg-neutral-950' : 'bg-neutral-50 dark:bg-dark-bg'
     }`}>
       <audio ref={audioRef} onEnded={() => setIsPlaying(false)} />
 
@@ -983,13 +983,13 @@ function TalkContent() {
       <header className={`px-4 sm:px-6 pb-3 sm:pb-4 sticky top-0 z-50 pt-12 transition-colors duration-500 ${
         isDarkPhase
           ? 'bg-neutral-950/80 backdrop-blur-xl border-b border-white/5'
-          : 'bg-white/80 backdrop-blur-md border-b border-neutral-200'
+          : 'bg-white/80 dark:bg-dark-surface/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800'
       }`}>
         <div className="max-w-2xl mx-auto flex justify-between items-center">
           <button
             onClick={() => router.push('/')}
             className={`p-2 rounded-xl transition-colors ${
-              isDarkPhase ? 'text-white/60 hover:text-white hover:bg-white/5' : 'text-neutral-500 hover:text-neutral-700'
+              isDarkPhase ? 'text-white/60 hover:text-white hover:bg-white/5' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-white'
             }`}
           >
             <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1007,7 +1007,7 @@ function TalkContent() {
               <h2 className={`font-semibold text-sm sm:text-base ${isDarkPhase ? 'text-white' : 'text-neutral-900'}`}>
                 {persona.name}
               </h2>
-              <p className={`text-xs ${isDarkPhase ? 'text-white/50' : 'text-neutral-500'}`}>{getPhaseText()}</p>
+              <p className={`text-xs ${isDarkPhase ? 'text-white/50' : 'text-neutral-500 dark:text-neutral-400'}`}>{getPhaseText()}</p>
             </div>
           </div>
 
@@ -1025,7 +1025,7 @@ function TalkContent() {
 
       {/* Progress Bar - Adaptive Theme */}
       <div className={`px-4 sm:px-6 py-3 transition-colors duration-500 ${
-        isDarkPhase ? 'bg-neutral-950' : 'bg-white border-b border-neutral-100'
+        isDarkPhase ? 'bg-neutral-950' : 'bg-white dark:bg-dark-surface border-b border-neutral-100 dark:border-neutral-800'
       }`}>
         <div className="max-w-2xl mx-auto">
           <div className="flex gap-1.5">
@@ -1035,7 +1035,7 @@ function TalkContent() {
                 className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
                   ['ready', 'recording', 'interview', 'analysis', 'review', 'shadowing', 'summary'].indexOf(phase) > idx
                     ? 'bg-primary-500'
-                    : isDarkPhase ? 'bg-white/10' : 'bg-neutral-200'
+                    : isDarkPhase ? 'bg-white/10' : 'bg-neutral-200 dark:bg-neutral-700'
                 }`}
               />
             ))}
@@ -1057,34 +1057,34 @@ function TalkContent() {
               />
             </div>
 
-            <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white mb-2">
               {persona.name}{t.readyToStart}
             </h2>
-            <p className="text-sm sm:text-base text-neutral-600 mb-6 sm:mb-8 max-w-md px-4">
+            <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-300 mb-6 sm:mb-8 max-w-md px-4">
               {t.readyDescription}
             </p>
 
-            <div className="bg-primary-50 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 max-w-md w-full mx-4">
-              <h3 className="font-semibold text-primary-900 mb-3 text-sm sm:text-base">{t.sessionFlow}</h3>
-              <div className="space-y-2 text-xs sm:text-sm text-primary-700">
+            <div className="bg-primary-50 dark:bg-primary-500/10 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 max-w-md w-full mx-4">
+              <h3 className="font-semibold text-primary-900 dark:text-primary-200 mb-3 text-sm sm:text-base">{t.sessionFlow}</h3>
+              <div className="space-y-2 text-xs sm:text-sm text-primary-700 dark:text-primary-300">
                 <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-primary-200 rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-primary-200 dark:bg-primary-500/30 rounded-full flex items-center justify-center text-xs font-bold">1</span>
                   <span>{t.flowStep1}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-primary-200 rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-primary-200 dark:bg-primary-500/30 rounded-full flex items-center justify-center text-xs font-bold">2</span>
                   <span>{t.flowStep2}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-primary-200 rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-primary-200 dark:bg-primary-500/30 rounded-full flex items-center justify-center text-xs font-bold">3</span>
                   <span>{t.flowStep3}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-primary-200 rounded-full flex items-center justify-center text-xs font-bold">4</span>
+                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-primary-200 dark:bg-primary-500/30 rounded-full flex items-center justify-center text-xs font-bold">4</span>
                   <span>{t.flowStep4}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-primary-200 rounded-full flex items-center justify-center text-xs font-bold">5</span>
+                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-primary-200 dark:bg-primary-500/30 rounded-full flex items-center justify-center text-xs font-bold">5</span>
                   <span>{t.flowStep5}</span>
                 </div>
               </div>
@@ -1313,8 +1313,8 @@ function TalkContent() {
               tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
               size="lg"
             />
-            <h2 className="text-lg sm:text-xl font-bold text-neutral-900 mb-2 text-center mt-4">{persona.name}{t.analyzing}</h2>
-            <p className="text-neutral-500 mb-6 text-sm sm:text-base text-center">{t.analyzingDesc}</p>
+            <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white mb-2 text-center mt-4">{persona.name}{t.analyzing}</h2>
+            <p className="text-neutral-500 dark:text-neutral-400 mb-6 text-sm sm:text-base text-center">{t.analyzingDesc}</p>
             <div className="flex gap-2">
               <div className="loading-dot" />
               <div className="loading-dot" />
@@ -1327,7 +1327,7 @@ function TalkContent() {
         {phase === 'review' && analysis && (
           <div className="flex-1 flex flex-col p-4 sm:p-6">
             <div className="text-center mb-4 sm:mb-6">
-              <span className="text-xs sm:text-sm text-neutral-500">{t.correction} {currentReviewIndex + 1} {t.of} {analysis.corrections.length}</span>
+              <span className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">{t.correction} {currentReviewIndex + 1} {t.of} {analysis.corrections.length}</span>
             </div>
 
             {analysis.corrections.length > 0 ? (
@@ -1342,24 +1342,24 @@ function TalkContent() {
                   </div>
 
                   {/* Intended */}
-                  <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-neutral-50 rounded-xl">
-                    <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider">{t.whatYouMeant}</span>
-                    <p className="text-neutral-700 mt-2 text-sm sm:text-base">
+                  <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-neutral-50 dark:bg-neutral-800 rounded-xl">
+                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{t.whatYouMeant}</span>
+                    <p className="text-neutral-700 dark:text-neutral-200 mt-2 text-sm sm:text-base">
                       {analysis.corrections[currentReviewIndex].intended}
                     </p>
                   </div>
 
                   {/* Corrected */}
                   <div className="mb-4 sm:mb-6">
-                    <span className="text-xs font-medium text-green-600 uppercase tracking-wider">{t.correctWay}</span>
+                    <span className="text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wider">{t.correctWay}</span>
                     <div className="flex items-center gap-2 sm:gap-3 mt-2">
-                      <p className="text-base sm:text-lg text-green-700 font-medium flex-1">
+                      <p className="text-base sm:text-lg text-green-700 dark:text-green-300 font-medium flex-1">
                         {analysis.corrections[currentReviewIndex].corrected}
                       </p>
                       <button
                         onClick={() => playTTS(analysis.corrections[currentReviewIndex].corrected)}
                         disabled={isPlaying}
-                        className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-xl flex items-center justify-center hover:bg-green-200 transition-colors flex-shrink-0"
+                        className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 dark:bg-green-500/20 rounded-xl flex items-center justify-center hover:bg-green-200 dark:hover:bg-green-500/30 transition-colors flex-shrink-0"
                       >
                         {isPlaying ? (
                           <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
@@ -1373,14 +1373,14 @@ function TalkContent() {
                   </div>
 
                   {/* Explanation */}
-                  <div className="p-3 sm:p-4 bg-primary-50 rounded-xl">
+                  <div className="p-3 sm:p-4 bg-primary-50 dark:bg-primary-500/10 rounded-xl">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1">
-                        <span className="text-xs font-medium text-primary-600 uppercase tracking-wider">{t.why}</span>
-                        <p className="text-primary-900 mt-2 text-xs sm:text-sm">
+                        <span className="text-xs font-medium text-primary-600 dark:text-primary-400 uppercase tracking-wider">{t.why}</span>
+                        <p className="text-primary-900 dark:text-primary-200 mt-2 text-xs sm:text-sm">
                           {analysis.corrections[currentReviewIndex].explanation}
                         </p>
-                        <span className="inline-block mt-2 px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full">
+                        <span className="inline-block mt-2 px-2 py-1 bg-primary-100 dark:bg-primary-500/20 text-primary-700 dark:text-primary-300 text-xs rounded-full">
                           {analysis.corrections[currentReviewIndex].category}
                         </span>
                       </div>
@@ -1390,7 +1390,7 @@ function TalkContent() {
                           playTTS(`You said: "${correction.original}". A better way is: "${correction.corrected}". ${correction.explanation}`);
                         }}
                         disabled={isPlaying}
-                        className="w-9 h-9 bg-primary-100 rounded-lg flex items-center justify-center hover:bg-primary-200 transition-colors flex-shrink-0"
+                        className="w-9 h-9 bg-primary-100 dark:bg-primary-500/20 rounded-lg flex items-center justify-center hover:bg-primary-200 transition-colors flex-shrink-0"
                         title={language === 'ko' ? '설명 듣기' : 'Listen to explanation'}
                       >
                         {isPlaying ? (
@@ -1411,13 +1411,13 @@ function TalkContent() {
               </div>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center text-center">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-green-100 dark:bg-green-500/20 rounded-full flex items-center justify-center mb-4">
                   <svg className="w-7 h-7 sm:w-8 sm:h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-neutral-900 mb-2">{language === 'ko' ? '훌륭해요!' : 'Great job!'}</h3>
-                <p className="text-neutral-600 mb-6 text-sm sm:text-base">{language === 'ko' ? '주요 교정 사항이 없습니다.' : 'No major corrections needed.'}</p>
+                <h3 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white mb-2">{language === 'ko' ? '훌륭해요!' : 'Great job!'}</h3>
+                <p className="text-neutral-600 dark:text-neutral-300 mb-6 text-sm sm:text-base">{language === 'ko' ? '주요 교정 사항이 없습니다.' : 'No major corrections needed.'}</p>
                 <button onClick={() => setPhase('summary')} className="btn-primary text-sm sm:text-base">
                   {t.viewSummary}
                 </button>
@@ -1436,7 +1436,7 @@ function TalkContent() {
             <div className="flex-1 flex flex-col justify-center">
               <div className="card-premium p-4 sm:p-6 mb-4 sm:mb-6 text-center">
                 <p className="text-xs sm:text-sm text-neutral-500 mb-3 sm:mb-4">{t.listenAndRepeat}</p>
-                <p className="text-xl sm:text-2xl font-medium text-neutral-900 mb-4 sm:mb-6">
+                <p className="text-xl sm:text-2xl font-medium text-neutral-900 dark:text-white dark:text-white mb-4 sm:mb-6">
                   {analysis.corrections[shadowingIndex].corrected}
                 </p>
 
@@ -1474,12 +1474,12 @@ function TalkContent() {
               <button
                 onClick={saveAsImage}
                 disabled={isSavingImage}
-                className="flex items-center gap-2 px-3 py-2 text-sm bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-3 py-2 text-sm bg-white dark:bg-dark-surface border border-neutral-200 dark:border-neutral-700 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
               >
                 {isSavingImage ? (
                   <div className="w-4 h-4 border-2 border-neutral-400 border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <svg className="w-4 h-4 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-neutral-600 dark:text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 )}
@@ -1488,7 +1488,7 @@ function TalkContent() {
             </div>
 
             {/* Report Content - for image capture */}
-            <div ref={summaryRef} className="bg-neutral-50 rounded-2xl p-4">
+            <div ref={summaryRef} className="bg-neutral-50 dark:bg-dark-surface rounded-2xl p-4">
               <div className="text-center mb-6 sm:mb-8">
                 <div className="flex justify-center mb-4">
                   <TutorAvatar
@@ -1496,7 +1496,7 @@ function TalkContent() {
                     size="lg"
                   />
                 </div>
-                <h2 className="text-xl sm:text-2xl font-bold text-neutral-900">{t.sessionComplete}</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">{t.sessionComplete}</h2>
                 <div className="flex items-center justify-center gap-1 mt-1">
                   <TapTalkLogo size="sm" theme="light" iconOnly />
                   <span className="text-xs text-neutral-400">TapTalk Report • {new Date().toLocaleDateString()}</span>
@@ -1505,8 +1505,8 @@ function TalkContent() {
 
             {/* Speech Metrics - Quantitative Analysis */}
             {speechMetrics && (
-              <div className="card-premium p-4 sm:p-6 mb-4 bg-gradient-to-br from-cyan-50 to-blue-50">
-                <h3 className="font-semibold text-neutral-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
+              <div className="card-premium p-4 sm:p-6 mb-4 bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-500/10 dark:to-blue-500/10">
+                <h3 className="font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-2 text-sm sm:text-base">
                   <span className="w-5 h-5 sm:w-6 sm:h-6 bg-cyan-100 rounded-full flex items-center justify-center">
                     <svg className="w-3 h-3 sm:w-4 sm:h-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -1522,16 +1522,16 @@ function TalkContent() {
                   </div>
                   <div>
                     <p className="text-xs text-neutral-500">{language === 'ko' ? '종합 점수' : 'Overall Score'}</p>
-                    <p className="text-lg font-bold text-neutral-900">/ 100</p>
+                    <p className="text-lg font-bold text-neutral-900 dark:text-white">/ 100</p>
                   </div>
                 </div>
 
                 {/* Metrics Grid */}
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   {formatMetricsForDisplay(speechMetrics, language).map((metric) => (
-                    <div key={metric.label} className="bg-white/60 rounded-lg p-2">
+                    <div key={metric.label} className="bg-white/60 dark:bg-white/5 rounded-lg p-2">
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-xs text-neutral-600">{metric.label}</span>
+                        <span className="text-xs text-neutral-600 dark:text-neutral-300">{metric.label}</span>
                         <span className={`text-xs font-bold ${
                           metric.level === 'high' ? 'text-green-600' :
                           metric.level === 'low' ? 'text-red-500' : 'text-neutral-900'
@@ -1550,15 +1550,15 @@ function TalkContent() {
                 {/* Summary Stats */}
                 <div className="flex justify-around text-center pt-2 border-t border-neutral-200">
                   <div>
-                    <p className="text-lg font-bold text-neutral-900">{speechMetrics.totalWords}</p>
+                    <p className="text-lg font-bold text-neutral-900 dark:text-white">{speechMetrics.totalWords}</p>
                     <p className="text-xs text-neutral-500">{language === 'ko' ? '총 단어' : 'Words'}</p>
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-neutral-900">{speechMetrics.totalSentences}</p>
+                    <p className="text-lg font-bold text-neutral-900 dark:text-white">{speechMetrics.totalSentences}</p>
                     <p className="text-xs text-neutral-500">{language === 'ko' ? '문장 수' : 'Sentences'}</p>
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-neutral-900">{speechMetrics.uniqueWords}</p>
+                    <p className="text-lg font-bold text-neutral-900 dark:text-white">{speechMetrics.uniqueWords}</p>
                     <p className="text-xs text-neutral-500">{language === 'ko' ? '고유 단어' : 'Unique'}</p>
                   </div>
                 </div>
@@ -1569,8 +1569,8 @@ function TalkContent() {
               <>
                 {/* AI Evaluated Level */}
                 {analysis.evaluatedGrade && analysis.levelDetails && (
-                  <div className="card-premium p-4 sm:p-6 mb-4 bg-gradient-to-br from-indigo-50 to-purple-50">
-                    <h3 className="font-semibold text-neutral-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
+                  <div className="card-premium p-4 sm:p-6 mb-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-500/10 dark:to-purple-500/10">
+                    <h3 className="font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-2 text-sm sm:text-base">
                       <span className="w-5 h-5 sm:w-6 sm:h-6 bg-indigo-100 rounded-full flex items-center justify-center">
                         <svg className="w-3 h-3 sm:w-4 sm:h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -1585,7 +1585,7 @@ function TalkContent() {
                       </div>
                       <div>
                         <p className="text-xs text-neutral-500">{language === 'ko' ? '평가 등급' : 'Evaluated Grade'}</p>
-                        <p className="text-lg font-bold text-neutral-900">
+                        <p className="text-lg font-bold text-neutral-900 dark:text-white">
                           {analysis.evaluatedGrade === 'K' && (language === 'ko' ? '유치원' : 'Kindergarten')}
                           {analysis.evaluatedGrade === '1-2' && (language === 'ko' ? '초등 1-2학년' : 'Grade 1-2')}
                           {analysis.evaluatedGrade === '3-4' && (language === 'ko' ? '초등 3-4학년' : 'Grade 3-4')}
@@ -1606,10 +1606,10 @@ function TalkContent() {
                         { label: language === 'ko' ? '유창성' : 'Fluency', value: analysis.levelDetails.fluency, color: 'bg-purple-500' },
                         { label: language === 'ko' ? '이해력' : 'Comprehension', value: analysis.levelDetails.comprehension, color: 'bg-amber-500' },
                       ].map((item) => (
-                        <div key={item.label} className="bg-white/60 rounded-lg p-2">
+                        <div key={item.label} className="bg-white/60 dark:bg-white/5 rounded-lg p-2">
                           <div className="flex justify-between items-center mb-1">
-                            <span className="text-xs text-neutral-600">{item.label}</span>
-                            <span className="text-xs font-bold text-neutral-900">{item.value}</span>
+                            <span className="text-xs text-neutral-600 dark:text-neutral-300">{item.label}</span>
+                            <span className="text-xs font-bold text-neutral-900 dark:text-white">{item.value}</span>
                           </div>
                           <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
                             <div className={`h-full ${item.color} rounded-full`} style={{ width: `${item.value}%` }} />
@@ -1619,15 +1619,15 @@ function TalkContent() {
                     </div>
 
                     {analysis.levelDetails.summary && (
-                      <p className="mt-3 text-xs sm:text-sm text-neutral-600 italic">{analysis.levelDetails.summary}</p>
+                      <p className="mt-3 text-xs sm:text-sm text-neutral-600 dark:text-neutral-300 italic">{analysis.levelDetails.summary}</p>
                     )}
                   </div>
                 )}
 
                 {/* Speaking Evaluation - Grade Level & Test Scores */}
                 {(isLoadingEval || speakingEval) && (
-                  <div className="card-premium p-4 sm:p-6 mb-4 bg-gradient-to-br from-slate-50 to-blue-50">
-                    <h3 className="font-semibold text-neutral-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
+                  <div className="card-premium p-4 sm:p-6 mb-4 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-500/10 dark:to-blue-500/10">
+                    <h3 className="font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-2 text-sm sm:text-base">
                       <span className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-100 rounded-full flex items-center justify-center">
                         <svg className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1639,24 +1639,24 @@ function TalkContent() {
                     {isLoadingEval ? (
                       <div className="flex items-center justify-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                        <span className="ml-3 text-sm text-neutral-600">
+                        <span className="ml-3 text-sm text-neutral-600 dark:text-neutral-300">
                           {language === 'ko' ? 'Speaking 분석 중...' : 'Analyzing speaking metrics...'}
                         </span>
                       </div>
                     ) : speakingEval && (
                       <>
                         {/* Primary Grade Level */}
-                        <div className="flex items-center gap-4 mb-4 p-3 bg-white/80 rounded-xl">
+                        <div className="flex items-center gap-4 mb-4 p-3 bg-white/80 dark:bg-white/5 rounded-xl">
                           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
                             <span className="text-white font-bold text-lg">{speakingEval.gradeLevel?.grade}</span>
                           </div>
                           <div className="flex-1">
-                            <p className="text-lg font-bold text-neutral-900">{speakingEval.gradeLevel?.usGrade}</p>
+                            <p className="text-lg font-bold text-neutral-900 dark:text-white">{speakingEval.gradeLevel?.usGrade}</p>
                             <p className="text-xs text-neutral-500">{speakingEval.gradeLevel?.ukYear}</p>
                             <span className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-medium ${
                               speakingEval.gradeLevel?.confidence === 'high' ? 'bg-green-100 text-green-700' :
                               speakingEval.gradeLevel?.confidence === 'medium' ? 'bg-amber-100 text-amber-700' :
-                              'bg-neutral-100 text-neutral-600'
+                              'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
                             }`}>
                               {language === 'ko' ? '신뢰도' : 'Confidence'}: {speakingEval.gradeLevel?.confidence}
                             </span>
@@ -1667,25 +1667,25 @@ function TalkContent() {
                         {speakingEval.testScores && (
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
                             {/* IELTS */}
-                            <div className="bg-white/80 rounded-lg p-2 text-center">
+                            <div className="bg-white/80 dark:bg-white/5 rounded-lg p-2 text-center">
                               <p className="text-[10px] text-neutral-500">IELTS Speaking</p>
                               <p className="text-lg font-bold text-red-600">{speakingEval.testScores.ielts?.band}</p>
                               <p className="text-[9px] text-neutral-400">/9.0</p>
                             </div>
                             {/* TOEFL */}
-                            <div className="bg-white/80 rounded-lg p-2 text-center">
+                            <div className="bg-white/80 dark:bg-white/5 rounded-lg p-2 text-center">
                               <p className="text-[10px] text-neutral-500">TOEFL Speaking</p>
                               <p className="text-lg font-bold text-blue-600">{speakingEval.testScores.toefl?.score}</p>
                               <p className="text-[9px] text-neutral-400">/30</p>
                             </div>
                             {/* TOEIC */}
-                            <div className="bg-white/80 rounded-lg p-2 text-center">
+                            <div className="bg-white/80 dark:bg-white/5 rounded-lg p-2 text-center">
                               <p className="text-[10px] text-neutral-500">TOEIC Speaking</p>
                               <p className="text-lg font-bold text-amber-600">{speakingEval.testScores.toeic?.score}</p>
                               <p className="text-[9px] text-neutral-400">/200 (Lv.{speakingEval.testScores.toeic?.level})</p>
                             </div>
                             {/* CEFR */}
-                            <div className="bg-white/80 rounded-lg p-2 text-center">
+                            <div className="bg-white/80 dark:bg-white/5 rounded-lg p-2 text-center">
                               <p className="text-[10px] text-neutral-500">CEFR</p>
                               <p className="text-lg font-bold text-purple-600">{speakingEval.testScores.cefr?.level}</p>
                             </div>
@@ -1694,7 +1694,7 @@ function TalkContent() {
 
                         {/* Metrics Breakdown */}
                         {speakingEval.metrics && (
-                          <div className="bg-white/60 rounded-lg p-3 mb-3">
+                          <div className="bg-white/60 dark:bg-white/5 rounded-lg p-3 mb-3">
                             <p className="text-xs font-medium text-neutral-700 mb-2">
                               {language === 'ko' ? '측정 지표' : 'Measured Metrics'}
                             </p>
@@ -1721,7 +1721,7 @@ function TalkContent() {
 
                         {/* Age Comparison */}
                         {speakingEval.comparison?.expectedForAge && (
-                          <div className="bg-white/60 rounded-lg p-3 mb-3">
+                          <div className="bg-white/60 dark:bg-white/5 rounded-lg p-3 mb-3">
                             <p className="text-xs font-medium text-neutral-700 mb-1">
                               {language === 'ko' ? '나이 대비 수준' : 'Performance vs Age'}
                             </p>
@@ -1737,7 +1737,7 @@ function TalkContent() {
                                   ? (language === 'ko' ? '기대치 수준' : 'At Expected Level')
                                   : (language === 'ko' ? '기대치 미만' : 'Below Expected')}
                               </span>
-                              <span className="text-xs text-neutral-600">
+                              <span className="text-xs text-neutral-600 dark:text-neutral-300">
                                 {language === 'ko'
                                   ? `기대 학년: ${speakingEval.comparison.expectedForAge}`
                                   : `Expected: Grade ${speakingEval.comparison.expectedForAge}`}
@@ -1791,7 +1791,7 @@ function TalkContent() {
                               <div className="mt-3 border border-amber-200 rounded-lg overflow-hidden">
                                 <div className="bg-amber-50 px-3 py-2 border-b border-amber-200">
                                   <p className="text-xs font-semibold text-amber-900 flex items-center gap-1.5">
-                                    <span>🗺️</span>
+                                    <svg className="w-3.5 h-3.5 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><path d="M8 2v16"/><path d="M16 6v16"/></svg>
                                     {language === 'ko' ? '개선 로드맵 — 이렇게 연습하세요' : 'Improvement Roadmap — How to Practice'}
                                   </p>
                                 </div>
@@ -1803,7 +1803,19 @@ function TalkContent() {
                                     <div key={idx} className="p-3">
                                       <div className="flex items-center justify-between mb-1.5">
                                         <span className="text-xs font-semibold text-amber-900 flex items-center gap-1">
-                                          <span>{item.icon}</span> {item.area}
+                                          {item.icon === 'book' ? (
+                                            <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                                          ) : item.icon === 'link' ? (
+                                            <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                                          ) : item.icon === 'shuffle' ? (
+                                            <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+                                          ) : item.icon === 'pencil' ? (
+                                            <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                          ) : item.icon === 'ruler' ? (
+                                            <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0z"/><line x1="14.5" y1="12.5" x2="11.5" y2="9.5"/></svg>
+                                          ) : (
+                                            <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/></svg>
+                                          )} {item.area}
                                         </span>
                                         <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
                                           item.priority === 'high' ? 'bg-red-100 text-red-700' :
@@ -1843,7 +1855,7 @@ function TalkContent() {
                                       )}
                                       <div className="bg-amber-100/50 rounded px-2 py-1.5">
                                         <p className="text-[11px] text-amber-900 font-medium flex items-center gap-1">
-                                          <span>🎯</span> {item.miniChallenge}
+                                          <svg className="w-3 h-3 inline-block flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> {item.miniChallenge}
                                         </p>
                                       </div>
                                     </div>
@@ -1860,7 +1872,7 @@ function TalkContent() {
 
                 {/* Strengths */}
                 <div className="card-premium p-4 sm:p-6 mb-4">
-                  <h3 className="font-semibold text-neutral-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
+                  <h3 className="font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-2 text-sm sm:text-base">
                     <span className="w-5 h-5 sm:w-6 sm:h-6 bg-green-100 rounded-full flex items-center justify-center">
                       <svg className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -1881,7 +1893,7 @@ function TalkContent() {
                 {/* Error Patterns */}
                 {analysis.patterns.length > 0 && (
                   <div className="card-premium p-4 sm:p-6 mb-4">
-                    <h3 className="font-semibold text-neutral-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
+                    <h3 className="font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-2 text-sm sm:text-base">
                       <span className="w-5 h-5 sm:w-6 sm:h-6 bg-amber-100 rounded-full flex items-center justify-center">
                         <svg className="w-3 h-3 sm:w-4 sm:h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -1904,7 +1916,7 @@ function TalkContent() {
                 )}
 
                 {/* Encouragement */}
-                <div className="card-premium p-4 sm:p-6 bg-gradient-to-br from-primary-50 to-white">
+                <div className="card-premium p-4 sm:p-6 bg-gradient-to-br from-primary-50 to-white dark:from-primary-500/10 dark:to-dark-surface">
                   <p className="text-primary-900 italic text-sm sm:text-base">&ldquo;{analysis.encouragement}&rdquo;</p>
                   <p className="text-xs sm:text-sm text-primary-600 mt-2">— {persona.name}</p>
                 </div>
@@ -1987,7 +1999,7 @@ function TalkContent() {
                           className={`py-2.5 rounded-xl text-sm font-medium transition-all ${
                             birthYear !== null && birthYear >= decade && birthYear < decade + 10
                               ? 'bg-indigo-500 text-white shadow-lg scale-105'
-                              : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                              : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
                           }`}
                         >
                           {decade}s
@@ -2022,7 +2034,7 @@ function TalkContent() {
                           className={`py-2.5 rounded-xl text-sm font-medium transition-all ${
                             birthYear === year
                               ? 'bg-indigo-500 text-white shadow-lg scale-105'
-                              : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                              : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
                           }`}
                         >
                           {year}
@@ -2071,7 +2083,7 @@ function TalkContent() {
 export default function TalkPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-dark-bg">
         <div className="flex gap-2">
           <div className="loading-dot" />
           <div className="loading-dot" />

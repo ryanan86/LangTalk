@@ -81,7 +81,7 @@ function LoginContent() {
   }, [callbackUrl]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-neutral-50 dark:bg-gradient-to-br dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex items-center justify-center p-4">
       {/* Native Error */}
       {nativeError && (
         <div className="fixed top-0 left-0 right-0 z-[9999] bg-red-500 text-white text-xs p-2 font-mono">
@@ -91,18 +91,18 @@ function LoginContent() {
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-3">
-            <TapTalkLogo size="lg" theme="dark" />
+            <TapTalkLogo size="lg" theme="auto" />
           </div>
-          <p className="text-gray-400">AI English Conversation Practice</p>
+          <p className="text-neutral-500 dark:text-gray-400">AI English Conversation Practice</p>
         </div>
 
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
-          <h2 className="text-2xl font-semibold text-white text-center mb-6">
+        <div className="bg-white dark:bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-neutral-200 dark:border-white/20 shadow-card dark:shadow-none">
+          <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white text-center mb-6">
             Welcome Back
           </h2>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm text-center">
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/50 rounded-lg text-red-700 dark:text-red-200 text-sm text-center">
               {error === 'AccessDenied'
                 ? 'Your subscription is not active. Please contact support.'
                 : 'An error occurred. Please try again.'}
@@ -112,7 +112,7 @@ function LoginContent() {
           <button
             onClick={handleGoogleSignIn}
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-800 font-medium py-3 px-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-3 bg-white dark:bg-white hover:bg-gray-50 dark:hover:bg-gray-100 text-gray-800 font-medium py-3 px-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 border border-neutral-200 dark:border-transparent"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -137,10 +137,10 @@ function LoginContent() {
 
           <div className="relative my-4">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/20"></div>
+              <div className="w-full border-t border-neutral-200 dark:border-white/20"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-transparent text-gray-400">or</span>
+              <span className="px-2 bg-white dark:bg-transparent text-neutral-400 dark:text-gray-400">or</span>
             </div>
           </div>
 
@@ -157,7 +157,7 @@ function LoginContent() {
             카카오로 계속하기
           </button>
 
-          <p className="mt-6 text-center text-gray-400 text-sm">
+          <p className="mt-6 text-center text-neutral-400 dark:text-gray-400 text-sm">
             By signing in, you agree to our Terms of Service and Privacy Policy
           </p>
         </div>
@@ -169,8 +169,8 @@ function LoginContent() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+      <div className="min-h-screen bg-neutral-50 dark:bg-gradient-to-br dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex items-center justify-center">
+        <div className="text-neutral-900 dark:text-white">Loading...</div>
       </div>
     }>
       <LoginContent />

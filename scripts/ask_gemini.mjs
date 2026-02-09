@@ -42,7 +42,11 @@ const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 async function askGemini(prompt) {
   try {
-    const result = await model.generateContent(prompt);
+    const maxTokens = parseInt(process.env.MAX_TOKENS || "2048", 10);
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: maxTokens },
+    });
     const response = await result.response;
     return response.text();
   } catch (error) {

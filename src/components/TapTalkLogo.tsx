@@ -3,7 +3,7 @@
 interface TapTalkLogoProps {
   variant?: 'icon-text' | 'text-icon';
   size?: 'sm' | 'md' | 'lg';
-  theme?: 'dark' | 'light';
+  theme?: 'dark' | 'light' | 'auto';
   className?: string;
   iconOnly?: boolean;
 }
@@ -34,12 +34,17 @@ function WaveIcon({ size }: { size: number }) {
 export default function TapTalkLogo({
   variant = 'icon-text',
   size = 'md',
-  theme = 'dark',
+  theme = 'auto',
   className = '',
   iconOnly = false,
 }: TapTalkLogoProps) {
   const config = sizeConfig[size];
-  const textColor = theme === 'dark' ? 'text-white' : 'text-[#1e293b]';
+  // 'auto' follows the global theme via CSS
+  const textColor = theme === 'auto'
+    ? 'text-neutral-900 dark:text-white'
+    : theme === 'dark'
+      ? 'text-white'
+      : 'text-[#1e293b]';
 
   if (iconOnly) {
     return (
