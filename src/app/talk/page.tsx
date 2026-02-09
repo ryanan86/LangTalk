@@ -101,6 +101,9 @@ function TalkContent() {
   // AbortController for cancelling AI response
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Exit confirmation modal
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+
   // User info for session (birth year & name)
   const [showUserInfoModal, setShowUserInfoModal] = useState(false);
   const [birthYear, setBirthYear] = useState<number | null>(null);
@@ -153,6 +156,44 @@ function TalkContent() {
       setIsSavingImage(false);
     }
   };
+
+  // Check if session is actively in progress (not ready or summary)
+  const isSessionActive = phase !== 'ready' && phase !== 'summary';
+
+  // Handle back button click - show confirmation if session is active
+  const handleBackClick = useCallback(() => {
+    if (isSessionActive) {
+      setShowExitConfirm(true);
+    } else {
+      router.push('/');
+    }
+  }, [isSessionActive, router]);
+
+  // Browser back button and beforeunload guards
+  useEffect(() => {
+    if (!isSessionActive) return;
+
+    // Push a dummy state so browser back triggers popstate instead of navigating
+    window.history.pushState({ taptalkSession: true }, '');
+
+    const handlePopState = () => {
+      setShowExitConfirm(true);
+      // Re-push state to keep the guard active if user cancels
+      window.history.pushState({ taptalkSession: true }, '');
+    };
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isSessionActive]);
 
   // Fetch previous session data for adaptive difficulty
   useEffect(() => {
@@ -1069,7 +1110,7 @@ function TalkContent() {
       }`}>
         <div className="max-w-2xl mx-auto flex justify-between items-center">
           <button
-            onClick={() => router.push('/')}
+            onClick={handleBackClick}
             className={`p-2 rounded-xl transition-colors ${
               isDarkPhase ? 'text-white/60 hover:text-white hover:bg-white/5' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-white'
             }`}
@@ -2024,6 +2065,48 @@ function TalkContent() {
           </div>
         )}
       </main>
+
+      {/* Exit Session Confirmation Modal */}
+      {showExitConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowExitConfirm(false)}
+          />
+          <div className="relative bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6 text-center">
+              <div className="w-14 h-14 mx-auto mb-4 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
+                <svg className="w-7 h-7 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-neutral-900 dark:text-white mb-2">
+                {t.exitSessionTitle}
+              </h3>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6">
+                {t.exitSessionMessage}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowExitConfirm(false)}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-medium text-sm hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                >
+                  {t.exitSessionCancel}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowExitConfirm(false);
+                    router.push('/');
+                  }}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-red-500 text-white font-medium text-sm hover:bg-red-600 transition-colors"
+                >
+                  {t.exitSessionConfirm}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* User Info Modal - Birth Year & Name */}
       {showUserInfoModal && (

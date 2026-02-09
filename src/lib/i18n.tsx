@@ -93,6 +93,10 @@ interface Translations {
   areasToFocus: string;
   backToHome: string;
   practiceAgain: string;
+  exitSessionTitle: string;
+  exitSessionMessage: string;
+  exitSessionConfirm: string;
+  exitSessionCancel: string;
 
   // Phases
   phaseReady: string;
@@ -299,6 +303,10 @@ const translations: Record<Language, Translations> = {
     areasToFocus: '개선할 점',
     backToHome: '홈으로',
     practiceAgain: '다시 연습하기',
+    exitSessionTitle: '학습을 종료하시겠습니까?',
+    exitSessionMessage: '진행 중인 학습 내용이 저장되지 않습니다.',
+    exitSessionConfirm: '종료',
+    exitSessionCancel: '계속 학습',
 
     // Phases
     phaseReady: '시작 준비',
@@ -503,6 +511,10 @@ const translations: Record<Language, Translations> = {
     areasToFocus: 'Areas to focus on',
     backToHome: 'Back to Home',
     practiceAgain: 'Practice Again',
+    exitSessionTitle: 'End this session?',
+    exitSessionMessage: 'Your learning progress will not be saved.',
+    exitSessionConfirm: 'End Session',
+    exitSessionCancel: 'Keep Learning',
 
     // Phases
     phaseReady: 'Ready to start',
