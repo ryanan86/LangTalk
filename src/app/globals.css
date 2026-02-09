@@ -977,3 +977,174 @@ html, body {
   height: 1px;
   background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
 }
+
+/* ============================================
+   DRAMATIC ANIMATIONS - TAPTALK v3.0
+   ============================================ */
+
+/* Twinkle Animation for Stars */
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.5);
+  }
+}
+
+/* Aurora Shift */
+@keyframes aurora-shift {
+  0% {
+    filter: hue-rotate(0deg) blur(120px);
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    filter: hue-rotate(30deg) blur(150px);
+    transform: scale(1.1) rotate(180deg);
+  }
+  100% {
+    filter: hue-rotate(0deg) blur(120px);
+    transform: scale(1) rotate(360deg);
+  }
+}
+
+/* Dramatic Glow */
+@keyframes dramatic-glow {
+  0%, 100% {
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.4), 0 0 60px rgba(139, 92, 246, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 50px rgba(139, 92, 246, 0.6), 0 0 100px rgba(139, 92, 246, 0.3), 0 0 150px rgba(236, 72, 153, 0.2);
+  }
+}
+
+/* Rainbow Border Animation */
+@keyframes rainbow-border {
+  0% {
+    border-color: rgba(139, 92, 246, 0.5);
+  }
+  25% {
+    border-color: rgba(236, 72, 153, 0.5);
+  }
+  50% {
+    border-color: rgba(249, 115, 22, 0.5);
+  }
+  75% {
+    border-color: rgba(16, 185, 129, 0.5);
+  }
+  100% {
+    border-color: rgba(139, 92, 246, 0.5);
+  }
+}
+
+.animate-rainbow-border {
+  animation: rainbow-border 4s linear infinite;
+}
+
+.animate-dramatic-glow {
+  animation: dramatic-glow 3s ease-in-out infinite;
+}
+
+/* Premium CTA Button */
+.btn-cta-premium {
+  @apply relative px-10 py-5 rounded-2xl font-bold text-xl text-white overflow-hidden;
+  background: linear-gradient(135deg, #7C3AED 0%, #EC4899 50%, #F97316 100%);
+  background-size: 200% 200%;
+  animation: gradient-flow 3s ease infinite;
+  box-shadow: 0 10px 40px rgba(124, 58, 237, 0.5), 0 0 80px rgba(236, 72, 153, 0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-cta-premium:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 20px 60px rgba(124, 58, 237, 0.6), 0 0 120px rgba(236, 72, 153, 0.4);
+}
+
+.btn-cta-premium::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* Glowing Text */
+.text-glow {
+  text-shadow: 0 0 20px rgba(139, 92, 246, 0.5), 0 0 40px rgba(139, 92, 246, 0.3);
+}
+
+.text-glow-pink {
+  text-shadow: 0 0 20px rgba(236, 72, 153, 0.5), 0 0 40px rgba(236, 72, 153, 0.3);
+}
+
+/* Animated Gradient Text - More vibrant */
+.text-gradient-animated {
+  background: linear-gradient(135deg, #A78BFA 0%, #F472B6 25%, #FBBF24 50%, #34D399 75%, #A78BFA 100%);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-flow 4s ease infinite;
+}
+
+/* Glass Card Premium */
+.glass-premium {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Persona Card Premium - 3D Effect */
+.persona-card-3d {
+  @apply relative overflow-hidden rounded-3xl p-6 cursor-pointer;
+  background: linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%);
+  border: 2px solid rgba(255,255,255,0.1);
+  transform-style: preserve-3d;
+  perspective: 1000px;
+  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.persona-card-3d::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(139,92,246,0.15) 0%, rgba(236,72,153,0.1) 50%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.5s;
+  border-radius: inherit;
+}
+
+.persona-card-3d:hover {
+  transform: translateY(-8px) rotateX(5deg) rotateY(-5deg);
+  border-color: rgba(139,92,246,0.5);
+  box-shadow:
+    0 30px 60px rgba(0,0,0,0.4),
+    0 0 40px rgba(139,92,246,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+.persona-card-3d:hover::before {
+  opacity: 1;
+}
+
+.persona-card-3d.selected {
+  border-color: #7C3AED;
+  background: linear-gradient(145deg, rgba(124,58,237,0.2) 0%, rgba(124,58,237,0.05) 100%);
+  box-shadow:
+    0 0 0 4px rgba(124,58,237,0.3),
+    0 20px 40px rgba(0,0,0,0.4),
+    0 0 60px rgba(124,58,237,0.4);
+}
+
+/* Floating Badge */
+.badge-floating {
+  @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-full;
+  background: linear-gradient(135deg, rgba(139,92,246,0.2) 0%, rgba(236,72,153,0.15) 100%);
+  border: 1px solid rgba(139,92,246,0.3);
+  box-shadow: 0 4px 20px rgba(139,92,246,0.2);
+  animation: gentle-float 3s ease-in-out infinite;
+}
