@@ -69,7 +69,7 @@ export const tutorData = {
     fallbackColor: 'bg-gradient-to-br from-amber-400 to-orange-500',
   },
   henly: {
-    name: 'Henly',
+    name: 'Henry',
     nationality: 'American',
     flag: 'US',
     gradient: 'from-lime-400 to-green-500',

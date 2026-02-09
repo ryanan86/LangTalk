@@ -132,13 +132,13 @@ const personas: Persona[] = [
   },
   {
     id: 'henly',
-    name: 'Henly',
+    name: 'Henry',
     nationality: 'american',
     gender: 'male',
     voice: 'alloy',
     gradient: 'from-lime-400 to-green-500',
     flag: 'US',
-    sampleText: "Hey hey! I'm Henly! Wanna know something cool? I love asking questions! So, what do you wanna talk about?",
+    sampleText: "Hey hey! I'm Henry! Wanna know something cool? I love asking questions! So, what do you wanna talk about?",
   },
 ];
 
@@ -543,11 +543,11 @@ export default function HomePage() {
   const currentLevel = evaluatedGrade && gradeMapping[evaluatedGrade] ? gradeMapping[evaluatedGrade] : null;
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-[#0a0a0f] text-neutral-900 dark:text-white overflow-hidden">
+    <div className="min-h-screen bg-gray-100 dark:bg-[#0a0a0f] text-neutral-900 dark:text-white overflow-hidden">
       {/* Animated Background - Dark only */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         {/* Light mode gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 via-transparent to-pink-50/30 dark:hidden" />
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-100/70 via-white/30 to-pink-100/50 dark:hidden" />
         {/* Morphing Gradient Blobs - Dark */}
         <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-gradient-to-br from-purple-600/30 to-pink-600/20 rounded-full blur-[100px] animate-morph hidden dark:block" />
         <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-gradient-to-br from-blue-600/25 to-cyan-600/15 rounded-full blur-[100px] animate-morph hidden dark:block" style={{ animationDelay: '-2s' }} />
@@ -580,7 +580,7 @@ export default function HomePage() {
       </div>
 
       {/* Header - pt-12 for Android status bar + notch clearance */}
-      <header className="relative z-50 border-b border-neutral-200 dark:border-white/5 pt-12 bg-white/80 dark:bg-transparent backdrop-blur-md dark:backdrop-blur-none">
+      <header className="relative z-50 border-b border-neutral-200 dark:border-white/5 pt-12 bg-white/70 dark:bg-transparent backdrop-blur-md dark:backdrop-blur-none">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Logo */}

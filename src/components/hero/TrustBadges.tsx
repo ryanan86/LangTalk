@@ -8,7 +8,7 @@ function StarRating({ rating }: { rating: number }) {
       {Array.from({ length: 5 }).map((_, i) => (
         <svg
           key={i}
-          className={`w-2.5 h-2.5 ${i < rating ? 'text-yellow-400' : 'text-white/10'}`}
+          className={`w-2.5 h-2.5 ${i < rating ? 'text-yellow-400' : 'text-neutral-200 dark:text-white/10'}`}
           fill="currentColor"
           viewBox="0 0 20 20"
         >
@@ -21,7 +21,7 @@ function StarRating({ rating }: { rating: number }) {
 
 function ReviewCard({ review }: { review: Review }) {
   return (
-    <div className="flex-shrink-0 w-[260px] p-3 rounded-xl bg-neutral-100 dark:bg-white/[0.07] border border-neutral-200 dark:border-white/10 hover:bg-neutral-150 dark:hover:bg-white/10 transition-colors">
+    <div className="flex-shrink-0 w-[260px] p-3 rounded-xl bg-white dark:bg-white/[0.07] border border-neutral-200 dark:border-white/10 shadow-sm dark:shadow-none hover:shadow-md dark:hover:bg-white/10 transition-all">
       <div className="flex items-center gap-2 mb-1.5">
         <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-[10px] text-white font-bold">
           {review.initial}

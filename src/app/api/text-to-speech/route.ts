@@ -19,7 +19,7 @@ const ELEVENLABS_VOICE_MAP: Record<string, string> = {
 const KID_VOICES = new Set(['nova', 'alloy']);
 
 // Hybrid TTS strategy: voices that should use ElevenLabs
-// Emma (shimmer), James (echo), Alina (nova), Henly (alloy) → ElevenLabs
+// Emma (shimmer), James (echo), Alina (nova), Henry (alloy) → ElevenLabs
 // Charlotte (fable), Oliver (onyx) → OpenAI
 const ELEVENLABS_PREFERRED_VOICES = new Set(['shimmer', 'echo', 'nova', 'alloy']);
 
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Hybrid TTS strategy:
-    // - Emma (shimmer), James (echo), Alina (nova), Henly (alloy) → ElevenLabs
+    // - Emma (shimmer), James (echo), Alina (nova), Henry (alloy) → ElevenLabs
     // - Charlotte (fable), Oliver (onyx) → OpenAI
     const elevenLabsKey = process.env.ELEVENLABS_API_KEY;
     const hasElevenLabsKey = !!elevenLabsKey && elevenLabsKey.trim().length > 0;
