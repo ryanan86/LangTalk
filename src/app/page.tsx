@@ -1178,76 +1178,81 @@ export default function HomePage() {
             {/* Product Demo Section - Conversation Mockup */}
             <section className={`py-16 sm:py-24 transition-all duration-1000 delay-300 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
               <div className="max-w-5xl mx-auto px-4 sm:px-6">
-                {/* Conversation Mockup - Shows the actual product */}
+                {/* Tutor Video Showcase */}
                 <div className="relative">
                   {/* Ambient glow */}
                   <div className="absolute -inset-10 bg-gradient-to-r from-purple-500/5 via-transparent to-pink-500/5 dark:from-purple-500/10 dark:to-pink-500/10 rounded-[3rem] blur-3xl pointer-events-none" />
 
-                  <div className="relative rounded-3xl overflow-hidden bg-neutral-900 dark:bg-neutral-950 shadow-2xl shadow-black/20">
-                    {/* Mock window bar */}
-                    <div className="flex items-center gap-2 px-5 py-3 bg-neutral-800/80 border-b border-white/5">
-                      <div className="flex gap-1.5">
-                        <div className="w-2.5 h-2.5 rounded-full bg-red-400/80" />
-                        <div className="w-2.5 h-2.5 rounded-full bg-yellow-400/80" />
-                        <div className="w-2.5 h-2.5 rounded-full bg-green-400/80" />
-                      </div>
-                      <div className="flex-1 flex justify-center">
-                        <span className="text-[11px] text-white/30 font-mono">taptalk.xyz</span>
-                      </div>
-                    </div>
-
-                    {/* Chat mockup */}
-                    <div className="p-6 sm:p-10 space-y-5">
-                      {/* AI message */}
-                      <div className="flex gap-3 max-w-lg">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">E</div>
-                        <div>
-                          <p className="text-white/90 text-sm sm:text-base leading-relaxed bg-white/5 rounded-2xl rounded-tl-md px-4 py-3">
-                            Hey! Tell me about your weekend plans. What are you excited about?
-                          </p>
-                          <span className="text-white/20 text-xs mt-1 block ml-1">Emma</span>
-                        </div>
-                      </div>
-
-                      {/* User message */}
-                      <div className="flex gap-3 max-w-lg ml-auto flex-row-reverse">
-                        <div className="w-9 h-9 rounded-full bg-purple-500/30 flex items-center justify-center text-white/60 text-xs font-bold flex-shrink-0">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                        </div>
-                        <div>
-                          <p className="text-white text-sm sm:text-base leading-relaxed bg-purple-500/20 rounded-2xl rounded-tr-md px-4 py-3">
-                            I&apos;m planning to going hiking with friends this Saturday!
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Correction - the core product value */}
-                      <div className="max-w-lg ml-12 sm:ml-14">
-                        <div className="bg-gradient-to-r from-amber-500/10 to-transparent rounded-xl px-4 py-3">
-                          <div className="flex items-start gap-2">
-                            <svg className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                  <div className="grid grid-cols-3 gap-3 sm:gap-6 relative">
+                    {[
+                      { id: 'emma', name: 'Emma', gradient: 'from-rose-400 to-pink-500', flag: 'US' },
+                      { id: 'james', name: 'James', gradient: 'from-blue-400 to-indigo-500', flag: 'US' },
+                      { id: 'charlotte', name: 'Charlotte', gradient: 'from-violet-400 to-purple-500', flag: 'UK' },
+                    ].map((tutor) => (
+                      <div
+                        key={tutor.id}
+                        className="group relative rounded-2xl sm:rounded-3xl overflow-hidden bg-neutral-900 dark:bg-neutral-950 shadow-2xl shadow-black/20 aspect-[3/4] cursor-pointer"
+                        onMouseEnter={() => {
+                          const video = videoRefs.current[`demo-${tutor.id}`];
+                          if (video) {
+                            video.muted = false;
+                            video.currentTime = 0;
+                            video.play().catch(() => {});
+                          }
+                        }}
+                        onMouseLeave={() => {
+                          const video = videoRefs.current[`demo-${tutor.id}`];
+                          if (video) {
+                            video.muted = true;
+                            video.pause();
+                            video.currentTime = 0;
+                          }
+                        }}
+                        onTouchStart={() => {
+                          const video = videoRefs.current[`demo-${tutor.id}`];
+                          if (video) {
+                            if (video.paused) {
+                              video.muted = false;
+                              video.currentTime = 0;
+                              video.play().catch(() => {});
+                            } else {
+                              video.muted = true;
+                              video.pause();
+                              video.currentTime = 0;
+                            }
+                          }
+                        }}
+                      >
+                        <video
+                          ref={(el) => { videoRefs.current[`demo-${tutor.id}`] = el; }}
+                          src={`/tutors/${getTutorFileName(tutor.id)}_greeting.mp4`}
+                          muted
+                          playsInline
+                          preload="auto"
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                        {/* Name overlay */}
+                        <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4 bg-gradient-to-t from-black/70 to-transparent">
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br ${tutor.gradient} flex items-center justify-center text-white text-[10px] sm:text-xs font-bold`}>
+                              {tutor.name[0]}
+                            </div>
                             <div>
-                              <p className="text-amber-300/90 text-sm">
-                                <span className="line-through text-white/30">planning to going</span>
-                                {' → '}
-                                <span className="text-green-400 font-medium">planning to go</span>
-                              </p>
-                              <p className="text-white/30 text-xs mt-1">
-                                {language === 'ko' ? '"plan to" 뒤에는 동사원형이 옵니다' : 'Use base form after "plan to"'}
-                              </p>
+                              <p className="text-white font-semibold text-xs sm:text-sm">{tutor.name}</p>
+                              <p className="text-white/50 text-[10px] sm:text-xs">{tutor.flag === 'US' ? 'American' : 'British'}</p>
                             </div>
                           </div>
                         </div>
+                        {/* Hover play indicator */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                          <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                            <svg className="w-5 h-5 sm:w-7 sm:h-7 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z" />
+                            </svg>
+                          </div>
+                        </div>
                       </div>
-
-                      {/* AI follow-up */}
-                      <div className="flex gap-3 max-w-lg">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">E</div>
-                        <p className="text-white/90 text-sm sm:text-base leading-relaxed bg-white/5 rounded-2xl rounded-tl-md px-4 py-3">
-                          Hiking sounds amazing! Where are you planning to go? Do you have a favorite trail?
-                        </p>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
 
