@@ -1011,10 +1011,220 @@ export function convertToStandardizedScores(
   };
 }
 
+// ========== IMPROVEMENT GUIDE ==========
+
+export interface ImprovementGuideItem {
+  area: string;
+  icon: string;
+  currentLevel: string;
+  targetLevel: string;
+  priority: 'high' | 'medium' | 'low';
+  tips: string[];
+  examplePhrases: string[];
+  miniChallenge: string;
+}
+
+export function generateImprovementGuide(
+  metrics: SpeakingMetricsResult,
+  language: string = 'en'
+): ImprovementGuideItem[] {
+  const isKo = language === 'ko';
+  const guide: ImprovementGuideItem[] = [];
+  const grade = metrics.gradeMatch.bestMatch;
+  const benchmark = GRADE_BENCHMARKS.find(b => b.grade === grade);
+  if (!benchmark) return guide;
+
+  // 1. Vocabulary Diversity
+  if (metrics.vocabulary.tier2Percentage < benchmark.vocabularyProfile.tier2Min) {
+    const gap = benchmark.vocabularyProfile.tier2Min - metrics.vocabulary.tier2Percentage;
+    guide.push({
+      area: isKo ? '학술 어휘력' : 'Academic Vocabulary',
+      icon: '📚',
+      currentLevel: isKo
+        ? `학술 어휘 ${metrics.vocabulary.tier2Percentage}%`
+        : `Academic words: ${metrics.vocabulary.tier2Percentage}%`,
+      targetLevel: isKo
+        ? `${benchmark.vocabularyProfile.tier2Min}% 이상`
+        : `${benchmark.vocabularyProfile.tier2Min}%+`,
+      priority: gap > 10 ? 'high' : 'medium',
+      tips: isKo ? [
+        `'good' 대신 'excellent, outstanding, remarkable' 사용해보기`,
+        `'think' 대신 'believe, consider, assume' 사용해보기`,
+        `'important' 대신 'significant, crucial, essential' 사용해보기`,
+      ] : [
+        `Replace 'good' with 'excellent, outstanding, remarkable'`,
+        `Replace 'think' with 'believe, consider, assume'`,
+        `Replace 'important' with 'significant, crucial, essential'`,
+      ],
+      examplePhrases: [
+        `"I believe this is a significant issue" (not "I think this is important")`,
+        `"That's an excellent point" (not "That's a good point")`,
+        `"I'd like to emphasize that..." (not "I want to say that...")`,
+      ],
+      miniChallenge: isKo
+        ? '다음 대화에서 Tier 2 단어 3개 이상 사용해보세요!'
+        : 'Use at least 3 academic words in your next conversation!',
+    });
+  }
+
+  // 2. Sentence Complexity
+  if (metrics.sentenceComplexity.complexRatio < benchmark.sentenceComplexity.complexRatio[0]) {
+    guide.push({
+      area: isKo ? '문장 복잡도' : 'Sentence Complexity',
+      icon: '🔗',
+      currentLevel: isKo
+        ? `복문 비율 ${metrics.sentenceComplexity.complexRatio}%`
+        : `Complex sentences: ${metrics.sentenceComplexity.complexRatio}%`,
+      targetLevel: isKo
+        ? `${benchmark.sentenceComplexity.complexRatio[0]}% 이상`
+        : `${benchmark.sentenceComplexity.complexRatio[0]}%+`,
+      priority: metrics.sentenceComplexity.complexRatio < 10 ? 'high' : 'medium',
+      tips: isKo ? [
+        `because/since로 이유 연결: "I like it because..."`,
+        `although/even though로 대조: "Although it was hard, I..."`,
+        `which/that으로 설명 추가: "The book, which I read yesterday,..."`,
+      ] : [
+        `Connect reasons with because/since: "I like it because..."`,
+        `Show contrast with although/even though: "Although it was hard, I..."`,
+        `Add descriptions with which/that: "The book, which I read yesterday,..."`,
+      ],
+      examplePhrases: [
+        `"I enjoy cooking because it helps me relax after work"`,
+        `"Although I was tired, I decided to finish the project"`,
+        `"The movie, which came out last week, was really interesting"`,
+      ],
+      miniChallenge: isKo
+        ? '다음 대화에서 because, although, which 중 2개 이상 사용해보세요!'
+        : 'Use at least 2 of: because, although, which in your next conversation!',
+    });
+  }
+
+  // 3. Discourse Markers
+  if (metrics.discourseMarkers.intermediatePer100 < benchmark.discourseMarkers.intermediateMin) {
+    guide.push({
+      area: isKo ? '연결어 사용' : 'Discourse Markers',
+      icon: '🔀',
+      currentLevel: isKo
+        ? `중급 연결어 ${metrics.discourseMarkers.intermediatePer100}/100단어`
+        : `Intermediate markers: ${metrics.discourseMarkers.intermediatePer100}/100 words`,
+      targetLevel: isKo
+        ? `${benchmark.discourseMarkers.intermediateMin}/100단어 이상`
+        : `${benchmark.discourseMarkers.intermediateMin}/100 words+`,
+      priority: 'medium',
+      tips: isKo ? [
+        `의견 전환: "However, on the other hand..."`,
+        `예시 들기: "For example, for instance..."`,
+        `추가하기: "In addition, furthermore, moreover..."`,
+      ] : [
+        `Shift opinions: "However, on the other hand..."`,
+        `Give examples: "For example, for instance..."`,
+        `Add points: "In addition, furthermore, moreover..."`,
+      ],
+      examplePhrases: [
+        `"I like summer. However, the heat can be too much sometimes"`,
+        `"There are many benefits. For example, it improves health"`,
+        `"First, it's convenient. In addition, it saves time"`,
+      ],
+      miniChallenge: isKo
+        ? '다음 대화에서 however, for example, in addition 중 하나 이상 써보세요!'
+        : 'Try using however, for example, or in addition in your next chat!',
+    });
+  }
+
+  // 4. Grammar Accuracy
+  if (metrics.grammarIndicators.estimatedErrorsPer100 > benchmark.grammarErrorRate) {
+    const issues: string[] = [];
+    if (metrics.grammarIndicators.subjectVerbAgreementIssues > 0) {
+      issues.push(isKo ? '주어-동사 일치' : 'Subject-verb agreement');
+    }
+    if (metrics.grammarIndicators.articleIssues > 0) {
+      issues.push(isKo ? '관사 (a/an/the)' : 'Articles (a/an/the)');
+    }
+
+    guide.push({
+      area: isKo ? '문법 정확도' : 'Grammar Accuracy',
+      icon: '✏️',
+      currentLevel: isKo
+        ? `오류율 ${metrics.grammarIndicators.estimatedErrorsPer100}/100단어`
+        : `Error rate: ${metrics.grammarIndicators.estimatedErrorsPer100}/100 words`,
+      targetLevel: isKo
+        ? `${benchmark.grammarErrorRate}/100단어 이하`
+        : `${benchmark.grammarErrorRate}/100 words or less`,
+      priority: metrics.grammarIndicators.estimatedErrorsPer100 > benchmark.grammarErrorRate * 2 ? 'high' : 'medium',
+      tips: metrics.grammarIndicators.articleIssues > 0 ? (isKo ? [
+        `처음 언급하는 것 → a/an: "I saw a movie"`,
+        `이미 언급한 것 → the: "The movie was great"`,
+        `유일한 것 → the: "the sun, the president"`,
+      ] : [
+        `First mention → a/an: "I saw a movie"`,
+        `Already mentioned → the: "The movie was great"`,
+        `Unique things → the: "the sun, the president"`,
+      ]) : (isKo ? [
+        `he/she/it + 동사s: "She likes coffee" (not "She like")`,
+        `I/you/we/they + 동사: "They like coffee" (not "They likes")`,
+        `과거형 일관성 유지: 한 이야기에서 시제 섞지 않기`,
+      ] : [
+        `he/she/it + verb-s: "She likes coffee" (not "She like")`,
+        `I/you/we/they + base verb: "They like coffee" (not "They likes")`,
+        `Keep tenses consistent within one story`,
+      ]),
+      examplePhrases: metrics.grammarIndicators.articleIssues > 0 ? [
+        `"I bought a book. The book was about history" (a → the)`,
+        `"She is a teacher at the university"`,
+        `"I had an interesting experience yesterday"`,
+      ] : [
+        `"She works at a hospital" (not "She work")`,
+        `"He doesn't like coffee" (not "He don't like")`,
+        `"Yesterday I went to the store and bought groceries" (consistent past)`,
+      ],
+      miniChallenge: isKo
+        ? `다음 대화에서 ${issues[0] || '문법'}에 특히 신경 써보세요!`
+        : `Pay extra attention to ${issues[0] || 'grammar'} in your next conversation!`,
+    });
+  }
+
+  // 5. Response Length
+  if (metrics.avgWordsPerTurn < benchmark.avgWordsPerTurn[0]) {
+    guide.push({
+      area: isKo ? '응답 길이' : 'Response Length',
+      icon: '📏',
+      currentLevel: isKo
+        ? `평균 ${metrics.avgWordsPerTurn}단어/응답`
+        : `Avg ${metrics.avgWordsPerTurn} words/response`,
+      targetLevel: isKo
+        ? `${benchmark.avgWordsPerTurn[0]}단어 이상`
+        : `${benchmark.avgWordsPerTurn[0]}+ words`,
+      priority: metrics.avgWordsPerTurn < benchmark.avgWordsPerTurn[0] / 2 ? 'high' : 'low',
+      tips: isKo ? [
+        `답변 후 이유 추가: "I like it because..."`,
+        `예시 덧붙이기: "For example, last week I..."`,
+        `감정/의견 추가: "I feel that... / I think..."`,
+      ] : [
+        `Add a reason after your answer: "I like it because..."`,
+        `Include an example: "For example, last week I..."`,
+        `Share your feelings/opinions: "I feel that... / I think..."`,
+      ],
+      examplePhrases: [
+        `Short: "I like pizza" → Extended: "I really enjoy pizza, especially margherita, because the fresh basil and mozzarella remind me of my trip to Italy"`,
+      ],
+      miniChallenge: isKo
+        ? '다음 대화에서 모든 답변을 2문장 이상으로 해보세요!'
+        : 'Make every answer at least 2 sentences in your next conversation!',
+    });
+  }
+
+  // Sort by priority
+  const priorityOrder = { high: 0, medium: 1, low: 2 };
+  guide.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+
+  return guide.slice(0, 4); // Max 4 items
+}
+
 // ========== FULL EVALUATION RESULT ==========
 
 export interface FullSpeakingEvaluation {
   metrics: SpeakingMetricsResult;
   standardizedScores: StandardizedScores;
   comparison?: ProgressComparison;
+  improvementGuide?: ImprovementGuideItem[];
 }

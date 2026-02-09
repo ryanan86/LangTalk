@@ -224,7 +224,9 @@ RETURN THIS EXACT JSON FORMAT (no markdown, valid JSON only):
     {
       "type": "${examplePatternType}",
       "count": 5,
-      "tip": "${examplePatternTip}"
+      "tip": "${examplePatternTip}",
+      "practiceMethod": "${isKorean ? '구체적 연습 방법 (예: shadow speaking으로 3번 반복, 또는 특정 문형으로 5문장 만들어보기)' : 'Specific practice method (e.g., repeat 3 times with shadow speaking, or create 5 sentences using this pattern)'}",
+      "exampleSentences": ["${isKorean ? '연습할 수 있는 예문 2-3개' : '2-3 example sentences to practice'}"]
     }
   ],
   "strengths": ${JSON.stringify(exampleStrengths)},

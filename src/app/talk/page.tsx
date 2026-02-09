@@ -1785,6 +1785,72 @@ function TalkContent() {
                                 </ul>
                               </div>
                             )}
+
+                            {/* Improvement Guide (개선 로드맵) */}
+                            {speakingEval.improvementGuide?.length > 0 && (
+                              <div className="mt-3 border border-amber-200 rounded-lg overflow-hidden">
+                                <div className="bg-amber-50 px-3 py-2 border-b border-amber-200">
+                                  <p className="text-xs font-semibold text-amber-900 flex items-center gap-1.5">
+                                    <span>🗺️</span>
+                                    {language === 'ko' ? '개선 로드맵 — 이렇게 연습하세요' : 'Improvement Roadmap — How to Practice'}
+                                  </p>
+                                </div>
+                                <div className="divide-y divide-amber-100">
+                                  {speakingEval.improvementGuide.map((item: {
+                                    area: string; icon: string; currentLevel: string; targetLevel: string;
+                                    priority: string; tips: string[]; examplePhrases: string[]; miniChallenge: string;
+                                  }, idx: number) => (
+                                    <div key={idx} className="p-3">
+                                      <div className="flex items-center justify-between mb-1.5">
+                                        <span className="text-xs font-semibold text-amber-900 flex items-center gap-1">
+                                          <span>{item.icon}</span> {item.area}
+                                        </span>
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                                          item.priority === 'high' ? 'bg-red-100 text-red-700' :
+                                          item.priority === 'medium' ? 'bg-amber-100 text-amber-700' :
+                                          'bg-gray-100 text-gray-600'
+                                        }`}>
+                                          {item.priority === 'high' ? (language === 'ko' ? '우선' : 'Priority') :
+                                           item.priority === 'medium' ? (language === 'ko' ? '권장' : 'Recommended') :
+                                           (language === 'ko' ? '참고' : 'Optional')}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <span className="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">
+                                          {item.currentLevel}
+                                        </span>
+                                        <span className="text-[10px] text-gray-400">→</span>
+                                        <span className="text-[10px] text-green-700 bg-green-50 px-1.5 py-0.5 rounded font-medium">
+                                          {item.targetLevel}
+                                        </span>
+                                      </div>
+                                      <ul className="space-y-0.5 mb-2">
+                                        {item.tips.map((tip: string, ti: number) => (
+                                          <li key={ti} className="text-[11px] text-amber-800 flex items-start gap-1">
+                                            <span className="text-amber-400 mt-0.5">•</span> {tip}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                      {item.examplePhrases.length > 0 && (
+                                        <div className="bg-white/60 rounded p-2 mb-2">
+                                          <p className="text-[10px] font-medium text-gray-500 mb-1">
+                                            {language === 'ko' ? '연습 표현' : 'Practice Phrases'}
+                                          </p>
+                                          {item.examplePhrases.slice(0, 2).map((phrase: string, pi: number) => (
+                                            <p key={pi} className="text-[11px] text-gray-700 italic">{phrase}</p>
+                                          ))}
+                                        </div>
+                                      )}
+                                      <div className="bg-amber-100/50 rounded px-2 py-1.5">
+                                        <p className="text-[11px] text-amber-900 font-medium flex items-center gap-1">
+                                          <span>🎯</span> {item.miniChallenge}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </>
                         )}
                       </>

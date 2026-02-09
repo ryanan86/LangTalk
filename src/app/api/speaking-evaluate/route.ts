@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   analyzeSpeaking,
   convertToStandardizedScores,
+  generateImprovementGuide,
   SpeakingMetricsResult,
   StandardizedScores,
+  ImprovementGuideItem,
   GRADE_BENCHMARKS,
 } from '@/lib/speakingMetrics';
 
@@ -80,6 +82,9 @@ export interface SpeakingEvaluationResponse {
       improvements: string[];
       nextSteps: string[];
     };
+
+    // Specific improvement guide with actionable tips
+    improvementGuide: ImprovementGuideItem[];
 
     // Grade expectation comparison
     comparison: {
@@ -253,6 +258,9 @@ export async function POST(request: NextRequest) {
     // ===== STEP 4: Generate Feedback =====
     const feedback = generateFeedback(metrics, language);
 
+    // ===== STEP 4.5: Generate Improvement Guide =====
+    const improvementGuide = generateImprovementGuide(metrics, language);
+
     // ===== STEP 5: Build Response =====
     const response: SpeakingEvaluationResponse = {
       success: true,
@@ -305,6 +313,7 @@ export async function POST(request: NextRequest) {
           },
         },
         feedback,
+        improvementGuide,
         comparison: {
           expectedForAge: expectedGrade,
           performanceVsExpected,
