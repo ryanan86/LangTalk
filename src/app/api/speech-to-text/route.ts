@@ -1,8 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 
 export async function POST(request: NextRequest) {
   try {
+    // Auth check
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Authentication required', text: '' }, { status: 401 });
+    }
+
+    // Rate limit
+    const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.audio);
+    if (rateLimitResult) return rateLimitResult;
+
     // Check API key
     if (!process.env.OPENAI_API_KEY) {
       console.error('OPENAI_API_KEY is not set');
@@ -45,17 +58,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ text: transcription.text || '' });
   } catch (error: unknown) {
     console.error('Speech to text error:', error);
-
-    // More detailed error response
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const errorDetails = error instanceof Error && 'status' in error ? (error as { status?: number }).status : undefined;
-
-    console.error('Error message:', errorMessage);
-    console.error('Error status:', errorDetails);
-
     return NextResponse.json(
-      { error: errorMessage, text: '' },
-      { status: errorDetails || 500 }
+      { error: 'Speech recognition failed', text: '' },
+      { status: 500 }
     );
   }
 }

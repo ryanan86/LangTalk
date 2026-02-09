@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { getUserData, getLearningData, getDebateTopicsForUser } from '@/lib/sheetHelper';
 import { GRADE_TO_AGE_GROUP, AgeGroup, DebateCategory, DebateTopicRow } from '@/lib/sheetTypes';
 import {
@@ -10,7 +11,7 @@ import {
 // GET: Get debate topics suitable for the user
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
       return NextResponse.json({ topics: [], error: 'Not logged in' });

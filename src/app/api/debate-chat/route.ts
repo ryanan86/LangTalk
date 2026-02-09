@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getDebatePersona, moderator } from '@/lib/debatePersonas';
 import { DebateMessage, DebatePhase, DebateTopic, DebateTeam, DebateAnalysis } from '@/lib/debateTypes';
 
@@ -18,6 +21,16 @@ interface DebateChatRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    // Auth check
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    // Rate limit
+    const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.ai);
+    if (rateLimitResult) return rateLimitResult;
+
     const {
       messages,
       topic,
@@ -203,6 +216,16 @@ ${isKorean ? 'Note: The user understands Korean but this debate is conducted in 
 // Separate endpoint for generating debate analysis
 export async function PUT(request: NextRequest) {
   try {
+    // Auth check
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    // Rate limit
+    const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.ai);
+    if (rateLimitResult) return rateLimitResult;
+
     const {
       messages,
       topic,

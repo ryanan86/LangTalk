@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { getUserData, getLearningData, getDueCorrections } from '@/lib/sheetHelper';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function GET(_request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
       return NextResponse.json({ subscribed: false, reason: 'Not logged in' });
@@ -119,7 +120,10 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error) {
     console.error('Subscription check error:', error);
-    // In case of error, allow access (fail-open for better UX during development)
-    return NextResponse.json({ subscribed: true, error: 'Check failed, allowing access' });
+    // Fail-closed: deny access on error to prevent unauthorized usage
+    return NextResponse.json(
+      { subscribed: false, error: 'Subscription check failed. Please try again.' },
+      { status: 500 }
+    );
   }
 }

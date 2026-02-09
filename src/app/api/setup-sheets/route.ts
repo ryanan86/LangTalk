@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { topicTemplates, templateToTopicRow } from '@/lib/debateTopicsV2';
 
 // Only allow admin to run this
@@ -13,7 +14,7 @@ const ADMIN_EMAILS = ['ryan@nuklabs.com', 'taewoongan@gmail.com'];
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
 
     if (!session?.user?.email || !ADMIN_EMAILS.includes(session.user.email)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

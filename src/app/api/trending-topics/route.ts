@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -49,6 +52,16 @@ const ageGroupFromBirthYear = (birthYear: number): string => {
 
 export async function POST(request: NextRequest) {
   try {
+    // Auth check
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    // Rate limit
+    const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.ai);
+    if (rateLimitResult) return rateLimitResult;
+
     const body = await request.json();
     const {
       birthYear,
@@ -56,6 +69,15 @@ export async function POST(request: NextRequest) {
       count = 3,     // Number of topics to generate
       language = 'en'
     } = body;
+
+    // Input validation
+    if (count && (typeof count !== 'number' || count < 1 || count > 10)) {
+      return NextResponse.json({ error: 'Count must be between 1 and 10' }, { status: 400 });
+    }
+    const validCategories = ['technology', 'environment', 'society', 'education', 'health', 'culture', 'economy', 'science'];
+    if (category && !validCategories.includes(category)) {
+      return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
+    }
 
     const ageGroup = birthYear ? ageGroupFromBirthYear(birthYear) : 'high';
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -197,7 +219,7 @@ Make topics ENGAGING and DEBATABLE - not one-sided questions.`;
   } catch (error) {
     console.error('Trending Topics error:', error);
     return NextResponse.json(
-      { error: 'Failed to generate topics', details: String(error) },
+      { error: 'Failed to generate topics' },
       { status: 500 }
     );
   }
@@ -205,6 +227,12 @@ Make topics ENGAGING and DEBATABLE - not one-sided questions.`;
 
 // GET method for fetching cached/preset trending topics
 export async function GET(request: NextRequest) {
+  // Auth check
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const ageGroup = searchParams.get('ageGroup') || 'high';
   const category = searchParams.get('category');

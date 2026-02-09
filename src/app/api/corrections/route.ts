@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { randomUUID } from 'crypto';
 import {
   getLearningData,
@@ -11,11 +13,15 @@ import { CorrectionItem } from '@/lib/sheetTypes';
 // GET: Retrieve corrections for review (due today or earlier)
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
       return NextResponse.json({ corrections: [], error: 'Not logged in' });
     }
+
+    // Rate limit
+    const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
+    if (rateLimitResult) return rateLimitResult;
 
     const email = session.user.email;
     const searchParams = request.nextUrl.searchParams;
@@ -84,11 +90,15 @@ export async function GET(request: NextRequest) {
 // POST: Save new correction(s)
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
       return NextResponse.json({ success: false, error: 'Not logged in' }, { status: 401 });
     }
+
+    // Rate limit
+    const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
+    if (rateLimitResult) return rateLimitResult;
 
     const email = session.user.email;
 

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -84,10 +87,27 @@ async function generateWithOpenAI(text: string, voice: string): Promise<ArrayBuf
 
 export async function POST(request: NextRequest) {
   try {
+    // Auth check
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    // Rate limit
+    const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.audio);
+    if (rateLimitResult) return rateLimitResult;
+
     const { text, voice = 'shimmer' } = await request.json();
 
-    if (!text) {
+    if (!text || typeof text !== 'string') {
       return NextResponse.json({ error: 'No text provided' }, { status: 400 });
+    }
+    if (text.length > 5000) {
+      return NextResponse.json({ error: 'Text too long (max 5000 characters)' }, { status: 400 });
+    }
+    const allowedVoices = ['shimmer', 'echo', 'fable', 'onyx', 'nova', 'alloy'];
+    if (!allowedVoices.includes(voice)) {
+      return NextResponse.json({ error: 'Invalid voice' }, { status: 400 });
     }
 
     // Hybrid TTS strategy:

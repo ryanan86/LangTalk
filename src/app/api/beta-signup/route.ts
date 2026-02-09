@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 // Admin email to notify
 const ADMIN_EMAIL = 'ryan@nuklabs.com';
 
 export async function POST() {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Not logged in' }, { status: 401 });

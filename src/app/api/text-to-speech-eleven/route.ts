@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 
 // ElevenLabs voice IDs - these are pre-made voices
 const VOICE_MAP: Record<string, string> = {
@@ -15,10 +18,23 @@ const VOICE_MAP: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
   try {
+    // Auth check
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    // Rate limit
+    const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.audio);
+    if (rateLimitResult) return rateLimitResult;
+
     const { text, voice = 'shimmer' } = await request.json();
 
-    if (!text) {
+    if (!text || typeof text !== 'string') {
       return NextResponse.json({ error: 'No text provided' }, { status: 400 });
+    }
+    if (text.length > 5000) {
+      return NextResponse.json({ error: 'Text too long (max 5000 characters)' }, { status: 400 });
     }
 
     const apiKey = process.env.ELEVENLABS_API_KEY;

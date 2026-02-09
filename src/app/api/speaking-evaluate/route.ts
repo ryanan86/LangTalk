@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import {
   analyzeSpeaking,
   convertToStandardizedScores,
@@ -206,6 +209,16 @@ function generateFeedback(
 
 export async function POST(request: NextRequest) {
   try {
+    // Auth check
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Authentication required', success: false }, { status: 401 });
+    }
+
+    // Rate limit
+    const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
+    if (rateLimitResult) return rateLimitResult;
+
     const body = await request.json();
     const {
       userMessages,      // Array of user message strings
@@ -333,7 +346,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Speaking evaluation error:', error);
     return NextResponse.json(
-      { error: 'Evaluation failed', details: String(error), success: false },
+      { error: 'Evaluation failed', success: false },
       { status: 500 }
     );
   }
