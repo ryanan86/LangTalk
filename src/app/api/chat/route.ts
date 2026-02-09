@@ -332,28 +332,82 @@ Be specific, helpful, and maintain your teaching persona.`;
       presence_penalty: 0.6,
       frequency_penalty: 0.3,
       messages: openaiMessages,
+      ...(mode === 'analysis' ? { response_format: { type: 'json_object' as const } } : {}),
     });
 
     const assistantMessage = response.choices[0]?.message?.content || '';
 
     // Parse JSON for analysis mode
     if (mode === 'analysis') {
-      try {
-        const analysisData = JSON.parse(assistantMessage);
-
-        // Validate and sanitize evaluatedGrade
-        const validGrades = ['K', '1-2', '3-4', '5-6', '7-8', '9-10', '11-12', 'College'];
-        if (analysisData.evaluatedGrade) {
-          // Extract first valid grade if AI returned multiple options
-          const foundGrade = validGrades.find(g =>
-            analysisData.evaluatedGrade.includes(g)
-          );
-          analysisData.evaluatedGrade = foundGrade || '5-6'; // Default to 5-6 if invalid
+      // Try to extract JSON from the response (handles markdown code blocks, extra text, etc.)
+      const extractJSON = (text: string): object | null => {
+        // 1. Try direct parse first
+        try {
+          return JSON.parse(text);
+        } catch {
+          // continue to extraction attempts
         }
 
-        return NextResponse.json({ analysis: analysisData });
-      } catch {
-        // If JSON parsing fails, return raw message
+        // 2. Try extracting from markdown code blocks: ```json ... ``` or ``` ... ```
+        const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (codeBlockMatch) {
+          try {
+            return JSON.parse(codeBlockMatch[1].trim());
+          } catch {
+            // continue
+          }
+        }
+
+        // 3. Try finding JSON object boundaries { ... }
+        const firstBrace = text.indexOf('{');
+        const lastBrace = text.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace > firstBrace) {
+          try {
+            return JSON.parse(text.slice(firstBrace, lastBrace + 1));
+          } catch {
+            // continue
+          }
+        }
+
+        return null;
+      };
+
+      const analysisData = extractJSON(assistantMessage);
+
+      if (analysisData && typeof analysisData === 'object') {
+        // Validate and sanitize evaluatedGrade
+        const validGrades = ['K', '1-2', '3-4', '5-6', '7-8', '9-10', '11-12', 'College'];
+        const data = analysisData as Record<string, unknown>;
+        if (data.evaluatedGrade && typeof data.evaluatedGrade === 'string') {
+          const foundGrade = validGrades.find(g =>
+            (data.evaluatedGrade as string).includes(g)
+          );
+          data.evaluatedGrade = foundGrade || '5-6';
+        }
+
+        // Ensure required fields exist with fallbacks
+        if (!data.corrections || !Array.isArray(data.corrections)) {
+          data.corrections = [];
+        }
+        if (!data.patterns || !Array.isArray(data.patterns)) {
+          data.patterns = [];
+        }
+        if (!data.strengths || !Array.isArray(data.strengths)) {
+          data.strengths = [isKorean ? '영어로 대화를 시도했습니다' : 'You attempted to converse in English'];
+        }
+        if (!data.encouragement || typeof data.encouragement !== 'string') {
+          data.encouragement = isKorean
+            ? '좋은 시도였어요! 꾸준히 연습하면 반드시 실력이 향상됩니다.'
+            : 'Great effort! Keep practicing and you will improve.';
+        }
+        if (!data.overallLevel || typeof data.overallLevel !== 'string') {
+          data.overallLevel = 'intermediate';
+        }
+
+        return NextResponse.json({ analysis: data });
+      } else {
+        // JSON extraction completely failed - return raw message
+        console.error('Analysis JSON extraction failed. Raw response:', assistantMessage.slice(0, 200));
         return NextResponse.json({ message: assistantMessage, parseError: true });
       }
     }

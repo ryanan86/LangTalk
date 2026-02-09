@@ -98,6 +98,9 @@ function TalkContent() {
   const [streamingText, setStreamingText] = useState('');
   const [showTranscript, setShowTranscript] = useState(false);
 
+  // AbortController for cancelling AI response
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   // User info for session (birth year & name)
   const [showUserInfoModal, setShowUserInfoModal] = useState(false);
   const [birthYear, setBirthYear] = useState<number | null>(null);
@@ -553,6 +556,10 @@ function TalkContent() {
     processedSentencesRef.current.clear();
     audioCacheRef.current.clear();
 
+    // Create AbortController for this request
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
       const MAX_MESSAGES = 10;
       let messagesToSend = currentMessages;
@@ -572,6 +579,7 @@ function TalkContent() {
           mode: 'interview',
           stream: true,
         }),
+        signal: controller.signal,
       });
 
       // Check if response is streaming (SSE)
@@ -668,6 +676,23 @@ function TalkContent() {
   };
 
   const getAnalysis = async () => {
+    // Abort any in-progress AI response
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+
+    // Stop any playing audio immediately
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    audioQueueRef.current = [];
+    isPlayingQueueRef.current = false;
+    setIsPlaying(false);
+    setIsProcessing(false);
+    setStreamingText('');
+
     setPhase('analysis');
     setIsProcessing(true);
 
@@ -720,7 +745,64 @@ function TalkContent() {
         setSpeechMetrics(metrics);
 
         setAnalysis(data.analysis);
-        setPhase('review');
+        // If there are corrections, go to review; otherwise go to summary
+        if (data.analysis.corrections && data.analysis.corrections.length > 0) {
+          setPhase('review');
+        } else {
+          setPhase('summary');
+        }
+      } else if (data.parseError) {
+        // Analysis JSON parsing failed on server - retry once
+        console.warn('Analysis parse error, retrying...');
+        try {
+          const retryResponse = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              messages: messages,
+              tutorId,
+              mode: 'analysis',
+              language: language,
+              birthYear: birthYear,
+              userName: userName,
+              previousGrade: previousGrade,
+              previousLevelDetails: previousLevelDetails,
+              speechMetrics: {
+                avgSentenceLength: preMetrics.avgSentenceLength,
+                vocabularyDiversity: preMetrics.vocabularyDiversity,
+                complexSentenceRatio: preMetrics.complexSentenceRatio,
+                wordsPerMinute: preMetrics.wordsPerMinute,
+              },
+            }),
+          });
+          const retryData = await retryResponse.json();
+
+          if (retryData.analysis) {
+            const grammarErrors = retryData.analysis.corrections?.length || 0;
+            const metrics = calculateSpeechMetrics(
+              userMessages,
+              totalSpeakingTime,
+              responseTimesRef.current,
+              grammarErrors
+            );
+            setSpeechMetrics(metrics);
+            setAnalysis(retryData.analysis);
+            if (retryData.analysis.corrections && retryData.analysis.corrections.length > 0) {
+              setPhase('review');
+            } else {
+              setPhase('summary');
+            }
+          } else {
+            // Retry also failed - go to summary with basic metrics
+            const metrics = calculateSpeechMetrics(userMessages, totalSpeakingTime, responseTimesRef.current, 0);
+            setSpeechMetrics(metrics);
+            setPhase('summary');
+          }
+        } catch {
+          const metrics = calculateSpeechMetrics(userMessages, totalSpeakingTime, responseTimesRef.current, 0);
+          setSpeechMetrics(metrics);
+          setPhase('summary');
+        }
       } else {
         console.error('Analysis parsing failed');
         // Still calculate basic metrics even if AI analysis fails
@@ -1011,7 +1093,7 @@ function TalkContent() {
             </div>
           </div>
 
-          {phase === 'interview' && conversationTime >= 60 && (
+          {phase === 'interview' && (
             <button
               onClick={getAnalysis}
               className="text-xs sm:text-sm text-primary-400 font-semibold hover:text-primary-300 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
@@ -1284,11 +1366,17 @@ function TalkContent() {
                     {isRecordingReply ? t.stop : isPlaying ? t.listening : isProcessing ? t.processing : t.reply}
                   </button>
 
-                  {/* Done Button */}
+                  {/* Done Button - always clickable except during recording */}
                   <button
                     onClick={getAnalysis}
-                    disabled={isProcessing || isPlaying || isRecordingReply}
-                    className="px-6 py-4 rounded-2xl font-semibold bg-white/10 text-white hover:bg-white/15 border border-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed text-base"
+                    disabled={isRecordingReply}
+                    className={`px-6 py-4 rounded-2xl font-semibold border transition-all text-base ${
+                      isRecordingReply
+                        ? 'bg-white/5 text-white/30 border-white/5 cursor-not-allowed'
+                        : isProcessing || isPlaying
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-400/30 hover:bg-amber-500/30'
+                          : 'bg-white/10 text-white hover:bg-white/15 border-white/10'
+                    }`}
                   >
                     {t.done}
                   </button>
