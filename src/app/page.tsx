@@ -1012,35 +1012,7 @@ export default function HomePage() {
                             }`}>
                               {/* Video / Image Area */}
                               <div className="relative h-44 sm:h-56 lg:h-72 overflow-hidden bg-white">
-                                {/* Tutor Video */}
-                                {/* Tutor Image (default, visible before hover) */}
-                                <div className={`absolute inset-0 z-10 transition-opacity duration-300 ${
-                                  hoveredTutor === persona.id ? 'opacity-0' : 'opacity-100'
-                                }`}>
-                                  <Image
-                                    src={`/tutors/${getTutorFileName(persona.id)}.png`}
-                                    alt={persona.name}
-                                    fill
-                                    className={`object-cover contrast-[1.02] ${
-                                      persona.id === 'emma' ? 'scale-110 object-top' :
-                                      persona.id === 'james' ? 'scale-105 object-top' :
-                                      persona.id === 'charlotte' ? 'scale-110 object-top' :
-                                      persona.id === 'alina' ? 'scale-110 object-top' :
-                                      persona.id === 'henly' ? 'scale-110 object-top' :
-                                      'scale-90 object-center'
-                                    }`}
-                                    style={{
-                                      filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.3))',
-                                      objectPosition: persona.id === 'oliver' ? 'center 20%' : undefined
-                                    }}
-                                    onError={(e) => {
-                                      const target = e.target as HTMLImageElement;
-                                      target.src = `/tutors/${getTutorFileName(persona.id)}.jpg`;
-                                    }}
-                                  />
-                                </div>
-
-                                {/* Tutor Video (behind image, shown on hover) */}
+                                {/* Tutor Video (first frame as still, plays on hover) */}
                                 <video
                                   ref={(el) => { videoRefs.current[persona.id] = el; }}
                                   src={`/tutors/${getTutorFileName(persona.id)}_greeting.mp4`}
@@ -1048,7 +1020,7 @@ export default function HomePage() {
                                   loop
                                   playsInline
                                   preload="auto"
-                                  className="absolute inset-0 w-full h-full object-cover z-0"
+                                  className="absolute inset-0 w-full h-full object-cover"
                                 />
 
                                 {/* Selection Check */}
