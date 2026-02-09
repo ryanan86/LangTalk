@@ -23,11 +23,11 @@ export default function QuickActions({
       {correctionsToReview > 0 && (
         <button
           onClick={() => onNavigate('/review')}
-          className="relative group p-4 rounded-2xl bg-amber-50 dark:bg-gradient-to-br dark:from-amber-500/10 dark:to-orange-500/10 border border-amber-200 dark:border-amber-500/20 hover:border-amber-300 dark:hover:border-amber-500/40 transition-all text-left"
+          className="relative group p-4 rounded-2xl bg-amber-50 dark:bg-neutral-800 border border-amber-200 dark:border-amber-500/30 hover:border-amber-300 dark:hover:border-amber-500/50 transition-all text-left"
         >
-          <div className="absolute inset-0 rounded-2xl bg-amber-100/50 dark:bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 rounded-2xl bg-amber-100/50 dark:bg-amber-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-gradient-to-br dark:from-amber-500/20 dark:to-orange-500/20 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center">
               <svg className="w-6 h-6 text-amber-500 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -41,11 +41,11 @@ export default function QuickActions({
                   {correctionsToReview}
                 </span>
               </div>
-              <p className="text-neutral-400 dark:text-white/40 text-xs mt-0.5">
+              <p className="text-neutral-500 dark:text-neutral-400 text-xs mt-0.5">
                 {language === 'ko' ? '지금 복습하고 기억을 강화하세요' : 'Strengthen your memory now'}
               </p>
             </div>
-            <svg className="w-5 h-5 text-neutral-300 dark:text-white/30 group-hover:text-neutral-500 dark:group-hover:text-white/60 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-neutral-300 dark:text-neutral-500 group-hover:text-neutral-500 dark:group-hover:text-neutral-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </div>

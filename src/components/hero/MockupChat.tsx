@@ -141,7 +141,7 @@ export default function MockupChat() {
       <div className="flex-1 flex flex-col items-center justify-center relative px-4">
         {/* Ambient glow */}
         <div
-          className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[200px] h-[200px] rounded-full opacity-25 transition-all duration-500"
+          className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[250px] h-[250px] rounded-full opacity-25 transition-all duration-500"
           style={{
             background: `radial-gradient(circle, ${
               isListening ? 'rgba(239,68,68,0.5)' :
@@ -169,7 +169,7 @@ export default function MockupChat() {
           )}
 
           <div
-            className={`relative w-24 h-24 rounded-full overflow-hidden ring-3 transition-all duration-500 ${
+            className={`relative w-32 h-32 rounded-full overflow-hidden ring-3 transition-all duration-500 ${
               isSpeaking ? `${tutor.ringColor} shadow-lg` :
               isListening ? 'ring-green-400 shadow-green-500/30' :
               isThinking ? 'ring-amber-400 shadow-amber-500/30' :

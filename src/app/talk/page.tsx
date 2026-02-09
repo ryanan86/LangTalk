@@ -1000,7 +1000,7 @@ function TalkContent() {
           <div className="flex items-center gap-2 sm:gap-3">
             <TutorAvatar
               tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
-              size="sm"
+              size="md"
               speaking={isPlaying}
             />
             <div>
