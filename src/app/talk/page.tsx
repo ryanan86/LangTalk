@@ -1048,7 +1048,7 @@ function TalkContent() {
 
         {/* ========== READY PHASE ========== */}
         {phase === 'ready' && (
-          <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 text-center">
+          <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 pb-24 sm:pb-8 text-center">
             <div className="mb-4 sm:mb-6 animate-bounce-soft">
               <TutorAvatar
                 tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
