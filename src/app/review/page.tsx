@@ -47,6 +47,13 @@ export default function ReviewPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [completedCount, setCompletedCount] = useState(0);
 
+  // Practice speaking states
+  const [isRecordingPractice, setIsRecordingPractice] = useState(false);
+  const [isProcessingPractice, setIsProcessingPractice] = useState(false);
+  const [practiceResult, setPracticeResult] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
   // Load corrections due for review
   useEffect(() => {
     const loadCorrections = async () => {
@@ -89,6 +96,75 @@ export default function ReviewPage() {
     }
   };
 
+  const togglePracticeRecording = async () => {
+    if (isRecordingPractice) {
+      // Stop recording
+      const recorder = mediaRecorderRef.current;
+      if (recorder && (recorder.state === 'recording' || recorder.state === 'paused')) {
+        recorder.stop();
+      }
+      setIsRecordingPractice(false);
+      return;
+    }
+
+    // Start recording
+    setPracticeResult(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+          ? 'audio/webm'
+          : 'audio/mp4';
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(track => track.stop());
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+
+        if (audioBlob.size < 100) return;
+
+        setIsProcessingPractice(true);
+        try {
+          const file = new File([audioBlob], 'practice.webm', { type: 'audio/webm' });
+          const formData = new FormData();
+          formData.append('audio', file);
+
+          const sttResponse = await fetch('/api/speech-to-text', {
+            method: 'POST',
+            body: formData,
+          });
+          const sttData = await sttResponse.json();
+          setPracticeResult(sttData.text?.trim() || '');
+        } catch (error) {
+          console.error('Practice STT error:', error);
+          setPracticeResult('');
+        } finally {
+          setIsProcessingPractice(false);
+        }
+      };
+
+      mediaRecorder.start(1000);
+      setIsRecordingPractice(true);
+    } catch (error) {
+      console.error('Microphone error:', error);
+    }
+  };
+
+  const resetPractice = () => {
+    setPracticeResult(null);
+    setIsRecordingPractice(false);
+  };
+
   const handleQualitySelect = async (quality: number) => {
     if (!currentCorrection || isSubmitting) return;
 
@@ -107,6 +183,7 @@ export default function ReviewPage() {
       setCompletedCount(prev => prev + 1);
 
       // Move to next or finish
+      resetPractice();
       if (currentIndex < corrections.length - 1) {
         setCurrentIndex(prev => prev + 1);
         setShowAnswer(false);
@@ -277,6 +354,78 @@ export default function ReviewPage() {
                   <p className="text-sm text-blue-800 dark:text-blue-300 mt-2">
                     {currentCorrection.explanation}
                   </p>
+                </div>
+
+                {/* Practice Speaking */}
+                <div className="p-4 bg-purple-50 dark:bg-purple-500/10 rounded-xl">
+                  <span className="text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wider">
+                    {language === 'ko' ? '따라 말해보기' : 'Try saying it'}
+                  </span>
+
+                  <div className="mt-3 flex items-center gap-3">
+                    <button
+                      onClick={togglePracticeRecording}
+                      disabled={isProcessingPractice}
+                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                        isRecordingPractice
+                          ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 animate-pulse'
+                          : isProcessingPractice
+                            ? 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 cursor-not-allowed'
+                            : 'bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 hover:bg-purple-200 dark:hover:bg-purple-500/30'
+                      }`}
+                    >
+                      {isProcessingPractice ? (
+                        <div className="w-5 h-5 border-2 border-purple-600 dark:border-purple-400 border-t-transparent rounded-full animate-spin" />
+                      ) : isRecordingPractice ? (
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <rect x="6" y="6" width="12" height="12" rx="2" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+                          <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+                        </svg>
+                      )}
+                    </button>
+
+                    <p className="text-sm text-purple-700 dark:text-purple-300">
+                      {isRecordingPractice
+                        ? (language === 'ko' ? '말하고 있어요... 완료되면 탭하세요' : 'Listening... tap when done')
+                        : isProcessingPractice
+                          ? (language === 'ko' ? '인식 중...' : 'Processing...')
+                          : practiceResult === null
+                            ? (language === 'ko' ? '마이크를 눌러 따라 말해보세요' : 'Tap the mic and try saying it')
+                            : ''}
+                    </p>
+                  </div>
+
+                  {/* Practice Result */}
+                  {practiceResult !== null && !isRecordingPractice && !isProcessingPractice && (
+                    <div className="mt-3 space-y-2">
+                      <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
+                        <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                          {language === 'ko' ? '내가 말한 것' : 'What you said'}
+                        </span>
+                        <p className="text-sm text-neutral-800 dark:text-neutral-200 mt-1">
+                          {practiceResult || (language === 'ko' ? '(음성이 인식되지 않았습니다)' : '(No speech detected)')}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-green-50 dark:bg-green-500/10 rounded-lg">
+                        <span className="text-xs text-green-600 dark:text-green-400">
+                          {language === 'ko' ? '정답' : 'Target'}
+                        </span>
+                        <p className="text-sm text-green-800 dark:text-green-300 mt-1">
+                          {currentCorrection.corrected}
+                        </p>
+                      </div>
+                      <button
+                        onClick={resetPractice}
+                        className="w-full py-2 text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
+                      >
+                        {language === 'ko' ? '다시 시도' : 'Try again'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
