@@ -950,6 +950,16 @@ export default function HomePage() {
                       <p className="text-neutral-500 dark:text-white/50">
                         {language === 'ko' ? '원어민 발음의 AI 튜터와 자유롭게 대화하세요' : 'Practice with native-speaking AI tutors'}
                       </p>
+                      <div className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20">
+                        <svg className="w-4 h-4 text-indigo-500 dark:text-indigo-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                        <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                          {language === 'ko'
+                            ? '13세 이하: IB 커리큘럼 기반 AI 튜터링'
+                            : 'Ages 13 & under: IB curriculum-based AI tutoring'}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
@@ -1293,6 +1303,20 @@ export default function HomePage() {
                         ? '타이핑 없이 말하기만 하세요. AI가 듣고, 이해하고, 자연스럽게 응답합니다.'
                         : 'No typing needed. Just speak. AI listens, understands, and responds naturally.'}
                     </p>
+                  </div>
+                </div>
+
+                {/* IB Curriculum Notice */}
+                <div className="mt-12 sm:mt-16 flex justify-center">
+                  <div className="inline-flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20">
+                    <svg className="w-5 h-5 text-indigo-500 dark:text-indigo-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                      {language === 'ko'
+                        ? '13세 이하: IB 커리큘럼 기반 AI 튜터링'
+                        : 'Ages 13 & under: IB curriculum-based AI tutoring'}
+                    </span>
                   </div>
                 </div>
               </div>
