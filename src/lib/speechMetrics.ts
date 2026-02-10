@@ -67,13 +67,13 @@ const AGE_GROUPS: AgeGroupConfig[] = [
     key: 'adult',
     ageRange: [18, 120],
     maxCorrectionWords: 35,
-    vocabularyLevel: '고급 + 콜로케이션 + 전문/학술적 표현',
+    vocabularyLevel: '상황에 맞는 자연스러운 표현 (캐주얼: 구어체/슬랭 OK, 포멀: 고급 어휘)',
     useIdioms: true,
     useConjunctions: true,
-    conjunctionExamples: 'nevertheless, furthermore, consequently, notwithstanding, in light of',
-    grammarFocus: ['all tenses', 'subjunctive mood', 'inversion', 'cleft sentences', 'advanced modals'],
-    correctionStyle: '원어민 수준의 정교함. 풍부한 콜로케이션과 뉘앙스 표현 사용. 예: "I think is good" → "I genuinely believe this is an excellent approach, particularly given the current circumstances."',
-    stretchTarget: '현재 최고 수준: 학술/비즈니스 고급 표현, 미묘한 뉘앙스 차이, 원어민도 감탄할 표현 추구',
+    conjunctionExamples: 'casual: but, so, actually, though, I mean / neutral: because, which, since / formal: however, although, therefore',
+    grammarFocus: ['all tenses', 'natural contractions', 'conditional sentences', 'relative clauses', 'advanced modals'],
+    correctionStyle: '대화 상황에 맞는 자연스러움. 캐주얼: "I think is good" → "I think that\'s pretty good, honestly." 포멀: "I think is good" → "I believe this is an excellent approach, particularly given the circumstances."',
+    stretchTarget: '현재 수준에서 한 단계 위: 캐주얼에선 자연스러운 관용표현과 구어체, 포멀에선 정교한 연결과 뉘앙스',
     stretchMaxWords: 40, // 기본 35 + 5 여유
   },
 ];

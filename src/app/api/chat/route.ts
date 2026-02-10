@@ -149,16 +149,45 @@ The "intended", "explanation", "type", "tip", "strengths", and "encouragement" f
         ? (userName ? `${userName}에게 보내는 짧고 따뜻한 격려 메시지 (1-2문장, 예: "정말 잘했어요! 다음에도 화이팅!")` : '짧고 따뜻한 격려 메시지 (1-2문장)')
         : (userName ? `Short, warm encouragement for ${userName} (1-2 sentences, e.g., "Great job! Keep it up!")` : 'Short, warm encouragement (1-2 sentences)');
 
+      // Derive register hint from persona
+      const personaRegisterHint = ['emma', 'james', 'alina', 'henly'].includes(tutorId)
+        ? 'This was a CASUAL conversation with a laid-back persona. Corrections MUST match casual native speech.'
+        : ['charlotte', 'oliver'].includes(tutorId)
+        ? 'This was a CASUAL-TO-NEUTRAL conversation (British persona). Corrections should sound naturally British and conversational.'
+        : 'Determine register from conversation content.';
+
       systemPrompt = `You are ${persona.name}, a supportive English coach analyzing a student's conversation.
 ${analysisLang}
 
-YOUR GOAL: Help them speak in LONGER, more CONNECTED sentences like native speakers do.
+=== STEP 1: DETECT CONVERSATION REGISTER ===
+Before correcting anything, read the full conversation and determine its register:
 
+CASUAL: Chatting about daily life, hobbies, food, friends, weekend plans, personal preferences, small talk.
+  -> Corrections should sound like a native friend talking. Short sentences are FINE. Contractions and informal connectors ("but", "so", "actually", "though") are GOOD.
+  -> Do NOT add formal connectors (furthermore, consequently, particularly) to casual chat.
+  -> Do NOT make sentences longer just for length. Only extend when the original is unclear or grammatically broken.
+
+NEUTRAL: Explaining something, describing an experience in detail, giving opinions with reasons, telling a story.
+  -> Corrections can be moderately more connected. Use natural connectors ("because", "which", "since").
+  -> Aim for clear, well-formed sentences, but not academic ones.
+
+FORMAL: Discussing work/business, academic topics, debates, presentations, professional scenarios.
+  -> Corrections should use sophisticated vocabulary and complex sentence structures.
+  -> Connectors like "however", "therefore", "particularly" are appropriate here.
+
+PERSONA CONTEXT: ${personaRegisterHint}
+
+YOUR GOAL: Help them speak more NATURALLY and CORRECTLY -- like a native speaker would IN THIS SAME SITUATION.
+A native speaker chatting about ramen does NOT say "I genuinely appreciate its simplicity and authentic flavors."
+A native speaker chatting about ramen says "Nothing beats the original, you know?"
+
+=== STEP 2: CORRECT WITHIN REGISTER ===
 ANALYSIS FOCUS:
-1. Find every short, choppy sentence and show how to EXTEND it
-2. Identify grammar mistakes and show the natural way to say it
-3. Suggest richer vocabulary and expressions
-4. Point out missed opportunities to connect ideas
+1. Fix grammar mistakes and unnatural phrasing
+2. Show how a native speaker would say the same thing IN THE SAME REGISTER
+3. For CASUAL conversations: keep it casual. Short is fine. Fix errors, do not formalize.
+4. For NEUTRAL/FORMAL conversations: suggest richer connections and vocabulary where appropriate.
+5. Only flag short sentences as a problem when they are ALSO unnatural or broken -- not just because they are short.
 
 ${ageGroup && adaptiveDifficulty ? `LEARNER AGE GROUP: ${ageGroup.key}
 EFFECTIVE DIFFICULTY: ${adaptiveDifficulty.difficulty}/5
@@ -186,9 +215,9 @@ ${ageGroup.correctionStyle}
 4. 교정 문장은 ${ageGroup.stretchMaxWords}단어 이내로 유지
 ` : ''}
 For EACH correction, provide:
-- What they said (even if grammatically correct but too short)
+- What they said (focus on actual errors or unnatural phrasing -- do NOT flag sentences just for being short)
 - What they probably wanted to express (their intent)
-- A MUCH BETTER version that is ${ageGroup ? '학습자 수준보다 살짝 높은 i+1 수준 (성장 유도)' : 'longer, more natural, and uses connectors (that, which, who, because, so, and then, especially when, which means)'}
+- A more NATURAL version that ${ageGroup ? '학습자 수준보다 살짝 높은 i+1 수준이면서 대화 register에 맞는 표현 (캐주얼 대화는 캐주얼하게, 포멀 대화는 포멀하게)' : 'sounds like what a native speaker would actually say in this same conversation context'}
 - Clear explanation of WHY the improved version is better
 
 LEVEL EVALUATION (US Grade Equivalent):
@@ -243,9 +272,9 @@ RETURN THIS EXACT JSON FORMAT (no markdown, valid JSON only):
     {
       "original": "I like coffee. It is good.",
       "intended": "${exampleIntended}",
-      "corrected": "I really love coffee, especially the kind that has a rich, bold flavor because it helps me wake up in the morning and gives me the energy I need to start my day.",
+      "corrected": "I'm really into coffee -- there's nothing like a good bold cup in the morning, you know?",
       "explanation": "${exampleExplanation}",
-      "category": "sentence-extension"
+      "category": "naturalness"
     }
   ],
   "patterns": [
@@ -270,7 +299,7 @@ RETURN THIS EXACT JSON FORMAT (no markdown, valid JSON only):
   "encouragement": "${exampleEncouragement}"
 }
 
-BE THOROUGH: Find at least 3-5 corrections. Even correct sentences can be improved to sound more natural and fluent. Show them how a native speaker would express the same idea with more detail and flow.`;
+BE THOROUGH: Find at least 3-5 corrections. Focus on grammar errors, unnatural phrasing, and vocabulary that doesn't fit the register. Show them how a native speaker would express the same idea IN THE SAME CONVERSATIONAL CONTEXT. Do NOT turn casual chat into essay writing.`;
     } else if (mode === 'feedback') {
       systemPrompt = `You are ${persona.name}, an English tutor providing feedback.
 
