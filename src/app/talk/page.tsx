@@ -100,6 +100,7 @@ function TalkContent() {
 
   // AbortController for cancelling AI response
   const abortControllerRef = useRef<AbortController | null>(null);
+  const isEndingSessionRef = useRef(false);
 
   // Exit confirmation modal
   const [showExitConfirm, setShowExitConfirm] = useState(false);
@@ -578,11 +579,13 @@ function TalkContent() {
       }
     } catch (error) {
       console.error('Audio processing error:', error);
-      if (isInitial) {
+      if (isInitial && !isEndingSessionRef.current) {
         setPhase('interview');
       }
     } finally {
-      setIsProcessing(false);
+      if (!isEndingSessionRef.current) {
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -711,13 +714,21 @@ function TalkContent() {
         }
       }
     } catch (error) {
-      console.error('AI response error:', error);
+      if (!isEndingSessionRef.current) {
+        console.error('AI response error:', error);
+      }
     } finally {
-      setIsProcessing(false);
+      // Don't override isProcessing if session is ending (getAnalysis sets its own state)
+      if (!isEndingSessionRef.current) {
+        setIsProcessing(false);
+      }
     }
   };
 
   const getAnalysis = async () => {
+    // Prevent race conditions with concurrent async operations
+    isEndingSessionRef.current = true;
+
     // Abort any in-progress AI response
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -1074,6 +1085,7 @@ function TalkContent() {
   };
 
   const resetSession = () => {
+    isEndingSessionRef.current = false;
     setMessages([]);
     setConversationTime(0);
     setAnalysis(null);
