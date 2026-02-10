@@ -5,8 +5,8 @@
  *
  * 사용법: node scripts/generate-greetings.mjs
  *
- * ElevenLabs: Emma, James, Alina, Henly (앱과 동일한 하이브리드 전략)
- * OpenAI TTS: Charlotte, Oliver
+ * Fish Audio S1: 전체 튜터 (primary)
+ * OpenAI TTS: fallback
  *
  * 출력: public/audio/greetings/{name}-greeting.mp3
  */
@@ -14,26 +14,39 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import https from 'https';
+import { readFileSync, existsSync } from 'fs';
+import { homedir } from 'os';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUTPUT_DIR = path.join(__dirname, '..', 'public', 'audio', 'greetings');
 
-// API Keys
-const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
+// ~/.claude/.env 로드
+function loadEnv() {
+  const envPath = path.join(homedir(), '.claude', '.env');
+  if (existsSync(envPath)) {
+    const content = readFileSync(envPath, 'utf-8');
+    for (const line of content.split('\n')) {
+      const match = line.match(/^(\w+)=["']?(.+?)["']?$/);
+      if (match && !process.env[match[1]]) {
+        process.env[match[1]] = match[2];
+      }
+    }
+  }
+}
+loadEnv();
+
+const FISH_AUDIO_API_KEY = process.env.FISH_AUDIO_API_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-// ElevenLabs Voice IDs (앱과 동일)
-const ELEVENLABS_VOICE_MAP = {
-  shimmer: 'EXAVITQu4vr4xnSDxMaL', // Emma
-  echo: 'pNInz6obpgDQGcFmaJgB',    // James
-  nova: 'jBpfuIE2acCO8z3wKNLl',     // Alina (kid)
-  alloy: 'TX3LPaxmHKxFdv7VOQHJ',   // Henly (kid)
+// Fish Audio voice reference IDs (앱 route.ts와 동일)
+const FISH_AUDIO_VOICE_MAP = {
+  shimmer: 'b545c585f631496c914815291da4e893', // Emma - Friendly Women
+  echo: '802e3bc2b27e49c2995d23ef70e6ac89',    // James - Energetic Male
+  fable: '2727e89d949a470fb3c8db8278306d36',    // Charlotte - Velvette (British female)
+  onyx: 'b99f2c4a0012471cb32ab61152e7e48d',     // Oliver - British Narrator
+  nova: 'f56b971895ed4a9d8aaf90e4c4d96a61',     // Alina - BLUEY (young girl)
+  alloy: '12d3a04e3dca4e49a40ee52fea6e7c0e',    // Henry - Mackenzie Bluey (young boy)
 };
-
-// ElevenLabs 선호 음성 (앱과 동일한 하이브리드 전략)
-const ELEVENLABS_PREFERRED = new Set(['shimmer', 'echo', 'nova', 'alloy']);
-const KID_VOICES = new Set(['nova', 'alloy']);
 
 // 튜터별 인사말 (캐릭터 성격 반영, 5~8초 분량)
 const GREETINGS = [
@@ -69,38 +82,37 @@ const GREETINGS = [
   },
 ];
 
-// ElevenLabs TTS
-async function generateWithElevenLabs(text, voice) {
-  const voiceId = ELEVENLABS_VOICE_MAP[voice];
-  const isKid = KID_VOICES.has(voice);
+// Fish Audio TTS
+async function generateWithFishAudio(text, voice) {
+  const referenceId = FISH_AUDIO_VOICE_MAP[voice];
+  const body = {
+    text,
+    format: 'mp3',
+    mp3_bitrate: 128,
+    normalize: true,
+    latency: 'balanced',
+  };
+  if (referenceId) body.reference_id = referenceId;
 
-  const voiceSettings = isKid
-    ? { stability: 0.75, similarity_boost: 0.6, style: 0.3, use_speaker_boost: true }
-    : { stability: 0.5, similarity_boost: 0.75, style: 0.5, use_speaker_boost: true };
-
-  const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+  const response = await fetch('https://api.fish.audio/v1/tts', {
     method: 'POST',
     headers: {
-      'Accept': 'audio/mpeg',
+      'Authorization': `Bearer ${FISH_AUDIO_API_KEY}`,
       'Content-Type': 'application/json',
-      'xi-api-key': ELEVENLABS_API_KEY,
+      'model': 's1',
     },
-    body: JSON.stringify({
-      text,
-      model_id: 'eleven_turbo_v2_5',
-      voice_settings: voiceSettings,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`ElevenLabs error ${response.status}: ${errorText}`);
+    throw new Error(`Fish Audio error ${response.status}: ${errorText}`);
   }
 
   return Buffer.from(await response.arrayBuffer());
 }
 
-// OpenAI TTS
+// OpenAI TTS (fallback)
 async function generateWithOpenAI(text, voice) {
   const response = await fetch('https://api.openai.com/v1/audio/speech', {
     method: 'POST',
@@ -125,51 +137,53 @@ async function generateWithOpenAI(text, voice) {
 }
 
 async function main() {
-  // 출력 디렉토리 생성
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
-  console.log('🎤 TapTalk 튜터 인사말 음성 생성 시작\n');
-  console.log(`📂 출력: ${OUTPUT_DIR}\n`);
+  console.log('TapTalk Tutor Greeting Audio Generator\n');
+  console.log(`Output: ${OUTPUT_DIR}\n`);
 
-  if (!ELEVENLABS_API_KEY) {
-    console.warn('⚠️  ELEVENLABS_API_KEY 없음 — 전부 OpenAI로 생성합니다\n');
+  if (!FISH_AUDIO_API_KEY) {
+    console.warn('FISH_AUDIO_API_KEY not found - using OpenAI only\n');
   }
   if (!OPENAI_API_KEY) {
-    console.error('❌ OPENAI_API_KEY 필수!');
+    console.error('OPENAI_API_KEY required as fallback');
     process.exit(1);
   }
 
   for (const tutor of GREETINGS) {
-    const useElevenLabs = ELEVENLABS_API_KEY && ELEVENLABS_PREFERRED.has(tutor.voice);
-    const provider = useElevenLabs ? 'ElevenLabs' : 'OpenAI';
-
-    console.log(`🔊 ${tutor.name} (${provider}, voice: ${tutor.voice})`);
-    console.log(`   "${tutor.text}"`);
+    console.log(`[${tutor.name}] voice: ${tutor.voice}`);
+    console.log(`  "${tutor.text}"`);
 
     try {
       let audioBuffer;
-      if (useElevenLabs) {
+      if (FISH_AUDIO_API_KEY) {
         try {
-          audioBuffer = await generateWithElevenLabs(tutor.text, tutor.voice);
+          audioBuffer = await generateWithFishAudio(tutor.text, tutor.voice);
+          console.log(`  -> Fish Audio OK`);
         } catch (err) {
-          console.warn(`   ⚠️ ElevenLabs 실패, OpenAI로 폴백: ${err.message}`);
+          console.warn(`  -> Fish Audio failed, fallback to OpenAI: ${err.message}`);
           audioBuffer = await generateWithOpenAI(tutor.text, tutor.voice);
+          console.log(`  -> OpenAI OK`);
         }
       } else {
         audioBuffer = await generateWithOpenAI(tutor.text, tutor.voice);
+        console.log(`  -> OpenAI OK`);
       }
 
       const outputPath = path.join(OUTPUT_DIR, `${tutor.name}-greeting.mp3`);
       fs.writeFileSync(outputPath, audioBuffer);
 
       const sizeKB = (audioBuffer.length / 1024).toFixed(1);
-      console.log(`   ✅ 저장 완료 (${sizeKB} KB)\n`);
+      console.log(`  -> Saved (${sizeKB} KB)\n`);
     } catch (err) {
-      console.error(`   ❌ 실패: ${err.message}\n`);
+      console.error(`  -> FAILED: ${err.message}\n`);
     }
+
+    // rate limit 방지
+    await new Promise(r => setTimeout(r, 500));
   }
 
-  console.log('🎉 완료! public/audio/greetings/ 에서 확인하세요.');
+  console.log('Done! Check public/audio/greetings/');
 }
 
 main();
