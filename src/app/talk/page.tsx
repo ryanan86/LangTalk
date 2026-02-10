@@ -138,9 +138,10 @@ function TalkContent() {
 
     setIsSavingImage(true);
     try {
+      const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
       const canvas = await html2canvas(summaryRef.current, {
         backgroundColor: '#f5f5f5',
-        scale: 2, // Higher quality
+        scale: Math.max(dpr, 2) * 2, // Retina-aware: 4x on standard, 6x on 3x displays
         useCORS: true,
         logging: false,
       });
