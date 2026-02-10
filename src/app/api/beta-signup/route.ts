@@ -143,25 +143,27 @@ async function sendAdminNotification(userEmail: string, userName: string, signup
   // Option 1: Telegram (if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID are configured)
   if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
     try {
-      const message = `🆕 *새 베타 신청!*
+      const escapedEmail = userEmail.replace(/[<>&]/g, '');
+      const escapedName = (userName || '(없음)').replace(/[<>&]/g, '');
 
-📧 이메일: \`${userEmail}\`
-👤 이름: ${userName || '(없음)'}
-🕐 시간: ${signupTime}
+      const message = `[새 베타 신청]\n\n이메일: ${escapedEmail}\n이름: ${escapedName}\n시간: ${signupTime}\n\nhttps://taptalk.xyz/admin/users`;
 
-[승인하러 가기](https://taptalk.xyz/admin/users)`;
-
-      await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      const res = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: process.env.TELEGRAM_CHAT_ID,
           text: message,
-          parse_mode: 'Markdown',
           disable_web_page_preview: true,
         }),
       });
-      console.log('Admin notification sent via Telegram');
+
+      const result = await res.json();
+      if (!result.ok) {
+        console.error('Telegram API error:', result.description);
+      } else {
+        console.log('Admin notification sent via Telegram');
+      }
     } catch (e) {
       console.error('Failed to send Telegram notification:', e);
     }
