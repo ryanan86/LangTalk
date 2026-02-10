@@ -8,67 +8,48 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// ElevenLabs voice IDs
-const ELEVENLABS_VOICE_MAP: Record<string, string> = {
-  shimmer: 'EXAVITQu4vr4xnSDxMaL', // Rachel - warm American female
-  echo: 'pNInz6obpgDQGcFmaJgB', // Adam - friendly American male
-  fable: 'ThT5KcBeYPX3keUQqHPh', // Dorothy - British female
-  onyx: 'JBFqnCBsd6RMkjVDRZzb', // George - British male, warm friendly voice
-  nova: 'jBpfuIE2acCO8z3wKNLl', // Gigi - young girl, childish tone
-  alloy: 'TX3LPaxmHKxFdv7VOQHJ', // Liam - young boy, brighter tone
+// Fish Audio voice reference IDs (primary provider)
+const FISH_AUDIO_VOICE_MAP: Record<string, string> = {
+  shimmer: 'b545c585f631496c914815291da4e893', // Emma - Friendly Women
+  echo: '802e3bc2b27e49c2995d23ef70e6ac89',    // James - Energetic Male
+  fable: '2727e89d949a470fb3c8db8278306d36',    // Charlotte - Velvette (British female)
+  onyx: 'b99f2c4a0012471cb32ab61152e7e48d',     // Oliver - British Narrator
+  nova: 'f56b971895ed4a9d8aaf90e4c4d96a61',     // Alina - BLUEY (young girl)
+  alloy: '12d3a04e3dca4e49a40ee52fea6e7c0e',    // Henry - Mackenzie Bluey (young boy)
 };
 
-// Kid voices that need higher speed in OpenAI fallback
-const KID_VOICES = new Set(['nova', 'alloy']);
-
-// Hybrid TTS strategy: voices that should use ElevenLabs
-// Emma (shimmer), James (echo), Alina (nova), Henry (alloy) → ElevenLabs
-// Charlotte (fable), Oliver (onyx) → OpenAI
-const ELEVENLABS_PREFERRED_VOICES = new Set(['shimmer', 'echo', 'nova', 'alloy']);
-
-async function generateWithElevenLabs(text: string, voice: string): Promise<ArrayBuffer> {
-  const apiKey = process.env.ELEVENLABS_API_KEY;
+async function generateWithFishAudio(text: string, voice: string): Promise<ArrayBuffer> {
+  const apiKey = process.env.FISH_AUDIO_API_KEY;
   if (!apiKey) {
-    throw new Error('ElevenLabs API key not configured');
+    throw new Error('Fish Audio API key not configured');
   }
 
-  const voiceId = ELEVENLABS_VOICE_MAP[voice] || ELEVENLABS_VOICE_MAP.shimmer;
-  const isKidVoice = KID_VOICES.has(voice);
+  const referenceId = FISH_AUDIO_VOICE_MAP[voice];
+  const body: Record<string, unknown> = {
+    text,
+    format: 'mp3',
+    mp3_bitrate: 128,
+    normalize: true,
+    latency: 'balanced',
+  };
+  if (referenceId) {
+    body.reference_id = referenceId;
+  }
 
-  // Kid voices: higher stability for slower, more measured speech
-  // Adult voices: standard settings
-  const voiceSettings = isKidVoice
-    ? {
-        stability: 0.75,        // Higher = more consistent, slower pacing
-        similarity_boost: 0.6,  // Slightly lower for more natural kid speech
-        style: 0.3,             // Lower style for clearer pronunciation
-        use_speaker_boost: true,
-      }
-    : {
-        stability: 0.5,
-        similarity_boost: 0.75,
-        style: 0.5,
-        use_speaker_boost: true,
-      };
-
-  const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+  const response = await fetch('https://api.fish.audio/v1/tts', {
     method: 'POST',
     headers: {
-      'Accept': 'audio/mpeg',
+      'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      'xi-api-key': apiKey,
+      'model': 's1',
     },
-    body: JSON.stringify({
-      text,
-      model_id: 'eleven_turbo_v2_5',
-      voice_settings: voiceSettings,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('ElevenLabs error:', response.status, errorText);
-    throw new Error(`ElevenLabs TTS failed: ${response.status} - ${errorText}`);
+    console.error('Fish Audio error:', response.status, errorText);
+    throw new Error(`Fish Audio TTS failed: ${response.status} - ${errorText}`);
   }
 
   return response.arrayBuffer();
@@ -76,10 +57,10 @@ async function generateWithElevenLabs(text: string, voice: string): Promise<Arra
 
 async function generateWithOpenAI(text: string, voice: string): Promise<ArrayBuffer> {
   const mp3 = await openai.audio.speech.create({
-    model: 'tts-1', // Use tts-1 for faster response (tts-1-hd is slower)
+    model: 'tts-1',
     voice: voice as 'nova' | 'onyx' | 'alloy' | 'echo' | 'fable' | 'shimmer',
     input: text,
-    speed: 1.0, // Normal speed for all voices
+    speed: 1.0,
   });
 
   return mp3.arrayBuffer();
@@ -110,27 +91,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid voice' }, { status: 400 });
     }
 
-    // Hybrid TTS strategy:
-    // - Emma (shimmer), James (echo), Alina (nova), Henry (alloy) → ElevenLabs
-    // - Charlotte (fable), Oliver (onyx) → OpenAI
-    const elevenLabsKey = process.env.ELEVENLABS_API_KEY;
-    const hasElevenLabsKey = !!elevenLabsKey && elevenLabsKey.trim().length > 0;
-    const shouldUseElevenLabs = hasElevenLabsKey && ELEVENLABS_PREFERRED_VOICES.has(voice);
-
-    console.log(`TTS: voice=${voice}, provider=${shouldUseElevenLabs ? 'ElevenLabs' : 'OpenAI'}`);
-
+    // TTS priority: Fish Audio -> OpenAI (fallback)
     let audioBuffer: ArrayBuffer;
+    let provider = 'OpenAI';
 
-    if (shouldUseElevenLabs) {
+    if (process.env.FISH_AUDIO_API_KEY?.trim()) {
       try {
-        audioBuffer = await generateWithElevenLabs(text, voice);
-      } catch (elevenLabsError) {
-        console.error('ElevenLabs failed, falling back to OpenAI:', elevenLabsError);
+        audioBuffer = await generateWithFishAudio(text, voice);
+        provider = 'FishAudio';
+      } catch (fishError) {
+        console.error('Fish Audio failed, falling back to OpenAI:', fishError);
         audioBuffer = await generateWithOpenAI(text, voice);
       }
     } else {
       audioBuffer = await generateWithOpenAI(text, voice);
     }
+
+    console.log(`TTS: voice=${voice}, provider=${provider}`);
 
     return new NextResponse(audioBuffer, {
       headers: {
