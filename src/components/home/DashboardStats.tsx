@@ -2,65 +2,6 @@
 
 import { useState, useEffect } from 'react';
 
-// Circular Progress Sub-Component
-function CircularProgress({
-  value,
-  max,
-  size = 80,
-  strokeWidth = 6,
-  color = 'purple',
-}: {
-  value: number;
-  max: number;
-  size?: number;
-  strokeWidth?: number;
-  color?: 'purple' | 'amber' | 'green' | 'blue';
-}) {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const progress = Math.min(value / max, 1);
-  const strokeDashoffset = circumference - progress * circumference;
-
-  const colors = {
-    purple: 'stroke-purple-500 dark:stroke-purple-400',
-    amber: 'stroke-amber-500 dark:stroke-amber-400',
-    green: 'stroke-green-500 dark:stroke-green-400',
-    blue: 'stroke-blue-500 dark:stroke-blue-400',
-  };
-
-  return (
-    <div className="relative" style={{ width: size, height: size }}>
-      <svg className="transform -rotate-90" width={size} height={size}>
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={strokeWidth}
-          className="text-neutral-100 dark:text-neutral-800"
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          className={`${colors[color]} transition-all duration-1000 ease-out`}
-          style={{
-            strokeDasharray: circumference,
-            strokeDashoffset: strokeDashoffset,
-          }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-lg font-bold text-neutral-900 dark:text-white">{value}</span>
-      </div>
-    </div>
-  );
-}
-
 // Animated Counter Sub-Component
 function AnimatedCounter({ target, duration = 1500 }: { target: number; duration?: number }) {
   const [count, setCount] = useState(0);
