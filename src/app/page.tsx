@@ -213,8 +213,18 @@ function HomePageContent() {
 
   // Hero video state for non-logged-in landing (mobile fullscreen)
   const [heroTutorIndex, setHeroTutorIndex] = useState(0);
-  const heroVideoRefs = useRef<(HTMLVideoElement | null)[]>([]);
-  const heroTouchStartX = useRef<number>(0);
+  const heroVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Combined hero video timeline - persona index mapped to video order
+  // Video order: Emma, James, Charlotte, Oliver, Henry, Alina
+  const heroTutorTimeline = useRef([
+    { personaIdx: 0, start: 0, end: 7.44 },       // Emma
+    { personaIdx: 1, start: 7.44, end: 14.16 },    // James
+    { personaIdx: 2, start: 14.16, end: 21.64 },   // Charlotte
+    { personaIdx: 3, start: 21.64, end: 28.20 },   // Oliver
+    { personaIdx: 5, start: 28.20, end: 35.64 },   // Henry (personas[5])
+    { personaIdx: 4, start: 35.64, end: 43.52 },   // Alina (personas[4])
+  ]);
 
   // Handle Google Sign-In (native for Android, web for browser)
   const handleGoogleSignIn = useCallback(async () => {
@@ -307,27 +317,23 @@ function HomePageContent() {
     setMounted(true);
   }, []);
 
-  // Play current hero video, pause others for seamless crossfade
+  // Sync hero tutor overlay with combined video timeline
   useEffect(() => {
-    heroVideoRefs.current.forEach((video, idx) => {
-      if (!video) return;
-      if (idx === heroTutorIndex) {
-        video.currentTime = 0;
-        video.play().catch(() => {});
-      } else {
-        video.pause();
+    const video = heroVideoRef.current;
+    if (!video || session) return;
+    const onTimeUpdate = () => {
+      const t = video.currentTime;
+      const timeline = heroTutorTimeline.current;
+      for (let i = timeline.length - 1; i >= 0; i--) {
+        if (t >= timeline[i].start) {
+          setHeroTutorIndex(timeline[i].personaIdx);
+          break;
+        }
       }
-    });
-  }, [heroTutorIndex]);
-
-  // Auto-rotate hero tutors every 5 seconds (non-logged-in only)
-  useEffect(() => {
-    if (session) return;
-    const timer = setInterval(() => {
-      setHeroTutorIndex((prev) => (prev + 1) % personas.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [session, heroTutorIndex]);
+    };
+    video.addEventListener('timeupdate', onTimeUpdate);
+    return () => video.removeEventListener('timeupdate', onTimeUpdate);
+  }, [session]);
 
   useEffect(() => {
     if (session?.user?.email) {
@@ -658,37 +664,19 @@ function HomePageContent() {
         {!session && (
           <section
             className="relative h-screen flex items-end justify-center overflow-hidden md:hidden"
-            onTouchStart={(e) => {
-              heroTouchStartX.current = e.touches[0].clientX;
-            }}
-            onTouchEnd={(e) => {
-              const diff = heroTouchStartX.current - e.changedTouches[0].clientX;
-              if (Math.abs(diff) > 50) {
-                if (diff > 0) {
-                  setHeroTutorIndex((prev) => (prev + 1) % personas.length);
-                } else {
-                  setHeroTutorIndex((prev) => (prev - 1 + personas.length) % personas.length);
-                }
-              }
-            }}
           >
-            {/* Background Videos - all preloaded for seamless crossfade */}
-            {personas.map((persona, idx) => (
-              <video
-                key={persona.id}
-                ref={(el) => { heroVideoRefs.current[idx] = el; }}
-                src={`/tutors/${getTutorFileName(persona.id)}_greeting.mp4`}
-                poster={`/tutors/${getTutorFileName(persona.id)}.png`}
-                autoPlay={idx === 0}
-                loop
-                muted
-                playsInline
-                preload="auto"
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
-                  idx === heroTutorIndex ? 'opacity-100' : 'opacity-0'
-                }`}
-              />
-            ))}
+            {/* Single combined hero video with proper poster */}
+            <video
+              ref={heroVideoRef}
+              src="/tutors/tutors_hero.mp4"
+              poster="/tutors/tutors_hero_poster.jpg"
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="auto"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
 
             {/* Gradient overlays */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40" />
@@ -696,8 +684,8 @@ function HomePageContent() {
 
             {/* Bottom Content Overlay */}
             <div className="relative z-10 w-full max-w-lg mx-auto px-6 pb-8 text-center">
-              {/* Tutor Info */}
-              <div className="mb-6">
+              {/* Tutor Info - synced with video timeline */}
+              <div className="mb-6 transition-opacity duration-500">
                 <div className="inline-flex items-center gap-2 mb-3">
                   <div className="px-2 py-0.5 rounded bg-white/10 backdrop-blur-sm">
                     <Flag country={personas[heroTutorIndex].flag as 'US' | 'UK'} size={20} />
@@ -714,14 +702,18 @@ function HomePageContent() {
                 </p>
               </div>
 
-              {/* Dot indicators */}
+              {/* Dot indicators - click to seek video */}
               <div className="flex justify-center gap-2 mb-6">
-                {personas.map((_, idx) => (
+                {heroTutorTimeline.current.map((segment, idx) => (
                   <button
                     key={idx}
-                    onClick={() => setHeroTutorIndex(idx)}
+                    onClick={() => {
+                      if (heroVideoRef.current) {
+                        heroVideoRef.current.currentTime = segment.start;
+                      }
+                    }}
                     className={`w-2 h-2 rounded-full transition-all ${
-                      idx === heroTutorIndex ? 'w-6 bg-white' : 'bg-white/40 hover:bg-white/60'
+                      segment.personaIdx === heroTutorIndex ? 'w-6 bg-white' : 'bg-white/40 hover:bg-white/60'
                     }`}
                   />
                 ))}
@@ -1134,7 +1126,7 @@ function HomePageContent() {
                                 : 'bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700'
                             }`}>
                               {/* Video / Image Area */}
-                              <div className="relative h-44 sm:h-56 lg:h-72 overflow-hidden bg-white">
+                              <div className="relative h-44 sm:h-56 lg:h-72 overflow-hidden bg-neutral-900">
                                 {/* Tutor Video (first frame as still, plays on hover) */}
                                 <video
                                   ref={(el) => { videoRefs.current[persona.id] = el; }}
@@ -1143,9 +1135,12 @@ function HomePageContent() {
                                   muted
                                   loop
                                   playsInline
-                                  preload="metadata"
+                                  preload="none"
                                   className="absolute inset-0 w-full h-full object-cover"
                                 />
+                                {/* Full vignette overlay - darken all edges for consistent look on dark theme */}
+                                <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.5) 100%)' }} />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none" />
 
                                 {/* Selection Check */}
                                 {isSelected && (
@@ -1357,7 +1352,7 @@ function HomePageContent() {
                           poster={`/tutors/${getTutorFileName(tutor.id)}.png`}
                           muted
                           playsInline
-                          preload="metadata"
+                          preload="none"
                           className="absolute inset-0 w-full h-full object-cover"
                         />
                         {/* Name overlay */}
