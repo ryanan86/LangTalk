@@ -576,8 +576,6 @@ function TalkContent() {
 
   const processAudio = async (audioBlob: Blob, isInitial: boolean) => {
     setIsProcessing(true);
-    // Play filler after a natural pause (800ms) so it doesn't feel rushed
-    setTimeout(() => playFiller(), 800);
 
     try {
       const file = new File([audioBlob], 'audio.webm', { type: 'audio/webm' });
