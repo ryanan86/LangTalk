@@ -38,11 +38,11 @@ if (!API_KEY) {
 }
 
 const genAI = new GoogleGenerativeAI(API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 async function askGemini(prompt) {
   try {
-    const maxTokens = parseInt(process.env.MAX_TOKENS || "2048", 10);
+    const maxTokens = parseInt(process.env.MAX_TOKENS || "16384", 10);
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: { maxOutputTokens: maxTokens },

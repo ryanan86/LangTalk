@@ -8,13 +8,12 @@ import TutorAvatar, { TutorAvatarLarge } from '@/components/TutorAvatar';
 import {
   SpeechMetrics,
   calculateSpeechMetrics,
-  calculateOverallScore,
-  formatMetricsForDisplay,
   getAgeGroup,
   calculateAdaptiveDifficulty,
 } from '@/lib/speechMetrics';
 import html2canvas from 'html2canvas';
 import TapTalkLogo from '@/components/TapTalkLogo';
+import AnalysisReview from '@/components/AnalysisReview';
 
 type Phase = 'ready' | 'recording' | 'interview' | 'analysis' | 'review' | 'shadowing' | 'summary';
 
@@ -1714,66 +1713,9 @@ function TalkContent() {
                 </div>
               </div>
 
-            {/* Speech Metrics - Quantitative Analysis */}
+            {/* Speech Metrics - Riiid Tutor Style Analysis */}
             {speechMetrics && (
-              <div className="card-premium p-4 sm:p-6 mb-4 bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-500/10 dark:to-blue-500/10">
-                <h3 className="font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-2 text-sm sm:text-base">
-                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-cyan-100 rounded-full flex items-center justify-center">
-                    <svg className="w-3 h-3 sm:w-4 sm:h-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                  </span>
-                  {language === 'ko' ? '발화 분석 (정량 지표)' : 'Speech Analysis (Metrics)'}
-                </h3>
-
-                {/* Overall Score */}
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                    <span className="text-white font-bold text-xl">{calculateOverallScore(speechMetrics)}</span>
-                  </div>
-                  <div>
-                    <p className="text-xs text-neutral-500">{language === 'ko' ? '종합 점수' : 'Overall Score'}</p>
-                    <p className="text-lg font-bold text-neutral-900 dark:text-white">/ 100</p>
-                  </div>
-                </div>
-
-                {/* Metrics Grid */}
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  {formatMetricsForDisplay(speechMetrics, language).map((metric) => (
-                    <div key={metric.label} className="bg-white/60 dark:bg-white/5 rounded-lg p-2">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-xs text-neutral-600 dark:text-neutral-300">{metric.label}</span>
-                        <span className={`text-xs font-bold ${
-                          metric.level === 'high' ? 'text-cyan-600' :
-                          metric.level === 'low' ? 'text-amber-500' : 'text-blue-600 dark:text-blue-400'
-                        }`}>{metric.value}</span>
-                      </div>
-                      <div className="h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full transition-all duration-700 ${
-                          metric.level === 'high' ? 'bg-gradient-to-r from-cyan-400 to-cyan-500' :
-                          metric.level === 'low' ? 'bg-gradient-to-r from-amber-300 to-amber-400' : 'bg-gradient-to-r from-blue-400 to-blue-500'
-                        }`} style={{ width: `${metric.percent}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Summary Stats */}
-                <div className="flex justify-around text-center pt-2 border-t border-neutral-200">
-                  <div>
-                    <p className="text-lg font-bold text-neutral-900 dark:text-white">{speechMetrics.totalWords}</p>
-                    <p className="text-xs text-neutral-500">{language === 'ko' ? '총 단어' : 'Words'}</p>
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-neutral-900 dark:text-white">{speechMetrics.totalSentences}</p>
-                    <p className="text-xs text-neutral-500">{language === 'ko' ? '문장 수' : 'Sentences'}</p>
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-neutral-900 dark:text-white">{speechMetrics.uniqueWords}</p>
-                    <p className="text-xs text-neutral-500">{language === 'ko' ? '고유 단어' : 'Unique'}</p>
-                  </div>
-                </div>
-              </div>
+              <AnalysisReview speechMetrics={speechMetrics} language={language} />
             )}
 
             {analysis && (
