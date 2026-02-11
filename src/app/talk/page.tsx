@@ -1083,39 +1083,24 @@ function TalkContent() {
     }
   };
 
-  // Play random filler audio - loops until stopFiller() is called
-  const fillerLoopActiveRef = useRef(false);
-
+  // Play one random filler audio (single play, no loop)
   const playFiller = () => {
     const cached = fillerCacheRef.current.get(persona.voice);
     if (!cached || cached.length === 0 || !fillerAudioRef.current) return;
 
-    fillerLoopActiveRef.current = true;
-
-    const playNext = () => {
-      if (!fillerLoopActiveRef.current || !fillerAudioRef.current) return;
-      const blobs = fillerCacheRef.current.get(persona.voice);
-      if (!blobs || blobs.length === 0) return;
-
-      const randomBlob = blobs[Math.floor(Math.random() * blobs.length)];
-      const url = URL.createObjectURL(randomBlob);
-      const audio = fillerAudioRef.current;
-      audio.onended = () => {
-        URL.revokeObjectURL(url);
-        // Small pause between fillers for natural feel
-        setTimeout(() => playNext(), 300);
-      };
-      audio.src = url;
-      audio.load();
-      audio.play().catch(() => {});
+    const randomBlob = cached[Math.floor(Math.random() * cached.length)];
+    const url = URL.createObjectURL(randomBlob);
+    const audio = fillerAudioRef.current;
+    audio.onended = () => {
+      URL.revokeObjectURL(url);
     };
-
-    playNext();
+    audio.src = url;
+    audio.load();
+    audio.play().catch(() => {});
   };
 
-  // Stop filler audio loop
+  // Stop filler audio if still playing
   const stopFiller = () => {
-    fillerLoopActiveRef.current = false;
     if (fillerAudioRef.current) {
       fillerAudioRef.current.onended = null;
       fillerAudioRef.current.pause();
