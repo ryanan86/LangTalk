@@ -1030,10 +1030,11 @@ export default function HomePage() {
                                 <video
                                   ref={(el) => { videoRefs.current[persona.id] = el; }}
                                   src={`/tutors/${getTutorFileName(persona.id)}_greeting.mp4`}
+                                  poster={`/tutors/${getTutorFileName(persona.id)}.png`}
                                   muted
                                   loop
                                   playsInline
-                                  preload="auto"
+                                  preload="metadata"
                                   className="absolute inset-0 w-full h-full object-cover"
                                 />
 
@@ -1244,9 +1245,10 @@ export default function HomePage() {
                         <video
                           ref={(el) => { videoRefs.current[`demo-${tutor.id}`] = el; }}
                           src={`/tutors/${getTutorFileName(tutor.id)}_greeting.mp4`}
+                          poster={`/tutors/${getTutorFileName(tutor.id)}.png`}
                           muted
                           playsInline
-                          preload="auto"
+                          preload="metadata"
                           className="absolute inset-0 w-full h-full object-cover"
                         />
                         {/* Name overlay */}
