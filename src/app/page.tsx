@@ -339,6 +339,31 @@ function HomePageContent() {
     return () => video.removeEventListener('timeupdate', onTimeUpdate);
   }, [session]);
 
+  // Unlock demo videos on first user interaction (browser autoplay policy)
+  useEffect(() => {
+    if (session) return;
+    const unlockVideos = () => {
+      ['emma', 'james', 'charlotte'].forEach((id) => {
+        const video = videoRefs.current[`demo-${id}`];
+        if (video) {
+          video.muted = true;
+          video.play().then(() => video.pause()).catch(() => {});
+        }
+      });
+      document.removeEventListener('click', unlockVideos);
+      document.removeEventListener('scroll', unlockVideos);
+      document.removeEventListener('mousemove', unlockVideos);
+    };
+    document.addEventListener('click', unlockVideos, { once: true });
+    document.addEventListener('scroll', unlockVideos, { once: true });
+    document.addEventListener('mousemove', unlockVideos, { once: true });
+    return () => {
+      document.removeEventListener('click', unlockVideos);
+      document.removeEventListener('scroll', unlockVideos);
+      document.removeEventListener('mousemove', unlockVideos);
+    };
+  }, [session]);
+
   useEffect(() => {
     if (session?.user?.email) {
       checkSubscription();
