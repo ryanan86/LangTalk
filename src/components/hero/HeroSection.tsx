@@ -14,6 +14,7 @@ interface HeroSectionProps {
   onCtaClick?: () => void;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default function HeroSection({ typingText, language, t, mounted, onCtaClick }: HeroSectionProps) {
   return (
     <section
@@ -62,6 +63,7 @@ export default function HeroSection({ typingText, language, t, mounted, onCtaCli
                 { icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', label: language === 'ko' ? '실시간 피드백' : 'Real-time Feedback' },
                 { icon: 'M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z', label: language === 'ko' ? '음성 인식' : 'Voice Recognition' },
                 { icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', label: language === 'ko' ? 'AI 튜터' : 'AI Tutors' },
+                { icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253', label: language === 'ko' ? 'IB 커리큘럼' : 'IB Curriculum' },
                 { icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', label: language === 'ko' ? '진행 추적' : 'Progress Tracking' },
               ].map((pill) => (
                 <div key={pill.label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 shadow-sm dark:shadow-none text-sm text-neutral-600 dark:text-white/60 hover:bg-neutral-50 dark:hover:bg-white/10 hover:text-neutral-800 dark:hover:text-white/80 transition-all cursor-default">
@@ -75,9 +77,9 @@ export default function HeroSection({ typingText, language, t, mounted, onCtaCli
 
             {/* CTA Button */}
             <div className="flex flex-col items-center lg:items-start gap-3">
-              <button
-                onClick={onCtaClick}
-                className="group relative px-8 py-4 rounded-2xl text-white font-bold text-lg overflow-hidden transition-all duration-300 hover:scale-[1.02] shadow-lg shadow-purple-500/20 hover:shadow-[0_8px_40px_rgba(124,58,237,0.4)] active:scale-[0.98]"
+              <a
+                href="/login"
+                className="group relative px-8 py-4 rounded-2xl text-white font-bold text-lg overflow-hidden transition-all duration-300 hover:scale-[1.02] shadow-lg shadow-purple-500/20 hover:shadow-[0_8px_40px_rgba(124,58,237,0.4)] active:scale-[0.98] inline-block text-center"
               >
                 {/* Gradient background */}
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 bg-[length:200%_auto] animate-gradient" />
@@ -86,7 +88,7 @@ export default function HeroSection({ typingText, language, t, mounted, onCtaCli
                 <span className="relative">
                   {language === 'ko' ? '무료로 시작하기' : 'Start Free'}
                 </span>
-              </button>
+              </a>
               <span className="text-xs text-[var(--text-muted)]">
                 {language === 'ko' ? '결제 정보 불필요 · 가입 후 바로 시작' : 'No credit card required · Start instantly'}
               </span>

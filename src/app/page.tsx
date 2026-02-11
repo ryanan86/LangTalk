@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import Image from 'next/image';
@@ -154,7 +154,7 @@ const gradeMapping: Record<string, { grade: string; name: string; nameKo: string
   'College': { grade: 'College', name: 'College', nameKo: '대학' },
 };
 
-export default function HomePage() {
+function HomePageContent() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { t, language } = useLanguage();
@@ -211,6 +211,10 @@ export default function HomePage() {
   // State for native sign-in error debugging
   const [nativeSignInError, setNativeSignInError] = useState<string | null>(null);
 
+  // Hero video state for non-logged-in landing (mobile fullscreen)
+  const [heroTutorIndex, setHeroTutorIndex] = useState(0);
+  const heroVideoRef = useRef<HTMLVideoElement | null>(null);
+  const heroTouchStartX = useRef<number>(0);
 
   // Handle Google Sign-In (native for Android, web for browser)
   const handleGoogleSignIn = useCallback(async () => {
@@ -302,6 +306,23 @@ export default function HomePage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Auto-play hero video when tutor changes
+  useEffect(() => {
+    if (heroVideoRef.current) {
+      heroVideoRef.current.load();
+      heroVideoRef.current.play().catch(() => {});
+    }
+  }, [heroTutorIndex]);
+
+  // Auto-rotate hero tutors every 5 seconds (non-logged-in only)
+  useEffect(() => {
+    if (session) return;
+    const timer = setInterval(() => {
+      setHeroTutorIndex((prev) => (prev + 1) % personas.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [session, heroTutorIndex]);
 
   useEffect(() => {
     if (session?.user?.email) {
@@ -533,7 +554,11 @@ export default function HomePage() {
       </div>
 
       {/* Header - pt-12 for Android status bar + notch clearance */}
-      <header className="relative z-50 border-b border-neutral-200 dark:border-white/5 pt-12 bg-white/70 dark:bg-transparent backdrop-blur-md dark:backdrop-blur-none">
+      <header className={`z-50 pt-12 ${
+        session
+          ? 'relative border-b border-neutral-200 dark:border-white/5 bg-white/70 dark:bg-transparent backdrop-blur-md dark:backdrop-blur-none'
+          : 'absolute top-0 left-0 right-0 bg-transparent border-b border-white/10 md:relative md:bg-white/70 md:dark:bg-transparent md:backdrop-blur-md md:dark:backdrop-blur-none md:border-neutral-200 md:dark:border-white/5'
+      }`}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Logo */}
@@ -597,12 +622,12 @@ export default function HomePage() {
               ) : (
                 <>
                   {/* Mobile: Single login button */}
-                  <button
-                    onClick={() => router.push('/login')}
-                    className="sm:hidden px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium"
+                  <a
+                    href="/login"
+                    className="sm:hidden px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium inline-block"
                   >
                     {language === 'ko' ? '로그인' : 'Login'}
-                  </button>
+                  </a>
                   {/* Desktop: Google + Kakao buttons */}
                   <div className="hidden sm:flex items-center gap-3">
                     <button
@@ -636,6 +661,92 @@ export default function HomePage() {
 
       {/* Main Content */}
       <main className="relative z-10">
+        {/* Fullscreen Tutor Video Hero - Mobile only, non-logged-in */}
+        {!session && (
+          <section
+            className="relative h-screen flex items-end justify-center overflow-hidden md:hidden"
+            onTouchStart={(e) => {
+              heroTouchStartX.current = e.touches[0].clientX;
+            }}
+            onTouchEnd={(e) => {
+              const diff = heroTouchStartX.current - e.changedTouches[0].clientX;
+              if (Math.abs(diff) > 50) {
+                if (diff > 0) {
+                  setHeroTutorIndex((prev) => (prev + 1) % personas.length);
+                } else {
+                  setHeroTutorIndex((prev) => (prev - 1 + personas.length) % personas.length);
+                }
+              }
+            }}
+          >
+            {/* Background Video */}
+            <video
+              ref={heroVideoRef}
+              key={personas[heroTutorIndex].id}
+              src={`/tutors/${getTutorFileName(personas[heroTutorIndex].id)}_greeting.mp4`}
+              poster={`/tutors/${getTutorFileName(personas[heroTutorIndex].id)}.png`}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+
+            {/* Gradient overlays */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30" />
+
+            {/* Bottom Content Overlay */}
+            <div className="relative z-10 w-full max-w-lg mx-auto px-6 pb-8 text-center">
+              {/* Tutor Info */}
+              <div className="mb-6">
+                <div className="inline-flex items-center gap-2 mb-3">
+                  <div className="px-2 py-0.5 rounded bg-white/10 backdrop-blur-sm">
+                    <Flag country={personas[heroTutorIndex].flag as 'US' | 'UK'} size={20} />
+                  </div>
+                  <span className="text-white/60 text-sm">
+                    {personas[heroTutorIndex].nationality === 'american' ? 'American English' : 'British English'}
+                  </span>
+                </div>
+                <h2 className="text-4xl sm:text-5xl font-bold text-white mb-2">
+                  {personas[heroTutorIndex].name}
+                </h2>
+                <p className="text-white/60 text-sm">
+                  {getPersonaDescription(personas[heroTutorIndex].id).desc}
+                </p>
+              </div>
+
+              {/* Dot indicators */}
+              <div className="flex justify-center gap-2 mb-6">
+                {personas.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setHeroTutorIndex(idx)}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      idx === heroTutorIndex ? 'w-6 bg-white' : 'bg-white/40 hover:bg-white/60'
+                    }`}
+                  />
+                ))}
+              </div>
+
+              {/* CTA */}
+              <a
+                href="/login"
+                className="block w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold text-lg shadow-lg shadow-purple-500/25 hover:shadow-xl hover:scale-[1.02] transition-all text-center"
+              >
+                {language === 'ko' ? '무료로 시작하기' : 'Start Free'}
+              </a>
+
+              {/* Scroll hint */}
+              <div className="mt-6 animate-bounce">
+                <svg className="w-6 h-6 mx-auto text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Hero Section */}
         <HeroSection
           typingText={typingText}
@@ -1358,8 +1469,8 @@ export default function HomePage() {
 
                 {/* CTA */}
                 <div className="text-center mt-16 sm:mt-20">
-                  <button
-                    onClick={() => router.push('/login')}
+                  <a
+                    href="/login"
                     className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-semibold text-lg text-white overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.98]"
                   >
                     {/* Button background */}
@@ -1369,7 +1480,7 @@ export default function HomePage() {
                     <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-500 rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity" />
                     <span className="relative">{language === 'ko' ? '무료로 시작하기' : 'Get Started Free'}</span>
                     <svg className="relative w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-                  </button>
+                  </a>
                   <p className="text-neutral-400 dark:text-white/25 text-xs mt-4 tracking-wide">
                     {language === 'ko' ? '가입만 하면 바로 시작 — 결제 정보 불필요' : 'Sign up and start immediately — no payment info needed'}
                   </p>
@@ -1430,5 +1541,13 @@ export default function HomePage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-100 dark:bg-[#0a0a0f]" />}>
+      <HomePageContent />
+    </Suspense>
   );
 }
