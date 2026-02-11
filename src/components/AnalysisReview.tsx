@@ -94,7 +94,7 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
   const arcProgress = (displayScore / 100) * arcLen;
 
   // Radar chart calculations
-  const radarSize = 260;
+  const radarSize = 290;
   const radarCx = radarSize / 2;
   const radarCy = radarSize / 2;
   const radarR = 90;

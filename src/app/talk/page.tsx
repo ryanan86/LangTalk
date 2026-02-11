@@ -148,19 +148,27 @@ function TalkContent() {
 
     setIsSavingImage(true);
     try {
-      const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-      const canvas = await html2canvas(summaryRef.current, {
-        backgroundColor: '#f5f5f5',
-        scale: Math.max(dpr, 2) * 2, // Retina-aware: 4x on standard, 6x on 3x displays
-        useCORS: true,
-        logging: false,
-      });
-
-      const link = document.createElement('a');
+      const isDark = document.documentElement.classList.contains('dark');
+      const bgColor = isDark ? '#1a1a1a' : '#f5f5f5';
+      const sections = summaryRef.current.querySelectorAll<HTMLElement>('[data-report-section]');
       const date = new Date().toISOString().split('T')[0];
-      link.download = `taptalk-report-${date}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      const total = sections.length;
+
+      for (let i = 0; i < total; i++) {
+        const canvas = await html2canvas(sections[i], {
+          backgroundColor: bgColor,
+          scale: 2,
+          useCORS: true,
+          logging: false,
+        });
+        const link = document.createElement('a');
+        link.download = `taptalk-report-${date}-${i + 1}of${total}.jpg`;
+        link.href = canvas.toDataURL('image/jpeg', 0.85);
+        link.click();
+        if (i < total - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
     } catch (error) {
       console.error('Failed to save image:', error);
     } finally {
@@ -478,6 +486,11 @@ function TalkContent() {
   const stopRecording = useCallback(() => {
     const recorder = mediaRecorderRef.current;
     if (!recorder) return;
+
+    // Immediately transition to interview phase with processing state
+    // so user gets instant visual feedback
+    setPhase('interview');
+    setIsProcessing(true);
 
     try {
       if (recorder.state === 'recording' || recorder.state === 'paused') {
@@ -1049,46 +1062,62 @@ function TalkContent() {
     playNextInQueue();
   };
 
-  // Pre-cache filler audio
+  // Pre-cache filler audio (parallel for speed)
   const preCacheFillers = async (voice: string) => {
     if (fillerCacheRef.current.has(voice)) return;
 
-    const blobs: Blob[] = [];
-    for (const phrase of FILLER_PHRASES) {
-      try {
-        const response = await fetch('/api/text-to-speech', {
+    const results = await Promise.allSettled(
+      FILLER_PHRASES.map(phrase =>
+        fetch('/api/text-to-speech', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: phrase, voice }),
-        });
-        if (response.ok) {
-          blobs.push(await response.blob());
-        }
-      } catch {
-        // Skip failed fillers
-      }
-    }
+        }).then(res => res.ok ? res.blob() : null)
+      )
+    );
+    const blobs = results
+      .filter((r): r is PromiseFulfilledResult<Blob | null> => r.status === 'fulfilled' && r.value !== null)
+      .map(r => r.value as Blob);
     if (blobs.length > 0) {
       fillerCacheRef.current.set(voice, blobs);
     }
   };
 
-  // Play random filler audio
+  // Play random filler audio - loops until stopFiller() is called
+  const fillerLoopActiveRef = useRef(false);
+
   const playFiller = () => {
     const cached = fillerCacheRef.current.get(persona.voice);
     if (!cached || cached.length === 0 || !fillerAudioRef.current) return;
 
-    const randomBlob = cached[Math.floor(Math.random() * cached.length)];
-    const url = URL.createObjectURL(randomBlob);
-    const audio = fillerAudioRef.current;
-    audio.src = url;
-    audio.load();
-    audio.play().catch(() => {});
+    fillerLoopActiveRef.current = true;
+
+    const playNext = () => {
+      if (!fillerLoopActiveRef.current || !fillerAudioRef.current) return;
+      const blobs = fillerCacheRef.current.get(persona.voice);
+      if (!blobs || blobs.length === 0) return;
+
+      const randomBlob = blobs[Math.floor(Math.random() * blobs.length)];
+      const url = URL.createObjectURL(randomBlob);
+      const audio = fillerAudioRef.current;
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        // Small pause between fillers for natural feel
+        setTimeout(() => playNext(), 300);
+      };
+      audio.src = url;
+      audio.load();
+      audio.play().catch(() => {});
+    };
+
+    playNext();
   };
 
-  // Stop filler audio
+  // Stop filler audio loop
   const stopFiller = () => {
+    fillerLoopActiveRef.current = false;
     if (fillerAudioRef.current) {
+      fillerAudioRef.current.onended = null;
       fillerAudioRef.current.pause();
       fillerAudioRef.current.currentTime = 0;
     }
@@ -1698,28 +1727,41 @@ function TalkContent() {
             </div>
 
             {/* Report Content - for image capture */}
-            <div ref={summaryRef} className="bg-neutral-50 dark:bg-dark-surface rounded-2xl p-4">
-              <div className="text-center mb-6 sm:mb-8">
-                <div className="flex justify-center mb-4">
-                  <TutorAvatar
-                    tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
-                    size="lg"
-                  />
+            <div ref={summaryRef} className="rounded-2xl overflow-hidden">
+              {/* Section 1: Overview + Analysis */}
+              <div data-report-section className="bg-neutral-50 dark:bg-dark-surface p-4">
+                <div className="flex items-center justify-between text-xs mb-4 pb-3 border-b border-neutral-200 dark:border-neutral-700">
+                  <div className="flex items-center gap-2">
+                    <TapTalkLogo size="sm" theme="light" iconOnly />
+                    <span className="font-semibold text-neutral-800 dark:text-neutral-200">{userName || 'Student'}</span>
+                    {birthYear && (
+                      <span className="text-neutral-500 dark:text-neutral-400">
+                        ({language === 'ko' ? '만' : 'Age'} {new Date().getFullYear() - birthYear}{language === 'ko' ? '세' : ''})
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-neutral-500 dark:text-neutral-400">{new Date().toLocaleDateString()}</span>
                 </div>
-                <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">{t.sessionComplete}</h2>
-                <div className="flex items-center justify-center gap-1 mt-1">
-                  <TapTalkLogo size="sm" theme="light" iconOnly />
-                  <span className="text-xs text-neutral-400">TapTalk Report • {new Date().toLocaleDateString()}</span>
-                </div>
-              </div>
 
-            {/* Speech Metrics - Riiid Tutor Style Analysis */}
-            {speechMetrics && (
-              <AnalysisReview speechMetrics={speechMetrics} language={language} />
-            )}
+                <div className="text-center mb-6 sm:mb-8">
+                  <div className="flex justify-center mb-4">
+                    <TutorAvatar
+                      tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
+                      size="lg"
+                    />
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">{t.sessionComplete}</h2>
+                </div>
+
+                {speechMetrics && (
+                  <AnalysisReview speechMetrics={speechMetrics} language={language} />
+                )}
+              </div>
 
             {analysis && (
               <>
+                {/* Section 2: Assessments */}
+                <div data-report-section className="bg-neutral-50 dark:bg-dark-surface px-4 py-4">
                 {/* AI Evaluated Level */}
                 {analysis.evaluatedGrade && analysis.levelDetails && (
                   <div className="card-premium p-4 sm:p-6 mb-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-500/10 dark:to-purple-500/10">
@@ -1786,7 +1828,7 @@ function TalkContent() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </span>
-                      {language === 'ko' ? '영미권 학년 수준 평가' : 'Native Speaker Grade Level Assessment'}
+                      {language === 'ko' ? '영어 능숙도 분석' : 'English Proficiency Analysis'}
                     </h3>
 
                     {isLoadingEval ? (
@@ -1815,6 +1857,12 @@ function TalkContent() {
                             </span>
                           </div>
                         </div>
+
+                        <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mb-3 italic">
+                          {language === 'ko'
+                            ? '* 영어 원어민 학년 기준으로 측정됩니다. ESL 학습자에게는 참고 지표로 활용하세요.'
+                            : '* Measured against native English speaker grade levels. Use as a reference benchmark.'}
+                        </p>
 
                         {/* Test Score Equivalents */}
                         {speakingEval.testScores && (
@@ -1848,7 +1896,7 @@ function TalkContent() {
                         {/* Metrics Breakdown */}
                         {speakingEval.metrics && (
                           <div className="bg-white/60 dark:bg-white/5 rounded-lg p-3 mb-3">
-                            <p className="text-xs font-medium text-neutral-700 mb-2">
+                            <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                               {language === 'ko' ? '측정 지표' : 'Measured Metrics'}
                             </p>
                             <div className="grid grid-cols-2 gap-2 text-xs">
@@ -1875,7 +1923,7 @@ function TalkContent() {
                         {/* Age Comparison */}
                         {speakingEval.comparison?.expectedForAge && (
                           <div className="bg-white/60 dark:bg-white/5 rounded-lg p-3 mb-3">
-                            <p className="text-xs font-medium text-neutral-700 mb-1">
+                            <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                               {language === 'ko' ? '나이 대비 수준' : 'Performance vs Age'}
                             </p>
                             <div className="flex items-center gap-2">
@@ -1909,13 +1957,13 @@ function TalkContent() {
                           <>
                             {/* Strengths */}
                             {speakingEval.feedback.strengths?.length > 0 && (
-                              <div className="bg-green-50/50 rounded-lg p-3 mb-2">
-                                <p className="text-xs font-medium text-green-800 mb-1">
+                              <div className="bg-green-50/50 dark:bg-green-500/10 rounded-lg p-3 mb-2">
+                                <p className="text-xs font-medium text-green-800 dark:text-green-300 mb-1">
                                   {language === 'ko' ? '강점' : 'Strengths'}
                                 </p>
                                 <ul className="space-y-0.5">
                                   {speakingEval.feedback.strengths.slice(0, 3).map((s: string, i: number) => (
-                                    <li key={i} className="text-xs text-green-700 flex items-start gap-1">
+                                    <li key={i} className="text-xs text-green-700 dark:text-green-400 flex items-start gap-1">
                                       <span>✓</span> {s}
                                     </li>
                                   ))}
@@ -1925,13 +1973,13 @@ function TalkContent() {
 
                             {/* Next Steps */}
                             {speakingEval.feedback.nextSteps?.length > 0 && (
-                              <div className="bg-blue-50/50 rounded-lg p-3">
-                                <p className="text-xs font-medium text-blue-800 mb-1">
+                              <div className="bg-blue-50/50 dark:bg-blue-500/10 rounded-lg p-3">
+                                <p className="text-xs font-medium text-blue-800 dark:text-blue-300 mb-1">
                                   {language === 'ko' ? '다음 단계' : 'Next Steps'}
                                 </p>
                                 <ul className="space-y-0.5">
                                   {speakingEval.feedback.nextSteps.slice(0, 3).map((s: string, i: number) => (
-                                    <li key={i} className="text-xs text-blue-700 flex items-start gap-1">
+                                    <li key={i} className="text-xs text-blue-700 dark:text-blue-400 flex items-start gap-1">
                                       <span>→</span> {s}
                                     </li>
                                   ))}
@@ -1941,21 +1989,21 @@ function TalkContent() {
 
                             {/* Improvement Guide (개선 로드맵) */}
                             {speakingEval.improvementGuide?.length > 0 && (
-                              <div className="mt-3 border border-amber-200 rounded-lg overflow-hidden">
-                                <div className="bg-amber-50 px-3 py-2 border-b border-amber-200">
-                                  <p className="text-xs font-semibold text-amber-900 flex items-center gap-1.5">
+                              <div className="mt-3 border border-amber-200 dark:border-amber-500/20 rounded-lg overflow-hidden">
+                                <div className="bg-amber-50 dark:bg-amber-500/10 px-3 py-2 border-b border-amber-200 dark:border-amber-500/20">
+                                  <p className="text-xs font-semibold text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
                                     <svg className="w-3.5 h-3.5 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><path d="M8 2v16"/><path d="M16 6v16"/></svg>
                                     {language === 'ko' ? '개선 로드맵 — 이렇게 연습하세요' : 'Improvement Roadmap — How to Practice'}
                                   </p>
                                 </div>
-                                <div className="divide-y divide-amber-100">
+                                <div className="divide-y divide-amber-100 dark:divide-amber-500/10">
                                   {speakingEval.improvementGuide.map((item: {
                                     area: string; icon: string; currentLevel: string; targetLevel: string;
                                     priority: string; tips: string[]; examplePhrases: string[]; miniChallenge: string;
                                   }, idx: number) => (
                                     <div key={idx} className="p-3">
                                       <div className="flex items-center justify-between mb-1.5">
-                                        <span className="text-xs font-semibold text-amber-900 flex items-center gap-1">
+                                        <span className="text-xs font-semibold text-amber-900 dark:text-amber-300 flex items-center gap-1">
                                           {item.icon === 'book' ? (
                                             <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
                                           ) : item.icon === 'link' ? (
@@ -1971,9 +2019,9 @@ function TalkContent() {
                                           )} {item.area}
                                         </span>
                                         <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                                          item.priority === 'high' ? 'bg-red-100 text-red-700' :
-                                          item.priority === 'medium' ? 'bg-amber-100 text-amber-700' :
-                                          'bg-gray-100 text-gray-600'
+                                          item.priority === 'high' ? 'bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-400' :
+                                          item.priority === 'medium' ? 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400' :
+                                          'bg-gray-100 dark:bg-neutral-700 text-gray-600 dark:text-neutral-300'
                                         }`}>
                                           {item.priority === 'high' ? (language === 'ko' ? '우선' : 'Priority') :
                                            item.priority === 'medium' ? (language === 'ko' ? '권장' : 'Recommended') :
@@ -1981,33 +2029,33 @@ function TalkContent() {
                                         </span>
                                       </div>
                                       <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">
+                                        <span className="text-[10px] text-gray-500 dark:text-neutral-400 bg-gray-50 dark:bg-neutral-700 px-1.5 py-0.5 rounded">
                                           {item.currentLevel}
                                         </span>
-                                        <span className="text-[10px] text-gray-400">→</span>
-                                        <span className="text-[10px] text-green-700 bg-green-50 px-1.5 py-0.5 rounded font-medium">
+                                        <span className="text-[10px] text-gray-400 dark:text-neutral-500">→</span>
+                                        <span className="text-[10px] text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-500/10 px-1.5 py-0.5 rounded font-medium">
                                           {item.targetLevel}
                                         </span>
                                       </div>
                                       <ul className="space-y-0.5 mb-2">
                                         {item.tips.map((tip: string, ti: number) => (
-                                          <li key={ti} className="text-[11px] text-amber-800 flex items-start gap-1">
+                                          <li key={ti} className="text-[11px] text-amber-800 dark:text-amber-300 flex items-start gap-1">
                                             <span className="text-amber-400 mt-0.5">•</span> {tip}
                                           </li>
                                         ))}
                                       </ul>
                                       {item.examplePhrases.length > 0 && (
-                                        <div className="bg-white/60 rounded p-2 mb-2">
-                                          <p className="text-[10px] font-medium text-gray-500 mb-1">
+                                        <div className="bg-white/60 dark:bg-white/5 rounded p-2 mb-2">
+                                          <p className="text-[10px] font-medium text-gray-500 dark:text-neutral-400 mb-1">
                                             {language === 'ko' ? '연습 표현' : 'Practice Phrases'}
                                           </p>
                                           {item.examplePhrases.slice(0, 2).map((phrase: string, pi: number) => (
-                                            <p key={pi} className="text-[11px] text-gray-700 italic">{phrase}</p>
+                                            <p key={pi} className="text-[11px] text-gray-700 dark:text-neutral-300 italic">{phrase}</p>
                                           ))}
                                         </div>
                                       )}
-                                      <div className="bg-amber-100/50 rounded px-2 py-1.5">
-                                        <p className="text-[11px] text-amber-900 font-medium flex items-center gap-1">
+                                      <div className="bg-amber-100/50 dark:bg-amber-500/10 rounded px-2 py-1.5">
+                                        <p className="text-[11px] text-amber-900 dark:text-amber-300 font-medium flex items-center gap-1">
                                           <svg className="w-3 h-3 inline-block flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> {item.miniChallenge}
                                         </p>
                                       </div>
@@ -2022,7 +2070,10 @@ function TalkContent() {
                     )}
                   </div>
                 )}
+                </div>
 
+                {/* Section 3: Feedback */}
+                <div data-report-section className="bg-neutral-50 dark:bg-dark-surface px-4 pb-4">
                 {/* Strengths */}
                 <div className="card-premium p-4 sm:p-6 mb-4">
                   <h3 className="font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-2 text-sm sm:text-base">
@@ -2035,7 +2086,7 @@ function TalkContent() {
                   </h3>
                   <ul className="space-y-2">
                     {analysis.strengths.map((strength, idx) => (
-                      <li key={idx} className="text-neutral-700 text-xs sm:text-sm flex items-start gap-2">
+                      <li key={idx} className="text-neutral-700 dark:text-neutral-300 text-xs sm:text-sm flex items-start gap-2">
                         <span className="text-green-500 mt-0.5">•</span>
                         {strength}
                       </li>
@@ -2056,12 +2107,12 @@ function TalkContent() {
                     </h3>
                     <div className="space-y-3">
                       {analysis.patterns.map((pattern, idx) => (
-                        <div key={idx} className="p-3 bg-amber-50 rounded-xl">
+                        <div key={idx} className="p-3 bg-amber-50 dark:bg-amber-500/10 rounded-xl">
                           <div className="flex justify-between items-center mb-1">
-                            <span className="font-medium text-amber-900 text-sm">{pattern.type}</span>
-                            <span className="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full">{pattern.count}x</span>
+                            <span className="font-medium text-amber-900 dark:text-amber-300 text-sm">{pattern.type}</span>
+                            <span className="text-xs bg-amber-200 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-full">{pattern.count}x</span>
                           </div>
-                          <p className="text-xs sm:text-sm text-amber-700">{pattern.tip}</p>
+                          <p className="text-xs sm:text-sm text-amber-700 dark:text-amber-400">{pattern.tip}</p>
                         </div>
                       ))}
                     </div>
@@ -2070,8 +2121,9 @@ function TalkContent() {
 
                 {/* Encouragement */}
                 <div className="card-premium p-4 sm:p-6 bg-gradient-to-br from-primary-50 to-white dark:from-primary-500/10 dark:to-dark-surface">
-                  <p className="text-primary-900 italic text-sm sm:text-base">&ldquo;{analysis.encouragement}&rdquo;</p>
-                  <p className="text-xs sm:text-sm text-primary-600 mt-2">— {persona.name}</p>
+                  <p className="text-primary-900 dark:text-white italic text-sm sm:text-base">&ldquo;{analysis.encouragement}&rdquo;</p>
+                  <p className="text-xs sm:text-sm text-primary-600 dark:text-primary-400 mt-2">— {persona.name}</p>
+                </div>
                 </div>
               </>
             )}
