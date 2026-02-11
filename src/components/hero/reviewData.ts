@@ -7,13 +7,20 @@ export interface Review {
 }
 
 export const reviews: Review[] = [
-  // Row 1 (좌→우)
+  // Row 1
   {
     name: '김지훈',
     initial: '김',
     role: '직장인 · 30대',
     rating: 5,
     text: '출퇴근 지하철에서 10분씩 했는데 3개월 만에 영어 미팅 자신감이 생겼어요',
+  },
+  {
+    name: 'Maria S.',
+    initial: 'M',
+    role: 'Student · Spain',
+    rating: 5,
+    text: 'I practice every morning before class. My IELTS speaking score went from 5.5 to 7 in two months',
   },
   {
     name: '박서연',
@@ -23,11 +30,25 @@ export const reviews: Review[] = [
     text: '아이가 Emma랑 대화하는 걸 너무 좋아해요. 학원보다 효과적',
   },
   {
+    name: 'Lars V.',
+    initial: 'L',
+    role: 'Engineer · Netherlands',
+    rating: 5,
+    text: 'The instant pronunciation feedback is incredible. Way better than any language app I have tried',
+  },
+  {
     name: '이준호',
     initial: '이',
     role: '대학생 · 20대',
     rating: 5,
     text: '호주 워홀 가기 전에 한 달 쓴 게 진짜 도움 됐어요',
+  },
+  {
+    name: 'Sophie M.',
+    initial: 'S',
+    role: 'Designer · France',
+    rating: 5,
+    text: 'Charlotte feels like a real tutor. I forgot I was talking to AI after the first session',
   },
   {
     name: '최예진',
@@ -37,11 +58,26 @@ export const reviews: Review[] = [
     text: '발음 교정이 실시간이라 원어민 수업 못지않아요',
   },
   {
+    name: 'Dmitry K.',
+    initial: 'D',
+    role: 'Developer · Russia',
+    rating: 5,
+    text: 'Practiced for tech interviews daily. Got an offer from a US company within 3 months',
+  },
+  {
     name: '정민수',
     initial: '정',
     role: '개발자 · 30대',
     rating: 5,
     text: '영어 기술 면접 준비에 매일 쓰고 있어요. AI가 진짜 잘 고쳐줌',
+  },
+  // Row 2
+  {
+    name: 'Anna W.',
+    initial: 'A',
+    role: 'Teacher · Germany',
+    rating: 5,
+    text: 'I recommend this to all my students. The AI tutors adapt to every level perfectly',
   },
   {
     name: '한소희',
@@ -51,19 +87,32 @@ export const reviews: Review[] = [
     text: '야간 근무 끝나고 새벽에도 연습할 수 있어서 좋아요',
   },
   {
+    name: 'Carlos R.',
+    initial: 'C',
+    role: 'Manager · Mexico',
+    rating: 5,
+    text: 'Available 24/7, no scheduling needed. Perfect for my busy lifestyle',
+  },
+  {
     name: '윤태호',
     initial: '윤',
     role: '자영업 · 50대',
     rating: 5,
     text: '외국인 손님 응대가 편해졌어요. 실전 회화 연습이 최고',
   },
-  // Row 2 (우→좌)
   {
     name: '강다은',
     initial: '강',
     role: '디자이너 · 20대',
     rating: 5,
     text: '해외 클라이언트 미팅 전에 항상 연습해요. 긴장이 확 줄었어요',
+  },
+  {
+    name: 'Wei L.',
+    initial: 'W',
+    role: 'MBA Student · China',
+    rating: 5,
+    text: 'The grammar corrections are instant and specific. It is like having a private tutor in my pocket',
   },
   {
     name: '송현우',
@@ -73,11 +122,26 @@ export const reviews: Review[] = [
     text: '수능 영어 듣기가 쉬워졌어요. 대화하면서 배우니까 재밌음',
   },
   {
+    name: 'Yuki T.',
+    initial: 'Y',
+    role: 'Nurse · Japan',
+    rating: 5,
+    text: 'I can practice at 3am after my night shift. No other English service offers that flexibility',
+  },
+  {
     name: '임지현',
     initial: '임',
     role: '주부 · 40대',
     rating: 5,
     text: '아이 영어 숙제 도와주다가 저도 빠졌어요. 같이 하니까 더 좋아요',
+  },
+  // Row 3
+  {
+    name: 'Lucas P.',
+    initial: 'L',
+    role: 'Entrepreneur · Brazil',
+    rating: 5,
+    text: 'Practiced my investor pitch with James. Closed my first international deal last month',
   },
   {
     name: '오승준',
@@ -94,11 +158,25 @@ export const reviews: Review[] = [
     text: '논문 발표 영어 연습에 딱이에요. 피드백이 구체적이라 좋아요',
   },
   {
+    name: 'Fatima A.',
+    initial: 'F',
+    role: 'Doctor · UAE',
+    rating: 5,
+    text: 'My medical conference presentations improved dramatically. The feedback is very detailed',
+  },
+  {
     name: '신동혁',
     initial: '신',
     role: '회사원 · 40대',
     rating: 5,
     text: '해외 출장 일주일 전부터 집중 연습하면 현지에서 차이를 느껴요',
+  },
+  {
+    name: 'Pieter D.',
+    initial: 'P',
+    role: 'Freelancer · Belgium',
+    rating: 4,
+    text: 'Each tutor has a unique personality. Oliver is strict but incredibly effective for my level',
   },
   {
     name: '홍유나',
@@ -107,13 +185,19 @@ export const reviews: Review[] = [
     rating: 5,
     text: '다양한 튜터 성격이 실제 승객 대응 연습이 돼요',
   },
-  // Row 3 (좌→우)
   {
     name: '문재영',
     initial: '문',
     role: '스타트업 대표 · 30대',
     rating: 5,
     text: '투자 피칭 영어를 AI랑 반복 연습하니까 자신감이 붙었어요',
+  },
+  {
+    name: 'Mia K.',
+    initial: 'M',
+    role: 'Student · Sweden',
+    rating: 5,
+    text: 'Emma makes learning so fun. I actually look forward to my daily practice sessions now',
   },
   {
     name: '양미래',
@@ -130,6 +214,13 @@ export const reviews: Review[] = [
     text: '학원 숙제보다 재밌어서 매일 자발적으로 해요. 엄마가 좋아해요',
   },
   {
+    name: 'Priya N.',
+    initial: 'P',
+    role: 'IT Consultant · India',
+    rating: 5,
+    text: 'My accent clarity improved so much that colleagues noticed within weeks. Highly recommended',
+  },
+  {
     name: '류성민',
     initial: '류',
     role: '교수 · 50대',
@@ -142,6 +233,13 @@ export const reviews: Review[] = [
     role: '유튜버 · 20대',
     rating: 4,
     text: '영어 콘텐츠 만들 때 표현 체크용으로 쓰고 있어요',
+  },
+  {
+    name: 'Elena V.',
+    initial: 'E',
+    role: 'Architect · Italy',
+    rating: 5,
+    text: 'I tried many apps before. TapTalk is the only one that actually feels like a real conversation',
   },
   {
     name: '권도윤',
@@ -158,8 +256,3 @@ export const reviews: Review[] = [
     text: '글로벌 캠페인 회의에서 의견을 영어로 말할 수 있게 됐어요',
   },
 ];
-
-// 3줄로 나누기
-export const reviewRow1 = reviews.slice(0, 7);
-export const reviewRow2 = reviews.slice(7, 14);
-export const reviewRow3 = reviews.slice(14, 21);
