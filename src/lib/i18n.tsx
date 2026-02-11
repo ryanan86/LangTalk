@@ -39,6 +39,7 @@ interface Translations {
   step2Desc: string;
   step3Title: string;
   step3Desc: string;
+  contactUs: string;
   footer: string;
 
   // Beta signup
@@ -249,6 +250,7 @@ const translations: Record<Language, Translations> = {
     step2Desc: 'AI 튜터가 당신의 주제에 맞춰 대화를 이어갑니다.',
     step3Title: '상세한 피드백',
     step3Desc: '문법 교정과 더 나은 표현 방법을 제안받으세요.',
+    contactUs: '문의하기',
     footer: 'TapTalk - AI 영어 회화 연습',
 
     // Beta signup
@@ -457,6 +459,7 @@ const translations: Record<Language, Translations> = {
     step2Desc: 'Your AI tutor continues the conversation based on your topic.',
     step3Title: 'Detailed Feedback',
     step3Desc: 'Get comprehensive corrections and better ways to express yourself.',
+    contactUs: 'Contact Us',
     footer: 'TapTalk - AI English Conversation Practice',
 
     // Beta signup
@@ -662,6 +665,7 @@ const translations: Record<Language, Translations> = {
     step2Desc: 'Je AI-tutor zet het gesprek voort op basis van jouw onderwerp.',
     step3Title: 'Gedetailleerde feedback',
     step3Desc: 'Ontvang uitgebreide correcties en betere manieren om jezelf uit te drukken.',
+    contactUs: 'Neem contact op',
     footer: 'TapTalk - AI Engels conversatieoefening',
     loginRequired: 'Log in om de betaservice te gebruiken.',
     betaSignupPrompt: 'Meld je aan voor betatoegang om de service te gebruiken.',
@@ -841,6 +845,7 @@ const translations: Record<Language, Translations> = {
     step2Desc: 'AI-репетитор продолжит разговор на вашу тему.',
     step3Title: 'Подробная обратная связь',
     step3Desc: 'Получите исправления и лучшие способы выразить свои мысли.',
+    contactUs: 'Связаться с нами',
     footer: 'TapTalk - Практика английского с AI',
     loginRequired: 'Войдите, чтобы использовать бета-сервис.',
     betaSignupPrompt: 'Зарегистрируйтесь для доступа к бета-версии.',
@@ -1020,6 +1025,7 @@ const translations: Record<Language, Translations> = {
     step2Desc: 'Votre tuteur IA poursuit la conversation sur votre sujet.',
     step3Title: 'Retour détaillé',
     step3Desc: "Recevez des corrections complètes et de meilleures façons de vous exprimer.",
+    contactUs: 'Nous contacter',
     footer: "TapTalk - Pratique de l'anglais avec IA",
     loginRequired: 'Connectez-vous pour utiliser le service bêta.',
     betaSignupPrompt: "Inscrivez-vous pour accéder à la version bêta.",
@@ -1199,6 +1205,7 @@ const translations: Record<Language, Translations> = {
     step2Desc: 'Tu tutor de IA continuará la conversación basándose en tu tema.',
     step3Title: 'Retroalimentación detallada',
     step3Desc: 'Recibe correcciones completas y mejores formas de expresarte.',
+    contactUs: 'Contáctenos',
     footer: 'TapTalk - Práctica de inglés con IA',
     loginRequired: 'Inicia sesión para usar el servicio beta.',
     betaSignupPrompt: 'Regístrate para acceder a la versión beta.',
@@ -1378,6 +1385,7 @@ const translations: Record<Language, Translations> = {
     step2Desc: 'AI导师会根据你的话题继续对话。',
     step3Title: '详细反馈',
     step3Desc: '获得全面的纠正和更好的表达方式。',
+    contactUs: '联系我们',
     footer: 'TapTalk - AI英语会话练习',
     loginRequired: '请登录以使用测试版服务。',
     betaSignupPrompt: '注册获取测试版访问权限。',
@@ -1557,6 +1565,7 @@ const translations: Record<Language, Translations> = {
     step2Desc: 'Dein KI-Tutor führt das Gespräch basierend auf deinem Thema weiter.',
     step3Title: 'Detailliertes Feedback',
     step3Desc: 'Erhalte umfassende Korrekturen und bessere Ausdrucksweisen.',
+    contactUs: 'Kontaktieren Sie uns',
     footer: 'TapTalk - KI-Englisch-Konversationstraining',
     loginRequired: 'Melde dich an, um den Beta-Service zu nutzen.',
     betaSignupPrompt: 'Registriere dich für den Beta-Zugang.',
