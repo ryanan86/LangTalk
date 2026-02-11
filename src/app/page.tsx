@@ -317,11 +317,15 @@ function HomePageContent() {
     setMounted(true);
   }, []);
 
-  // Sync hero tutor overlay with combined video timeline
+  // Sync hero tutor overlay with combined video timeline (throttled to 1/sec)
   useEffect(() => {
     const video = heroVideoRef.current;
     if (!video || session) return;
+    let lastUpdate = 0;
     const onTimeUpdate = () => {
+      const now = Date.now();
+      if (now - lastUpdate < 800) return;
+      lastUpdate = now;
       const t = video.currentTime;
       const timeline = heroTutorTimeline.current;
       for (let i = timeline.length - 1; i >= 0; i--) {
@@ -533,16 +537,16 @@ function HomePageContent() {
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         {/* Light mode gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-100/70 via-white/30 to-pink-100/50 dark:hidden" />
-        {/* Morphing Gradient Blobs - Dark */}
-        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-gradient-to-br from-purple-600/30 to-pink-600/20 rounded-full blur-[100px] animate-morph hidden dark:block" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-gradient-to-br from-blue-600/25 to-cyan-600/15 rounded-full blur-[100px] animate-morph hidden dark:block" style={{ animationDelay: '-2s' }} />
-        <div className="absolute top-[40%] right-[20%] w-[350px] h-[350px] bg-gradient-to-br from-pink-500/15 to-orange-500/10 rounded-full blur-[80px] animate-morph hidden dark:block" style={{ animationDelay: '-4s' }} />
-        <div className="absolute top-[60%] left-[10%] w-[250px] h-[250px] bg-gradient-to-br from-indigo-500/20 to-purple-500/10 rounded-full blur-[60px] animate-float hidden dark:block" />
+        {/* Morphing Gradient Blobs - Dark, desktop only (mobile: static, reduced blur) */}
+        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-gradient-to-br from-purple-600/30 to-pink-600/20 rounded-full blur-[40px] md:blur-[100px] md:animate-morph hidden dark:block" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-gradient-to-br from-blue-600/25 to-cyan-600/15 rounded-full blur-[40px] md:blur-[100px] md:animate-morph hidden dark:block" style={{ animationDelay: '-2s' }} />
+        <div className="absolute top-[40%] right-[20%] w-[350px] h-[350px] bg-gradient-to-br from-pink-500/15 to-orange-500/10 rounded-full blur-[30px] md:blur-[80px] md:animate-morph hidden dark:block" style={{ animationDelay: '-4s' }} />
+        <div className="absolute top-[60%] left-[10%] w-[250px] h-[250px] bg-gradient-to-br from-indigo-500/20 to-purple-500/10 rounded-full blur-[30px] md:blur-[60px] md:animate-float hidden dark:block" />
 
-        {/* Floating Particles - Dark only */}
+        {/* Floating Particles - Dark only (reduced count for performance) */}
         {mounted && (
           <div className="absolute inset-0 hidden dark:block">
-            {[...Array(20)].map((_, i) => (
+            {[...Array(8)].map((_, i) => (
               <div
                 key={i}
                 className="absolute w-1 h-1 bg-white/20 rounded-full"
