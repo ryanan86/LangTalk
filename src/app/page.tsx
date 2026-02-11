@@ -1135,7 +1135,7 @@ function HomePageContent() {
                                 <video
                                   ref={(el) => { videoRefs.current[persona.id] = el; }}
                                   src={`/tutors/${getTutorFileName(persona.id)}_greeting.mp4`}
-                                  poster={`/tutors/${getTutorFileName(persona.id)}.png`}
+                                  poster={`/tutors/${getTutorFileName(persona.id)}_poster.jpg`}
                                   muted
                                   loop
                                   playsInline
@@ -1311,7 +1311,7 @@ function HomePageContent() {
                     ].map((tutor) => (
                       <div
                         key={tutor.id}
-                        className="group relative rounded-2xl sm:rounded-3xl overflow-hidden bg-neutral-900 dark:bg-neutral-950 shadow-2xl shadow-black/20 aspect-[3/4] cursor-pointer"
+                        className="group relative rounded-2xl sm:rounded-3xl overflow-hidden bg-white dark:bg-neutral-950 shadow-2xl shadow-black/20 aspect-[3/4] cursor-pointer"
                         onMouseEnter={() => {
                           const video = videoRefs.current[`demo-${tutor.id}`];
                           if (video) {
@@ -1350,7 +1350,7 @@ function HomePageContent() {
                         <video
                           ref={(el) => { videoRefs.current[`demo-${tutor.id}`] = el; }}
                           src={`/tutors/${getTutorFileName(tutor.id)}_greeting.mp4`}
-                          poster={`/tutors/${getTutorFileName(tutor.id)}.png`}
+                          poster={`/tutors/${getTutorFileName(tutor.id)}_poster.jpg`}
                           muted
                           playsInline
                           preload="metadata"
