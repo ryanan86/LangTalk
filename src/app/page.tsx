@@ -259,8 +259,10 @@ export default function HomePage() {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error('[TapTalk] Native Google Sign-In error:', errorMessage);
-        setNativeSignInError(errorMessage);
-        // Don't auto-fallback - show the error to user for debugging
+        // Auto-fallback to web OAuth (works via "wv" removal in WebView)
+        console.log('[TapTalk] Falling back to web OAuth');
+        signIn('google');
+        return;
       } finally {
         setIsGoogleLoading(false);
       }

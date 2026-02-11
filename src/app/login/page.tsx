@@ -25,6 +25,11 @@ function LoginContent() {
   const [nativeError, setNativeError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const fallbackToWebOAuth = useCallback(() => {
+    console.log('[TapTalk] Falling back to web OAuth');
+    signIn('google', { callbackUrl });
+  }, [callbackUrl]);
+
   const handleGoogleSignIn = useCallback(async () => {
     const isNative = isTapTalkNativeApp();
     const isAndroid = isAndroidDevice();
@@ -39,46 +44,52 @@ function LoginContent() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const TapTalkAuth = (window as any).TapTalkAuth;
         if (!TapTalkAuth) {
-          throw new Error('TapTalkAuth interface not available');
+          // Bridge not available - fall back to web OAuth
+          fallbackToWebOAuth();
+          return;
         }
 
         // Set up callbacks for native auth result
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window as any).onTapTalkAuthSuccess = async (result: { idToken: string; email: string; name: string; photoUrl: string }) => {
-          const signInResult = await signIn('google-native', {
-            idToken: result.idToken,
-            email: result.email,
-            name: result.name,
-            image: result.photoUrl,
-            redirect: false,
-          });
+          try {
+            const signInResult = await signIn('google-native', {
+              idToken: result.idToken,
+              email: result.email,
+              name: result.name,
+              image: result.photoUrl,
+              redirect: false,
+            });
 
-          if (signInResult?.ok) {
-            window.location.href = callbackUrl;
-          } else {
-            setNativeError('로그인 실패');
-            setIsLoading(false);
+            if (signInResult?.ok) {
+              window.location.href = callbackUrl;
+            } else {
+              // Server-side token verification failed - fall back to web OAuth
+              fallbackToWebOAuth();
+            }
+          } catch {
+            fallbackToWebOAuth();
           }
         };
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (window as any).onTapTalkAuthError = (error: string) => {
-          setNativeError(error);
-          setIsLoading(false);
+        (window as any).onTapTalkAuthError = () => {
+          // Native sign-in failed (e.g. Play Store re-signing SHA-1 mismatch)
+          // Fall back to web OAuth which works via "wv" removal
+          fallbackToWebOAuth();
         };
 
         // Call native sign-in
         TapTalkAuth.signInWithGoogle();
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        setNativeError(msg);
-        setIsLoading(false);
+      } catch {
+        // Any error in native flow - fall back to web OAuth
+        fallbackToWebOAuth();
       }
     } else {
       // Web OAuth - not in native app
       signIn('google', { callbackUrl });
     }
-  }, [callbackUrl]);
+  }, [callbackUrl, fallbackToWebOAuth]);
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-gradient-to-br dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 flex items-center justify-center p-4">

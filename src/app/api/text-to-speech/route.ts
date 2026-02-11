@@ -30,7 +30,7 @@ async function generateWithFishAudio(text: string, voice: string): Promise<Array
     format: 'mp3',
     mp3_bitrate: 128,
     normalize: true,
-    latency: 'balanced',
+    latency: 'normal',
   };
   if (referenceId) {
     body.reference_id = referenceId;

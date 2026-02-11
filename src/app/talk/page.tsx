@@ -55,6 +55,14 @@ interface Analysis {
   encouragement: string;
 }
 
+const FILLER_PHRASES = [
+  "Hmm, let me think...",
+  "That's interesting...",
+  "Good point...",
+  "Let me see...",
+  "Okay...",
+];
+
 function TalkContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -125,6 +133,8 @@ function TalkContent() {
   const isPlayingQueueRef = useRef(false);
   const processedSentencesRef = useRef<Set<string>>(new Set());
   const audioCacheRef = useRef<Map<string, Promise<Blob>>>(new Map());
+  const fillerAudioRef = useRef<HTMLAudioElement | null>(null);
+  const fillerCacheRef = useRef<Map<string, Blob[]>>(new Map());
   const summaryRef = useRef<HTMLDivElement>(null);
   const [isSavingImage, setIsSavingImage] = useState(false);
 
@@ -395,6 +405,14 @@ function TalkContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
+  // Pre-cache filler audio when interview starts
+  useEffect(() => {
+    if (phase === 'interview' && persona) {
+      preCacheFillers(persona.voice);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, persona]);
+
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -546,6 +564,8 @@ function TalkContent() {
 
   const processAudio = async (audioBlob: Blob, isInitial: boolean) => {
     setIsProcessing(true);
+    // Play filler audio immediately to reduce perceived latency
+    playFiller();
 
     try {
       const file = new File([audioBlob], 'audio.webm', { type: 'audio/webm' });
@@ -880,6 +900,7 @@ function TalkContent() {
 
   const playTTS = async (text: string) => {
     setIsPlaying(true);
+    stopFiller();
     try {
       const response = await fetch('/api/text-to-speech', {
         method: 'POST',
@@ -957,6 +978,8 @@ function TalkContent() {
 
     isPlayingQueueRef.current = true;
     setIsPlaying(true);
+    // Stop filler audio when real TTS starts
+    stopFiller();
 
     const sentence = audioQueueRef.current.shift()!;
 
@@ -1025,6 +1048,51 @@ function TalkContent() {
 
     // Play next in queue
     playNextInQueue();
+  };
+
+  // Pre-cache filler audio
+  const preCacheFillers = async (voice: string) => {
+    if (fillerCacheRef.current.has(voice)) return;
+
+    const blobs: Blob[] = [];
+    for (const phrase of FILLER_PHRASES) {
+      try {
+        const response = await fetch('/api/text-to-speech', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: phrase, voice }),
+        });
+        if (response.ok) {
+          blobs.push(await response.blob());
+        }
+      } catch {
+        // Skip failed fillers
+      }
+    }
+    if (blobs.length > 0) {
+      fillerCacheRef.current.set(voice, blobs);
+    }
+  };
+
+  // Play random filler audio
+  const playFiller = () => {
+    const cached = fillerCacheRef.current.get(persona.voice);
+    if (!cached || cached.length === 0 || !fillerAudioRef.current) return;
+
+    const randomBlob = cached[Math.floor(Math.random() * cached.length)];
+    const url = URL.createObjectURL(randomBlob);
+    const audio = fillerAudioRef.current;
+    audio.src = url;
+    audio.load();
+    audio.play().catch(() => {});
+  };
+
+  // Stop filler audio
+  const stopFiller = () => {
+    if (fillerAudioRef.current) {
+      fillerAudioRef.current.pause();
+      fillerAudioRef.current.currentTime = 0;
+    }
   };
 
   // Prefetch audio for a sentence
@@ -1114,6 +1182,7 @@ function TalkContent() {
       isDarkPhase ? 'bg-neutral-950' : 'bg-neutral-50 dark:bg-dark-bg'
     }`}>
       <audio ref={audioRef} onEnded={() => setIsPlaying(false)} />
+      <audio ref={fillerAudioRef} />
 
       {/* Header - Premium Glass Effect */}
       <header className={`px-4 sm:px-6 pb-3 sm:pb-4 sticky top-0 z-50 pt-12 transition-colors duration-500 ${
