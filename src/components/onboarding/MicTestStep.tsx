@@ -1,11 +1,12 @@
 'use client';
 
+import type { Language } from '@/lib/i18n';
 import { useState, useRef, useEffect } from 'react';
 
 interface MicTestStepProps {
   onComplete: () => void;
   onSkip: () => void;
-  language: 'ko' | 'en';
+  language: Language;
 }
 
 type TestStatus = 'idle' | 'requesting' | 'recording' | 'processing' | 'success' | 'error';

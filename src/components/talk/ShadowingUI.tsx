@@ -1,5 +1,7 @@
 'use client';
 
+import type { Language } from '@/lib/i18n';
+
 interface ShadowingUIProps {
   sentence: string;
   index: number;
@@ -8,7 +10,7 @@ interface ShadowingUIProps {
   onNext: () => void;
   onSkip: () => void;
   isPlaying: boolean;
-  language: 'ko' | 'en';
+  language: Language;
 }
 
 export default function ShadowingUI({

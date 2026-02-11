@@ -1,11 +1,12 @@
 'use client';
 
+import type { Language } from '@/lib/i18n';
 import PhoneMockup from './PhoneMockup';
 import TrustBadges from './TrustBadges';
 
 interface HeroSectionProps {
   typingText: string;
-  language: 'ko' | 'en';
+  language: Language;
   t: {
     heroTitle: string;
     heroSubtitle: string;

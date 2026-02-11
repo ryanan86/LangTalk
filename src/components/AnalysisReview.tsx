@@ -1,11 +1,12 @@
 'use client';
 
+import type { Language } from '@/lib/i18n';
 import { SpeechMetrics, calculateOverallScore, formatMetricsForDisplay } from '@/lib/speechMetrics';
 import { useState, useEffect } from 'react';
 
 interface AnalysisReviewProps {
   speechMetrics: SpeechMetrics;
-  language: 'ko' | 'en';
+  language: Language;
 }
 
 export default function AnalysisReview({ speechMetrics, language }: AnalysisReviewProps) {

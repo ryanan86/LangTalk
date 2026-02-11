@@ -4,6 +4,8 @@
  * Provides quantitative metrics for evaluating English speaking ability.
  */
 
+import type { Language } from './i18n';
+
 // ===== Age Group & Adaptive Difficulty =====
 
 export type AgeGroupKey = 'young_child' | 'older_child' | 'teenager' | 'adult';
@@ -403,7 +405,7 @@ export function scoreToGrade(score: number): string {
 /**
  * Format metrics for display
  */
-export function formatMetricsForDisplay(metrics: SpeechMetrics, language: 'ko' | 'en' = 'ko') {
+export function formatMetricsForDisplay(metrics: SpeechMetrics, language: Language = 'ko') {
   const labels = {
     ko: {
       wordsPerMinute: '말하기 속도',
@@ -427,7 +429,7 @@ export function formatMetricsForDisplay(metrics: SpeechMetrics, language: 'ko' |
     },
   };
 
-  const l = labels[language];
+  const l = labels[language as 'ko' | 'en'] || labels['en'];
 
   // Grammar accuracy = 100% - error rate (positive framing)
   const grammarAccuracy = Math.max(0, Math.round((1 - metrics.grammarErrorRate) * 100));

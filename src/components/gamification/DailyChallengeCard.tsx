@@ -1,12 +1,13 @@
 'use client';
 
+import type { Language } from '@/lib/i18n';
 import type { DailyChallenge } from '@/lib/dailyChallenges';
 
 interface DailyChallengeCardProps {
   challenge: DailyChallenge;
   isComplete: boolean;
   streakDays?: number;
-  language?: 'ko' | 'en';
+  language?: Language;
   className?: string;
 }
 
@@ -62,12 +63,12 @@ export default function DailyChallengeCard({
 
       {/* Challenge Title */}
       <h3 className="text-base font-bold text-neutral-900 dark:text-white mb-1">
-        {challenge.title[language]}
+        {challenge.title[language as 'ko' | 'en'] || challenge.title['en']}
       </h3>
 
       {/* Challenge Description */}
       <p className="text-sm text-neutral-500 dark:text-white/50 mb-3">
-        {challenge.description[language]}
+        {challenge.description[language as 'ko' | 'en'] || challenge.description['en']}
       </p>
 
       {/* Bottom Row: XP Reward + Progress */}

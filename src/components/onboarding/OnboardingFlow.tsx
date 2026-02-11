@@ -1,5 +1,6 @@
 'use client';
 
+import type { Language } from '@/lib/i18n';
 import { useState, useCallback, useEffect } from 'react';
 import TapTalkLogo from '@/components/TapTalkLogo';
 import MicTestStep from './MicTestStep';
@@ -7,7 +8,7 @@ import TutorIntroCarousel from './TutorIntroCarousel';
 
 interface OnboardingFlowProps {
   onComplete: () => void;
-  language: 'ko' | 'en';
+  language: Language;
 }
 
 interface ProfileType {

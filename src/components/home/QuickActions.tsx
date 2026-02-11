@@ -1,9 +1,11 @@
 'use client';
 
+import type { Language } from '@/lib/i18n';
+
 interface QuickActionsProps {
   correctionsToReview: number;
   hasProfile: boolean;
-  language: 'ko' | 'en';
+  language: Language;
   onNavigate: (path: string) => void;
 }
 

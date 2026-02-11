@@ -1,9 +1,11 @@
 'use client';
 
+import type { Language } from '@/lib/i18n';
+
 interface StreakDisplayProps {
   currentStreak: number;
   sessionCount: number;
-  language: 'ko' | 'en';
+  language: Language;
 }
 
 export default function StreakDisplay({ currentStreak, sessionCount, language }: StreakDisplayProps) {

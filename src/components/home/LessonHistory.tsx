@@ -1,5 +1,6 @@
 'use client';
 
+import type { Language } from '@/lib/i18n';
 import { useState } from 'react';
 
 interface Lesson {
@@ -14,7 +15,7 @@ interface Lesson {
 
 interface LessonHistoryProps {
   lessonHistory: Lesson[];
-  language: 'ko' | 'en';
+  language: Language;
 }
 
 const tutorGradients: Record<string, string> = {

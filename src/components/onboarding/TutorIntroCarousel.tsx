@@ -1,11 +1,12 @@
 'use client';
 
+import type { Language } from '@/lib/i18n';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 
 interface TutorIntroCarouselProps {
   onComplete: (selectedTutorId?: string) => void;
-  language: 'ko' | 'en';
+  language: Language;
 }
 
 interface TutorInfo {

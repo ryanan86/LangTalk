@@ -114,7 +114,7 @@ export default function AboutPage() {
     },
   };
 
-  const t = content[language];
+  const t = content[language as 'ko' | 'en'] || content['en'];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">

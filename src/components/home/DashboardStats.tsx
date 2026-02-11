@@ -1,5 +1,6 @@
 'use client';
 
+import type { Language } from '@/lib/i18n';
 import { useState, useEffect } from 'react';
 
 // Animated Counter Sub-Component
@@ -35,7 +36,7 @@ function AnimatedCounter({ target, duration = 1500 }: { target: number; duration
 interface DashboardStatsProps {
   sessionCount: number;
   currentLevel: { grade: string; name: string; nameKo: string } | null;
-  language: 'ko' | 'en';
+  language: Language;
   canAccessDebate: boolean;
 }
 

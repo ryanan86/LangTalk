@@ -1,5 +1,6 @@
 'use client';
 
+import type { Language } from '@/lib/i18n';
 import { reviews, type Review } from './reviewData';
 
 function StarRating({ rating }: { rating: number }) {
@@ -36,7 +37,7 @@ function ReviewCard({ review }: { review: Review }) {
   );
 }
 
-export default function TrustBadges({ language }: { language: 'ko' | 'en' }) {
+export default function TrustBadges({ language }: { language: Language }) {
   return (
     <div className="mt-12 sm:mt-16">
       {/* Stats badges */}

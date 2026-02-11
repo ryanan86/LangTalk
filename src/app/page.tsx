@@ -578,19 +578,7 @@ function HomePageContent() {
               <ThemeToggle />
 
               {/* Desktop: Full language toggle, Mobile: Simple toggle */}
-              <div className="hidden sm:block">
-                <LanguageToggle />
-              </div>
-              <button
-                onClick={() => {
-                  const newLang = language === 'ko' ? 'en' : 'ko';
-                  localStorage.setItem('taptalk-language', newLang);
-                  window.location.reload();
-                }}
-                className="sm:hidden px-2.5 py-1.5 rounded-full bg-neutral-100 dark:bg-white/10 border border-neutral-200 dark:border-white/20 text-neutral-500 dark:text-white/70 text-xs font-medium"
-              >
-                {language === 'ko' ? 'EN' : '한'}
-              </button>
+              <LanguageToggle />
 
               {status === 'loading' ? (
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-neutral-200 dark:bg-white/10 animate-pulse" />

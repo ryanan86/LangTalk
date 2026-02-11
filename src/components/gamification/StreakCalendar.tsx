@@ -1,16 +1,18 @@
 'use client';
 
+import type { Language } from '@/lib/i18n';
+
 interface StreakCalendarProps {
   activeDays: boolean[];  // Length 7: [6 days ago, 5 days ago, ..., yesterday, today]
   currentStreak: number;
-  language?: 'ko' | 'en';
+  language?: Language;
   className?: string;
 }
 
 const DAY_LABELS_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DAY_LABELS_KO = ['월', '화', '수', '목', '금', '토', '일'];
 
-function getDayLabels(language: 'ko' | 'en'): string[] {
+function getDayLabels(language: Language): string[] {
   const labels = language === 'ko' ? DAY_LABELS_KO : DAY_LABELS_EN;
   const today = new Date().getDay(); // 0 = Sunday
   // Build last 7 days' labels, ending with today

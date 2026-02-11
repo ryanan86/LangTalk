@@ -1,5 +1,6 @@
 'use client';
 
+import type { Language } from '@/lib/i18n';
 import Image from 'next/image';
 import { Flag } from '@/components/Icons';
 
@@ -22,7 +23,7 @@ interface TutorCardProps {
   isPlaying: boolean;
   desc: string;
   style: string;
-  language: 'ko' | 'en';
+  language: Language;
 }
 
 export default function TutorCard({

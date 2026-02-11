@@ -1,5 +1,6 @@
 'use client';
 
+import type { Language } from '@/lib/i18n';
 import { useState, useEffect } from 'react';
 
 interface SessionSummaryProps {
@@ -11,7 +12,7 @@ interface SessionSummaryProps {
   level?: number;
   onBackHome: () => void;
   onPracticeAgain: () => void;
-  language: 'ko' | 'en';
+  language: Language;
 }
 
 function AnimatedCounter({ target, duration = 1200 }: { target: number; duration?: number }) {
@@ -34,7 +35,7 @@ function AnimatedCounter({ target, duration = 1200 }: { target: number; duration
   return <span>{count}</span>;
 }
 
-function formatDuration(seconds: number, lang: 'ko' | 'en'): string {
+function formatDuration(seconds: number, lang: Language): string {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   if (lang === 'ko') {
