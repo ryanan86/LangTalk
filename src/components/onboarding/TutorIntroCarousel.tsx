@@ -114,7 +114,7 @@ const tutors: TutorInfo[] = [
     sampleTextKo: "안녕! 나는 Alina야! 재미있는 얘기 하자!",
   },
   {
-    id: 'henly',
+    id: 'henry',
     name: 'Henry',
     nationality: 'American',
     nationalityKo: '미국인',
@@ -126,7 +126,7 @@ const tutors: TutorInfo[] = [
     descriptionKo: '장난꾸러기 호기심쟁이',
     personalityEn: 'Adventurous, funny, full of questions. A playful young buddy who loves discovering new things.',
     personalityKo: '모험심 가득하고 질문이 많은 또래 친구. 새로운 것을 발견하는 걸 좋아하는 장난꾸러기.',
-    imagePath: '/tutors/henly.png',
+    imagePath: '/tutors/henry.png',
     sampleTextEn: "Whoa, hey! I'm Henry! Wanna know something cool?",
     sampleTextKo: "안녕! 나는 Henry야! 뭔가 신기한 거 알려줄까?",
   },

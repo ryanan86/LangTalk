@@ -119,8 +119,8 @@ interface Translations {
   oliverStyle: string;
   alinaDesc: string;
   alinaStyle: string;
-  henlyDesc: string;
-  henlyStyle: string;
+  henryDesc: string;
+  henryStyle: string;
 
   // Debate Mode
   debateMode: string;
@@ -330,8 +330,8 @@ const translations: Record<Language, Translations> = {
     oliverStyle: '드라이한 유머, 진솔함, 편안한 대화',
     alinaDesc: '밝고 활발한 친구',
     alinaStyle: '에너지 넘치고 늘 신나는 또래 친구',
-    henlyDesc: '장난꾸러기 호기심쟁이',
-    henlyStyle: '모험심 가득, 재미있는 또래 친구',
+    henryDesc: '장난꾸러기 호기심쟁이',
+    henryStyle: '모험심 가득, 재미있는 또래 친구',
 
     // Debate Mode
     debateMode: '디베이트 모드',
@@ -539,8 +539,8 @@ const translations: Record<Language, Translations> = {
     oliverStyle: 'Dry wit, genuine, easy to talk to',
     alinaDesc: 'Bright & bubbly friend',
     alinaStyle: 'Cheerful, energetic, always excited',
-    henlyDesc: 'Playful & curious buddy',
-    henlyStyle: 'Adventurous, funny, full of questions',
+    henryDesc: 'Playful & curious buddy',
+    henryStyle: 'Adventurous, funny, full of questions',
 
     // Debate Mode
     debateMode: 'Debate Mode',
@@ -737,8 +737,8 @@ const translations: Record<Language, Translations> = {
     oliverStyle: 'Droge humor, oprecht, makkelijk prater',
     alinaDesc: 'Vrolijke en levendige vriendin',
     alinaStyle: 'Opgewekt, energiek, altijd enthousiast',
-    henlyDesc: 'Speelse en nieuwsgierige vriend',
-    henlyStyle: 'Avontuurlijk, grappig, vol vragen',
+    henryDesc: 'Speelse en nieuwsgierige vriend',
+    henryStyle: 'Avontuurlijk, grappig, vol vragen',
     debateMode: 'Debatmodus',
     debateLocked: 'Ontgrendeling vereist',
     sessionsToUnlock: 'Nog {n} sessies om te ontgrendelen',
@@ -917,8 +917,8 @@ const translations: Record<Language, Translations> = {
     oliverStyle: 'Сухой юмор, искренний, легко общаться',
     alinaDesc: 'Яркая и весёлая подруга',
     alinaStyle: 'Жизнерадостная, энергичная, всегда в восторге',
-    henlyDesc: 'Игривый и любопытный друг',
-    henlyStyle: 'Авантюрный, смешной, полон вопросов',
+    henryDesc: 'Игривый и любопытный друг',
+    henryStyle: 'Авантюрный, смешной, полон вопросов',
     debateMode: 'Режим дебатов',
     debateLocked: 'Требуется разблокировка',
     sessionsToUnlock: 'Ещё {n} сессий для разблокировки',
@@ -1097,8 +1097,8 @@ const translations: Record<Language, Translations> = {
     oliverStyle: "Humour pince-sans-rire, sincère, facile à aborder",
     alinaDesc: 'Amie joyeuse et pétillante',
     alinaStyle: 'Gaie, énergique, toujours enthousiaste',
-    henlyDesc: 'Ami joueur et curieux',
-    henlyStyle: "Aventurier, drôle, plein de questions",
+    henryDesc: 'Ami joueur et curieux',
+    henryStyle: "Aventurier, drôle, plein de questions",
     debateMode: 'Mode débat',
     debateLocked: 'Déverrouillage requis',
     sessionsToUnlock: 'Encore {n} sessions pour débloquer',
@@ -1277,8 +1277,8 @@ const translations: Record<Language, Translations> = {
     oliverStyle: 'Humor seco, genuino, fácil de hablar',
     alinaDesc: 'Amiga alegre y vivaz',
     alinaStyle: 'Animada, energética, siempre emocionada',
-    henlyDesc: 'Amigo juguetón y curioso',
-    henlyStyle: 'Aventurero, gracioso, lleno de preguntas',
+    henryDesc: 'Amigo juguetón y curioso',
+    henryStyle: 'Aventurero, gracioso, lleno de preguntas',
     debateMode: 'Modo debate',
     debateLocked: 'Desbloqueo requerido',
     sessionsToUnlock: '{n} sesiones para desbloquear',
@@ -1457,8 +1457,8 @@ const translations: Record<Language, Translations> = {
     oliverStyle: '冷幽默、真诚、好聊天',
     alinaDesc: '活泼开朗的朋友',
     alinaStyle: '快乐、有活力、总是兴奋',
-    henlyDesc: '顽皮又好奇的伙伴',
-    henlyStyle: '爱冒险、有趣、问题多多',
+    henryDesc: '顽皮又好奇的伙伴',
+    henryStyle: '爱冒险、有趣、问题多多',
     debateMode: '辩论模式',
     debateLocked: '需要解锁',
     sessionsToUnlock: '还需{n}次课程解锁',
@@ -1637,8 +1637,8 @@ const translations: Record<Language, Translations> = {
     oliverStyle: 'Trockener Humor, aufrichtig, leicht zu reden',
     alinaDesc: 'Fröhliche und lebhafte Freundin',
     alinaStyle: 'Heiter, energisch, immer begeistert',
-    henlyDesc: 'Verspielter und neugieriger Freund',
-    henlyStyle: 'Abenteuerlustig, lustig, voller Fragen',
+    henryDesc: 'Verspielter und neugieriger Freund',
+    henryStyle: 'Abenteuerlustig, lustig, voller Fragen',
     debateMode: 'Debattenmodus',
     debateLocked: 'Freischaltung erforderlich',
     sessionsToUnlock: 'Noch {n} Sitzungen zum Freischalten',

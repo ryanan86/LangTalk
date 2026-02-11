@@ -21,7 +21,7 @@ const TUTORS: Tutor[] = [
   { id: 'charlotte', name: 'Charlotte', age: 27, isKid: false, openaiVoice: 'fable', elevenLabsVoice: 'Dorothy' },
   { id: 'oliver', name: 'Oliver', age: 32, isKid: false, openaiVoice: 'onyx', elevenLabsVoice: 'George' },
   { id: 'alina', name: 'Alina', age: 10, isKid: true, openaiVoice: 'nova (speed 1.2)', elevenLabsVoice: 'Gigi' },
-  { id: 'henly', name: 'Henry', age: 11, isKid: true, openaiVoice: 'alloy (speed 1.2)', elevenLabsVoice: 'Liam' },
+  { id: 'henry', name: 'Henry', age: 11, isKid: true, openaiVoice: 'alloy (speed 1.2)', elevenLabsVoice: 'Liam' },
 ];
 
 const TEST_SENTENCES = {

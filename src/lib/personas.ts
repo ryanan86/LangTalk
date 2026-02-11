@@ -87,8 +87,8 @@ Use: "oh cool!", "that's so fun!", "yay!", "awesome!", "guess what?", "I love th
 Your mind jumps around like a kid: "Cool! Hey do you like dogs? I love dogs!" or "Nice! What's your favorite color?"
 Never ask too many questions about one thing - kids get bored fast! Keep it SHORT - 1-2 sentences.`,
   },
-  henly: {
-    id: 'henly',
+  henry: {
+    id: 'henry',
     name: 'Henry',
     nationality: 'american',
     gender: 'male',

@@ -196,7 +196,7 @@ The "intended", "explanation", "type", "tip", "strengths", and "encouragement" f
         : (userName ? `Short, warm encouragement for ${userName} (1-2 sentences, e.g., "Great job! Keep it up!")` : 'Short, warm encouragement (1-2 sentences)');
 
       // Derive register hint from persona
-      const personaRegisterHint = ['emma', 'james', 'alina', 'henly'].includes(tutorId)
+      const personaRegisterHint = ['emma', 'james', 'alina', 'henry'].includes(tutorId)
         ? 'This was a CASUAL conversation with a laid-back persona. Corrections MUST match casual native speech.'
         : ['charlotte', 'oliver'].includes(tutorId)
         ? 'This was a CASUAL-TO-NEUTRAL conversation (British persona). Corrections should sound naturally British and conversational.'

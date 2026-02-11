@@ -24,7 +24,7 @@ const tutorGradients: Record<string, string> = {
   charlotte: 'from-violet-400 to-purple-500',
   oliver: 'from-emerald-400 to-teal-500',
   alina: 'from-amber-400 to-orange-500',
-  henly: 'from-lime-400 to-green-500',
+  henry: 'from-lime-400 to-green-500',
 };
 
 export default function LessonHistory({ lessonHistory, language }: LessonHistoryProps) {

@@ -73,7 +73,7 @@ export default function TutorCard({
                       ? 'scale-110 group-hover:scale-115 object-top'
                       : persona.id === 'alina'
                         ? 'scale-110 group-hover:scale-115 object-top'
-                        : persona.id === 'henly'
+                        : persona.id === 'henry'
                           ? 'scale-110 group-hover:scale-115 object-top'
                           : 'scale-90 group-hover:scale-95 object-center'
               }`}

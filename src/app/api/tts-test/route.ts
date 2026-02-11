@@ -16,7 +16,7 @@ const OPENAI_VOICES: Record<string, 'alloy' | 'echo' | 'fable' | 'nova' | 'onyx'
   charlotte: 'fable',
   oliver: 'onyx',
   alina: 'nova',
-  henly: 'alloy',
+  henry: 'alloy',
 };
 
 // ElevenLabs voice mapping
@@ -26,10 +26,10 @@ const ELEVENLABS_VOICES: Record<string, string> = {
   charlotte: 'ThT5KcBeYPX3keUQqHPh',  // Dorothy
   oliver: 'JBFqnCBsd6RMkjVDRZzb',     // George
   alina: 'jBpfuIE2acCO8z3wKNLl',      // Gigi (kid)
-  henly: 'TX3LPaxmHKxFdv7VOQHJ',      // Liam (kid)
+  henry: 'TX3LPaxmHKxFdv7VOQHJ',      // Liam (kid)
 };
 
-const KID_TUTORS = ['alina', 'henly'];
+const KID_TUTORS = ['alina', 'henry'];
 
 async function generateWithOpenAI(text: string, tutorId: string): Promise<ArrayBuffer> {
   const voice = OPENAI_VOICES[tutorId] || 'shimmer';

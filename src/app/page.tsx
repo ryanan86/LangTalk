@@ -131,7 +131,7 @@ const personas: Persona[] = [
     sampleText: "Hi hi! I'm Alina! I'm so happy to meet you! Let's talk about fun stuff together, okay?",
   },
   {
-    id: 'henly',
+    id: 'henry',
     name: 'Henry',
     nationality: 'american',
     gender: 'male',
@@ -193,7 +193,7 @@ function HomePageContent() {
   // Video hover states
   const [hoveredTutor, setHoveredTutor] = useState<string | null>(null);
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
-  const tutorFileNameMap: Record<string, string> = { henly: 'henry' };
+  const tutorFileNameMap: Record<string, string> = { henry: 'henry' };
   const getTutorFileName = (id: string) => tutorFileNameMap[id] || id;
 
   // Animation states
@@ -548,7 +548,7 @@ function HomePageContent() {
       charlotte: { desc: t.charlotteDesc, style: t.charlotteStyle },
       oliver: { desc: t.oliverDesc, style: t.oliverStyle },
       alina: { desc: t.alinaDesc, style: t.alinaStyle },
-      henly: { desc: t.henlyDesc, style: t.henlyStyle },
+      henry: { desc: t.henryDesc, style: t.henryStyle },
     };
     return descriptions[id] || { desc: '', style: '' };
   };
