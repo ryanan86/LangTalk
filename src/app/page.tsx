@@ -1157,9 +1157,9 @@ function HomePageContent() {
                                   <Flag country={persona.flag as 'US' | 'UK'} size={24} />
                                 </div>
 
-                                {/* Play indicator on hover */}
+                                {/* Play indicator on hover - desktop only */}
                                 {hoveredTutor !== persona.id && (
-                                  <div className="absolute bottom-3 right-3 z-10 bg-black/50 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <div className="hidden md:flex absolute bottom-3 right-3 z-10 bg-black/50 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center">
                                     <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                                       <path d="M8 5v14l11-7z" />
                                     </svg>
@@ -1368,8 +1368,8 @@ function HomePageContent() {
                             </div>
                           </div>
                         </div>
-                        {/* Hover play indicator */}
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                        {/* Hover play indicator - desktop only */}
+                        <div className="hidden md:flex absolute inset-0 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                           <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
                             <svg className="w-5 h-5 sm:w-7 sm:h-7 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M8 5v14l11-7z" />
