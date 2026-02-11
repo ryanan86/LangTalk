@@ -406,22 +406,22 @@ export function scoreToGrade(score: number): string {
 export function formatMetricsForDisplay(metrics: SpeechMetrics, language: 'ko' | 'en' = 'ko') {
   const labels = {
     ko: {
-      wordsPerMinute: '분당 단어 수',
-      avgSentenceLength: '평균 문장 길이',
+      wordsPerMinute: '말하기 속도',
+      avgSentenceLength: '문장 구성력',
       vocabularyDiversity: '어휘 다양성',
-      complexSentenceRatio: '복합문 비율',
-      grammarErrorRate: '문법 오류율',
-      avgResponseTime: '평균 응답 시간',
+      complexSentenceRatio: '표현 풍부도',
+      grammarErrorRate: '문법 정확도',
+      avgResponseTime: '응답 속도',
       totalWords: '총 단어 수',
       totalSpeakingTime: '총 발화 시간',
     },
     en: {
-      wordsPerMinute: 'Words Per Minute',
-      avgSentenceLength: 'Avg Sentence Length',
-      vocabularyDiversity: 'Vocabulary Diversity',
-      complexSentenceRatio: 'Complex Sentence Ratio',
-      grammarErrorRate: 'Grammar Error Rate',
-      avgResponseTime: 'Avg Response Time',
+      wordsPerMinute: 'Speaking Speed',
+      avgSentenceLength: 'Sentence Structure',
+      vocabularyDiversity: 'Vocabulary Range',
+      complexSentenceRatio: 'Expression Richness',
+      grammarErrorRate: 'Grammar Accuracy',
+      avgResponseTime: 'Response Speed',
       totalWords: 'Total Words',
       totalSpeakingTime: 'Total Speaking Time',
     },
@@ -429,12 +429,21 @@ export function formatMetricsForDisplay(metrics: SpeechMetrics, language: 'ko' |
 
   const l = labels[language];
 
+  // Grammar accuracy = 100% - error rate (positive framing)
+  const grammarAccuracy = Math.max(0, Math.round((1 - metrics.grammarErrorRate) * 100));
+  // Response speed: map 0-10s to 100-0% (faster = higher)
+  const responseSpeed = Math.max(0, Math.min(100, Math.round((1 - Math.min(metrics.avgResponseTime, 10) / 10) * 100)));
+  // WPM normalized to 0-100 (80-180 range mapped)
+  const wpmPercent = Math.max(0, Math.min(100, Math.round(((metrics.wordsPerMinute - 40) / 160) * 100)));
+  // Sentence length normalized (3-15 range)
+  const sentLenPercent = Math.max(0, Math.min(100, Math.round(((metrics.avgSentenceLength - 2) / 13) * 100)));
+
   return [
-    { label: l.wordsPerMinute, value: `${metrics.wordsPerMinute} WPM`, level: getMetricLevel('wordsPerMinute', metrics.wordsPerMinute) },
-    { label: l.avgSentenceLength, value: `${metrics.avgSentenceLength} words`, level: getMetricLevel('avgSentenceLength', metrics.avgSentenceLength) },
-    { label: l.vocabularyDiversity, value: `${Math.round(metrics.vocabularyDiversity * 100)}%`, level: getMetricLevel('vocabularyDiversity', metrics.vocabularyDiversity) },
-    { label: l.complexSentenceRatio, value: `${Math.round(metrics.complexSentenceRatio * 100)}%`, level: getMetricLevel('complexSentenceRatio', metrics.complexSentenceRatio) },
-    { label: l.grammarErrorRate, value: `${Math.round(metrics.grammarErrorRate * 100)}%`, level: getMetricLevel('grammarErrorRate', metrics.grammarErrorRate) },
-    { label: l.avgResponseTime, value: `${metrics.avgResponseTime}s`, level: getMetricLevel('avgResponseTime', metrics.avgResponseTime) },
+    { label: l.wordsPerMinute, value: `${metrics.wordsPerMinute} WPM`, level: getMetricLevel('wordsPerMinute', metrics.wordsPerMinute), percent: wpmPercent },
+    { label: l.avgSentenceLength, value: `${metrics.avgSentenceLength} words`, level: getMetricLevel('avgSentenceLength', metrics.avgSentenceLength), percent: sentLenPercent },
+    { label: l.vocabularyDiversity, value: `${Math.round(metrics.vocabularyDiversity * 100)}%`, level: getMetricLevel('vocabularyDiversity', metrics.vocabularyDiversity), percent: Math.round(metrics.vocabularyDiversity * 100) },
+    { label: l.complexSentenceRatio, value: `${Math.round(metrics.complexSentenceRatio * 100)}%`, level: getMetricLevel('complexSentenceRatio', metrics.complexSentenceRatio), percent: Math.round(metrics.complexSentenceRatio * 100) },
+    { label: l.grammarErrorRate, value: `${grammarAccuracy}%`, level: getMetricLevel('grammarErrorRate', metrics.grammarErrorRate), percent: grammarAccuracy },
+    { label: l.avgResponseTime, value: `${responseSpeed}%`, level: getMetricLevel('avgResponseTime', metrics.avgResponseTime), percent: responseSpeed },
   ];
 }

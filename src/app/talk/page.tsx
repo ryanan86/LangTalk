@@ -1744,15 +1744,15 @@ function TalkContent() {
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-xs text-neutral-600 dark:text-neutral-300">{metric.label}</span>
                         <span className={`text-xs font-bold ${
-                          metric.level === 'high' ? 'text-green-600' :
-                          metric.level === 'low' ? 'text-red-500' : 'text-neutral-900'
+                          metric.level === 'high' ? 'text-cyan-600' :
+                          metric.level === 'low' ? 'text-amber-500' : 'text-blue-600 dark:text-blue-400'
                         }`}>{metric.value}</span>
                       </div>
-                      <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full ${
-                          metric.level === 'high' ? 'bg-green-500' :
-                          metric.level === 'low' ? 'bg-red-400' : 'bg-blue-500'
-                        }`} style={{ width: metric.level === 'high' ? '90%' : metric.level === 'low' ? '30%' : '60%' }} />
+                      <div className="h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-700 ${
+                          metric.level === 'high' ? 'bg-gradient-to-r from-cyan-400 to-cyan-500' :
+                          metric.level === 'low' ? 'bg-gradient-to-r from-amber-300 to-amber-400' : 'bg-gradient-to-r from-blue-400 to-blue-500'
+                        }`} style={{ width: `${metric.percent}%` }} />
                       </div>
                     </div>
                   ))}
