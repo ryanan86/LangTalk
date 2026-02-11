@@ -1130,7 +1130,7 @@ function HomePageContent() {
                                 : 'bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700'
                             }`}>
                               {/* Video / Image Area */}
-                              <div className="relative h-44 sm:h-56 lg:h-72 overflow-hidden bg-neutral-900">
+                              <div className="relative h-44 sm:h-56 lg:h-72 overflow-hidden bg-white">
                                 {/* Tutor Video (first frame as still, plays on hover) */}
                                 <video
                                   ref={(el) => { videoRefs.current[persona.id] = el; }}
@@ -1139,12 +1139,9 @@ function HomePageContent() {
                                   muted
                                   loop
                                   playsInline
-                                  preload="none"
+                                  preload="metadata"
                                   className="absolute inset-0 w-full h-full object-cover"
                                 />
-                                {/* Full vignette overlay - darken all edges for consistent look on dark theme */}
-                                <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.5) 100%)' }} />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none" />
 
                                 {/* Selection Check */}
                                 {isSelected && (
@@ -1356,7 +1353,7 @@ function HomePageContent() {
                           poster={`/tutors/${getTutorFileName(tutor.id)}.png`}
                           muted
                           playsInline
-                          preload="none"
+                          preload="metadata"
                           className="absolute inset-0 w-full h-full object-cover"
                         />
                         {/* Name overlay */}
