@@ -13,6 +13,7 @@ import {
 } from '@/lib/speechMetrics';
 import html2canvas from 'html2canvas';
 import TapTalkLogo from '@/components/TapTalkLogo';
+import { useLipSync } from '@/hooks/useLipSync';
 import AnalysisReview from '@/components/AnalysisReview';
 
 type Phase = 'ready' | 'recording' | 'interview' | 'analysis' | 'review' | 'shadowing' | 'summary';
@@ -74,6 +75,9 @@ function TalkContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRecordingReply, setIsRecordingReply] = useState(false);
+
+  // Lip-sync
+  const { mouthShape, connectAudio, startAnalysis, stopAnalysis } = useLipSync();
 
   // Analysis & Review state
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
@@ -169,6 +173,15 @@ function TalkContent() {
 
   // Check if session is actively in progress (not ready or summary)
   const isSessionActive = phase !== 'ready' && phase !== 'summary';
+
+  // Lip-sync: start/stop analysis when audio plays/stops
+  useEffect(() => {
+    if (isPlaying) {
+      startAnalysis();
+    } else {
+      stopAnalysis();
+    }
+  }, [isPlaying, startAnalysis, stopAnalysis]);
 
   // Handle back button click - show confirmation if session is active
   const handleBackClick = useCallback(() => {
@@ -438,6 +451,8 @@ function TalkContent() {
 
   const startRecording = async () => {
     initialRecordingStoppedRef.current = false;
+    // Connect lip-sync to audio element on first user gesture
+    if (audioRef.current) connectAudio(audioRef.current);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
@@ -1354,6 +1369,7 @@ function TalkContent() {
               <TutorAvatarLarge
                 tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
                 speaking={isPlaying}
+                mouthOpen={mouthShape.open}
                 status={
                   isPlaying ? 'speaking' :
                   isProcessing ? 'thinking' :
