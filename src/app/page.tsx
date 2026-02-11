@@ -533,8 +533,8 @@ function HomePageContent() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-[#0a0a0f] text-neutral-900 dark:text-white overflow-hidden">
-      {/* Animated Background - Dark only */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+      {/* Animated Background - Dark only (GPU-promoted layer) */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{ willChange: 'transform', contain: 'strict' }}>
         {/* Light mode gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-100/70 via-white/30 to-pink-100/50 dark:hidden" />
         {/* Morphing Gradient Blobs - Dark, desktop only (mobile: static, reduced blur) */}
@@ -571,7 +571,7 @@ function HomePageContent() {
       {/* Header - pt-12 for Android status bar + notch clearance */}
       <header className={`z-50 pt-12 ${
         session
-          ? 'relative border-b border-neutral-200 dark:border-white/5 bg-white/70 dark:bg-transparent backdrop-blur-md dark:backdrop-blur-none'
+          ? 'relative border-b border-neutral-200 dark:border-white/5 bg-white dark:bg-[#0a0a0f] md:bg-white/70 md:dark:bg-transparent md:backdrop-blur-md md:dark:backdrop-blur-none'
           : 'absolute top-0 left-0 right-0 bg-transparent border-b border-white/10 md:relative md:bg-white/70 md:dark:bg-transparent md:backdrop-blur-md md:dark:backdrop-blur-none md:border-neutral-200 md:dark:border-white/5'
       }`}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -757,7 +757,7 @@ function HomePageContent() {
         />
 
         {/* Dashboard & User Content */}
-        <section className={`pb-8 sm:pb-12 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+        <section className={`pb-8 sm:pb-12 transition-[opacity,transform] duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <div className="text-center max-w-3xl mx-auto">
 
@@ -849,7 +849,7 @@ function HomePageContent() {
 
         {/* Mode Tabs */}
         {session && isSubscribed && (
-          <section className={`pb-6 transition-all duration-1000 delay-200 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <section className={`pb-6 transition-[opacity,transform] duration-700 delay-100 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
             <div className="max-w-6xl mx-auto px-4 sm:px-6">
               <div className="flex justify-center">
                 <div className="inline-flex p-1.5 rounded-2xl bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10">
@@ -896,7 +896,7 @@ function HomePageContent() {
 
         {/* Talk Mode Content */}
         {(!session || !isSubscribed || activeTab === 'talk') && (
-          <section className={`py-8 sm:py-12 transition-all duration-1000 delay-300 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <section className={`py-8 sm:py-12 transition-[opacity,transform] duration-700 delay-200 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
             <div className="max-w-6xl mx-auto px-4 sm:px-6">
 
               {/* Not Logged In State */}
@@ -1211,7 +1211,7 @@ function HomePageContent() {
 
         {/* Debate Mode Content */}
         {session && isSubscribed && activeTab === 'debate' && (
-          <section className={`py-8 sm:py-12 transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <section className={`py-8 sm:py-12 transition-[opacity,transform] duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
             <div className="max-w-2xl mx-auto px-4 sm:px-6">
               {canAccessDebate ? (
                 /* Unlocked Debate */
@@ -1299,7 +1299,7 @@ function HomePageContent() {
         {!session && (
           <>
             {/* Product Demo Section - Conversation Mockup */}
-            <section className={`py-16 sm:py-24 transition-all duration-1000 delay-300 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <section className={`py-16 sm:py-24 transition-[opacity,transform] duration-700 delay-200 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
               <div className="max-w-5xl mx-auto px-4 sm:px-6">
                 {/* Tutor Video Showcase */}
                 <div className="relative">
@@ -1435,7 +1435,7 @@ function HomePageContent() {
             </section>
 
             {/* How It Works - Clean, no boxes */}
-            <section className={`py-16 sm:py-24 transition-all duration-1000 delay-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <section className={`py-16 sm:py-24 transition-[opacity,transform] duration-700 delay-300 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
               <div className="max-w-4xl mx-auto px-4 sm:px-6">
                 <h2 className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white text-center mb-16">
                   {t.howItWorks}
