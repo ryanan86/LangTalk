@@ -213,7 +213,7 @@ function HomePageContent() {
 
   // Hero video state for non-logged-in landing (mobile fullscreen)
   const [heroTutorIndex, setHeroTutorIndex] = useState(0);
-  const heroVideoRef = useRef<HTMLVideoElement | null>(null);
+  const heroVideoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const heroTouchStartX = useRef<number>(0);
 
   // Handle Google Sign-In (native for Android, web for browser)
@@ -307,12 +307,17 @@ function HomePageContent() {
     setMounted(true);
   }, []);
 
-  // Auto-play hero video when tutor changes
+  // Play current hero video, pause others for seamless crossfade
   useEffect(() => {
-    if (heroVideoRef.current) {
-      heroVideoRef.current.load();
-      heroVideoRef.current.play().catch(() => {});
-    }
+    heroVideoRefs.current.forEach((video, idx) => {
+      if (!video) return;
+      if (idx === heroTutorIndex) {
+        video.currentTime = 0;
+        video.play().catch(() => {});
+      } else {
+        video.pause();
+      }
+    });
   }, [heroTutorIndex]);
 
   // Auto-rotate hero tutors every 5 seconds (non-logged-in only)
@@ -667,18 +672,23 @@ function HomePageContent() {
               }
             }}
           >
-            {/* Background Video */}
-            <video
-              ref={heroVideoRef}
-              key={personas[heroTutorIndex].id}
-              src={`/tutors/${getTutorFileName(personas[heroTutorIndex].id)}_greeting.mp4`}
-              poster={`/tutors/${getTutorFileName(personas[heroTutorIndex].id)}.png`}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover"
-            />
+            {/* Background Videos - all preloaded for seamless crossfade */}
+            {personas.map((persona, idx) => (
+              <video
+                key={persona.id}
+                ref={(el) => { heroVideoRefs.current[idx] = el; }}
+                src={`/tutors/${getTutorFileName(persona.id)}_greeting.mp4`}
+                poster={`/tutors/${getTutorFileName(persona.id)}.png`}
+                autoPlay={idx === 0}
+                loop
+                muted
+                playsInline
+                preload="auto"
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
+                  idx === heroTutorIndex ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
+            ))}
 
             {/* Gradient overlays */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40" />
