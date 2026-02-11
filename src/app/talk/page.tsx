@@ -54,14 +54,6 @@ interface Analysis {
   encouragement: string;
 }
 
-const FILLER_PHRASES = [
-  "Hmm, let me think...",
-  "That's interesting...",
-  "Good point...",
-  "Let me see...",
-  "Okay...",
-];
-
 function TalkContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -133,7 +125,6 @@ function TalkContent() {
   const processedSentencesRef = useRef<Set<string>>(new Set());
   const audioCacheRef = useRef<Map<string, Promise<Blob>>>(new Map());
   const fillerAudioRef = useRef<HTMLAudioElement | null>(null);
-  const fillerCacheRef = useRef<Map<string, Blob[]>>(new Map());
   const summaryRef = useRef<HTMLDivElement>(null);
   const [isSavingImage, setIsSavingImage] = useState(false);
 
@@ -415,7 +406,7 @@ function TalkContent() {
   // Pre-cache filler audio when interview starts
   useEffect(() => {
     if (phase === 'interview' && persona) {
-      preCacheFillers(persona.voice);
+      // filler pre-caching disabled - contextual filler approach planned
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, persona]);
@@ -1058,43 +1049,6 @@ function TalkContent() {
 
     // Play next in queue
     playNextInQueue();
-  };
-
-  // Pre-cache filler audio (parallel for speed)
-  const preCacheFillers = async (voice: string) => {
-    if (fillerCacheRef.current.has(voice)) return;
-
-    const results = await Promise.allSettled(
-      FILLER_PHRASES.map(phrase =>
-        fetch('/api/text-to-speech', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: phrase, voice }),
-        }).then(res => res.ok ? res.blob() : null)
-      )
-    );
-    const blobs = results
-      .filter((r): r is PromiseFulfilledResult<Blob | null> => r.status === 'fulfilled' && r.value !== null)
-      .map(r => r.value as Blob);
-    if (blobs.length > 0) {
-      fillerCacheRef.current.set(voice, blobs);
-    }
-  };
-
-  // Play one random filler audio (single play, no loop)
-  const playFiller = () => {
-    const cached = fillerCacheRef.current.get(persona.voice);
-    if (!cached || cached.length === 0 || !fillerAudioRef.current) return;
-
-    const randomBlob = cached[Math.floor(Math.random() * cached.length)];
-    const url = URL.createObjectURL(randomBlob);
-    const audio = fillerAudioRef.current;
-    audio.onended = () => {
-      URL.revokeObjectURL(url);
-    };
-    audio.src = url;
-    audio.load();
-    audio.play().catch(() => {});
   };
 
   // Stop filler audio if still playing
