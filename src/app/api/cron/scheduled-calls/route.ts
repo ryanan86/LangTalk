@@ -156,7 +156,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Get current time in user's timezone
-        const userTime = getUserLocalTime(schedule.timezone);
+        const userTime = getUserLocalTime(now, schedule.timezone);
         const currentSlot = getTimeSlot(userTime.hour, userTime.minute);
 
         // Check if current day is in schedule
