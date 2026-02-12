@@ -50,6 +50,7 @@ export async function GET(request: Request) {
       nativeLanguage: userData.profile.nativeLanguage,
       preferredTutors: userData.profile.preferredTutors || [],
       difficultyPreference: userData.profile.difficultyPreference || 'adaptive',
+      schedule: userData.profile.schedule || null,
     };
 
     return NextResponse.json({ profile, email });
@@ -88,6 +89,7 @@ export async function POST(request: NextRequest) {
       nativeLanguage,
       preferredTutors,
       difficultyPreference,
+      schedule,
     } = body;
 
     // If no Google Sheets credentials, return success for development
@@ -113,6 +115,7 @@ export async function POST(request: NextRequest) {
     if (nativeLanguage !== undefined) profileUpdate.nativeLanguage = nativeLanguage;
     if (preferredTutors !== undefined) profileUpdate.preferredTutors = preferredTutors;
     if (difficultyPreference !== undefined) profileUpdate.difficultyPreference = difficultyPreference;
+    if (schedule !== undefined) profileUpdate.schedule = schedule;
 
     // Update user profile using helper
     const success = await updateUserFields(email, { profile: profileUpdate });

@@ -30,6 +30,17 @@ export interface ProfileData {
   nativeLanguage: 'ko' | 'en' | 'other';
   preferredTutors?: string[]; // ["emma", "oliver"]
   difficultyPreference?: 'easy' | 'medium' | 'hard' | 'adaptive';
+
+  // Push Notifications
+  fcmToken?: string;
+
+  // Scheduled call settings
+  schedule?: {
+    enabled: boolean;
+    times: string[];   // ["09:00", "19:00"] in KST
+    days: number[];    // [1,2,3,4,5] (0=Sun, 6=Sat)
+    preferredTutor?: string; // "emma" | "random"
+  };
 }
 
 export interface StatsData {

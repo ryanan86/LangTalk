@@ -17,6 +17,7 @@ import XPBar from '@/components/gamification/XPBar';
 import DailyChallengeCard from '@/components/gamification/DailyChallengeCard';
 import OnboardingFlow from '@/components/onboarding/OnboardingFlow';
 import { getTodayChallenge } from '@/lib/dailyChallenges';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 // Helper function to check if running in Android WebView (Capacitor app)
 function isAndroidWebView(): boolean {
   if (typeof window === 'undefined') return false;
@@ -207,6 +208,11 @@ function HomePageContent() {
   // Gamification state
   const [userXP, setUserXP] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
+
+  // Push notifications (Android only) - register FCM token & handle scheduled calls
+  usePushNotifications(!!session?.user?.email, (tutorId) => {
+    router.push(`/incoming-call?tutor=${tutorId}`);
+  });
 
   // State for native sign-in error debugging
   const [nativeSignInError, setNativeSignInError] = useState<string | null>(null);

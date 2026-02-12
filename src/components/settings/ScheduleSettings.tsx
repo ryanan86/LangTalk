@@ -1,0 +1,228 @@
+'use client';
+
+import { useState } from 'react';
+
+interface ScheduleData {
+  enabled: boolean;
+  times: string[];
+  days: number[];
+  preferredTutor: string;
+}
+
+interface ScheduleSettingsProps {
+  language: 'ko' | 'en';
+  initialSchedule?: ScheduleData;
+  onSave: (schedule: ScheduleData) => Promise<void>;
+}
+
+const TUTORS = [
+  { id: 'random', nameEn: 'Random', nameKo: 'Random' },
+  { id: 'emma', nameEn: 'Emma', nameKo: 'Emma' },
+  { id: 'james', nameEn: 'James', nameKo: 'James' },
+  { id: 'charlotte', nameEn: 'Charlotte', nameKo: 'Charlotte' },
+  { id: 'oliver', nameEn: 'Oliver', nameKo: 'Oliver' },
+  { id: 'alina', nameEn: 'Alina', nameKo: 'Alina' },
+  { id: 'henry', nameEn: 'Henry', nameKo: 'Henry' },
+];
+
+const DAYS = [
+  { value: 0, labelEn: 'Sun', labelKo: '일' },
+  { value: 1, labelEn: 'Mon', labelKo: '월' },
+  { value: 2, labelEn: 'Tue', labelKo: '화' },
+  { value: 3, labelEn: 'Wed', labelKo: '수' },
+  { value: 4, labelEn: 'Thu', labelKo: '목' },
+  { value: 5, labelEn: 'Fri', labelKo: '금' },
+  { value: 6, labelEn: 'Sat', labelKo: '토' },
+];
+
+// Generate time slots from 06:00 to 23:00 in 30-min intervals
+const TIME_SLOTS: string[] = [];
+for (let h = 6; h <= 23; h++) {
+  TIME_SLOTS.push(`${String(h).padStart(2, '0')}:00`);
+  if (h < 23) TIME_SLOTS.push(`${String(h).padStart(2, '0')}:30`);
+}
+
+export default function ScheduleSettings({ language, initialSchedule, onSave }: ScheduleSettingsProps) {
+  const [enabled, setEnabled] = useState(initialSchedule?.enabled ?? false);
+  const [times, setTimes] = useState<string[]>(initialSchedule?.times ?? ['09:00']);
+  const [days, setDays] = useState<number[]>(initialSchedule?.days ?? [1, 2, 3, 4, 5]);
+  const [preferredTutor, setPreferredTutor] = useState(initialSchedule?.preferredTutor ?? 'random');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const toggleDay = (day: number) => {
+    setDays(prev =>
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day].sort()
+    );
+    setSaved(false);
+  };
+
+  const addTime = () => {
+    if (times.length >= 3) return;
+    // Find next available slot
+    const next = TIME_SLOTS.find(t => !times.includes(t)) || '12:00';
+    setTimes(prev => [...prev, next].sort());
+    setSaved(false);
+  };
+
+  const removeTime = (index: number) => {
+    if (times.length <= 1) return;
+    setTimes(prev => prev.filter((_, i) => i !== index));
+    setSaved(false);
+  };
+
+  const updateTime = (index: number, value: string) => {
+    setTimes(prev => {
+      const next = [...prev];
+      next[index] = value;
+      return next.sort();
+    });
+    setSaved(false);
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await onSave({ enabled, times, days, preferredTutor });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <section className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+            {language === 'ko' ? 'AI 튜터 예약 알림' : 'Scheduled Call Reminders'}
+          </h2>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+            {language === 'ko'
+              ? '설정한 시간에 AI 튜터가 알림을 보내드려요.'
+              : 'Get notified at your scheduled times to practice.'}
+          </p>
+        </div>
+        {/* Toggle switch */}
+        <button
+          onClick={() => { setEnabled(!enabled); setSaved(false); }}
+          className={`relative w-12 h-7 rounded-full transition-colors ${
+            enabled ? 'bg-primary-500' : 'bg-neutral-300 dark:bg-neutral-600'
+          }`}
+        >
+          <span
+            className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${
+              enabled ? 'translate-x-5' : 'translate-x-0'
+            }`}
+          />
+        </button>
+      </div>
+
+      {enabled && (
+        <div className="space-y-5 pl-1">
+          {/* Days selection */}
+          <div>
+            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 block mb-2">
+              {language === 'ko' ? '요일 선택' : 'Select Days'}
+            </label>
+            <div className="flex gap-2">
+              {DAYS.map(day => (
+                <button
+                  key={day.value}
+                  onClick={() => toggleDay(day.value)}
+                  className={`w-10 h-10 rounded-full text-sm font-medium transition-all ${
+                    days.includes(day.value)
+                      ? 'bg-primary-500 text-white'
+                      : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                  }`}
+                >
+                  {language === 'ko' ? day.labelKo : day.labelEn}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Time slots */}
+          <div>
+            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 block mb-2">
+              {language === 'ko' ? `알림 시간 (${times.length}/3)` : `Reminder Times (${times.length}/3)`}
+            </label>
+            <div className="space-y-2">
+              {times.map((time, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <select
+                    value={time}
+                    onChange={(e) => updateTime(index, e.target.value)}
+                    className="flex-1 px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-dark-surface text-neutral-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    {TIME_SLOTS.map(slot => (
+                      <option key={slot} value={slot}>{slot}</option>
+                    ))}
+                  </select>
+                  {times.length > 1 && (
+                    <button
+                      onClick={() => removeTime(index)}
+                      className="p-2 text-neutral-400 hover:text-red-500 transition-colors"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              ))}
+              {times.length < 3 && (
+                <button
+                  onClick={addTime}
+                  className="w-full py-2.5 rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-500 dark:text-neutral-400 text-sm hover:border-primary-400 hover:text-primary-500 transition-colors"
+                >
+                  + {language === 'ko' ? '시간 추가' : 'Add Time'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Preferred tutor */}
+          <div>
+            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 block mb-2">
+              {language === 'ko' ? '선호 튜터' : 'Preferred Tutor'}
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {TUTORS.map(tutor => (
+                <button
+                  key={tutor.id}
+                  onClick={() => { setPreferredTutor(tutor.id); setSaved(false); }}
+                  className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                    preferredTutor === tutor.id
+                      ? 'bg-primary-500 text-white'
+                      : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                  }`}
+                >
+                  {language === 'ko' ? tutor.nameKo : tutor.nameEn}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Save button */}
+          <button
+            onClick={handleSave}
+            disabled={isSaving || days.length === 0}
+            className={`w-full py-3 rounded-xl text-sm font-semibold transition-all ${
+              saved
+                ? 'bg-green-500 text-white'
+                : 'btn-primary disabled:opacity-50 disabled:cursor-not-allowed'
+            }`}
+          >
+            {isSaving
+              ? (language === 'ko' ? '저장 중...' : 'Saving...')
+              : saved
+                ? (language === 'ko' ? '저장 완료' : 'Saved')
+                : (language === 'ko' ? '알림 설정 저장' : 'Save Schedule')}
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}

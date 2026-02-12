@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n';
+import ScheduleSettings from '@/components/settings/ScheduleSettings';
 
 interface ProfileType {
   id: string;
@@ -81,6 +82,12 @@ export default function ProfilePage() {
   const [customContext, setCustomContext] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [schedule, setSchedule] = useState<{
+    enabled: boolean;
+    times: string[];
+    days: number[];
+    preferredTutor: string;
+  } | undefined>(undefined);
 
   // Load existing profile
   useEffect(() => {
@@ -93,6 +100,9 @@ export default function ProfilePage() {
           setSelectedType(data.profile.profileType || '');
           setSelectedInterests(data.profile.interests || []);
           setCustomContext(data.profile.customContext || '');
+          if (data.profile.schedule) {
+            setSchedule(data.profile.schedule);
+          }
         }
       } catch (error) {
         console.error('Failed to load profile:', error);
@@ -102,6 +112,25 @@ export default function ProfilePage() {
     };
 
     loadProfile();
+  }, []);
+
+  const handleScheduleSave = useCallback(async (scheduleData: {
+    enabled: boolean;
+    times: string[];
+    days: number[];
+    preferredTutor: string;
+  }) => {
+    const response = await fetch('/api/user-profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ schedule: scheduleData }),
+    });
+    const data = await response.json();
+    if (data.success) {
+      setSchedule(scheduleData);
+    } else {
+      throw new Error('Failed to save schedule');
+    }
   }, []);
 
   const toggleInterest = (interestId: string) => {
@@ -266,6 +295,15 @@ export default function ProfilePage() {
             rows={3}
           />
         </section>
+
+        {/* Schedule Settings */}
+        <div className="p-4 bg-white dark:bg-dark-surface rounded-xl border border-neutral-200 dark:border-neutral-700">
+          <ScheduleSettings
+            language={language as 'ko' | 'en'}
+            initialSchedule={schedule}
+            onSave={handleScheduleSave}
+          />
+        </div>
 
         {/* Save Button */}
         <div className="pt-4 pb-8">
