@@ -635,13 +635,18 @@ function HomePageContent() {
                     <span className="text-sm text-neutral-600 dark:text-neutral-600 dark:text-white/70">{session.user?.name?.split(' ')[0]}</span>
                   </div>
                   {session.user?.image && (
-                    <Image
-                      src={session.user.image}
-                      alt=""
-                      width={40}
-                      height={40}
-                      className="w-8 h-8 sm:w-10 sm:h-10 rounded-full ring-2 ring-neutral-200 dark:ring-white/10"
-                    />
+                    <button
+                      onClick={() => router.push('/profile')}
+                      title={language === 'ko' ? '프로필 설정' : 'Profile Settings'}
+                    >
+                      <Image
+                        src={session.user.image}
+                        alt=""
+                        width={40}
+                        height={40}
+                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full ring-2 ring-neutral-200 dark:ring-white/10 hover:ring-primary-400 transition-all cursor-pointer"
+                      />
+                    </button>
                   )}
                   <button
                     onClick={() => signOut()}
