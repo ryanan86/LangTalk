@@ -266,7 +266,7 @@ export function TutorAvatarLarge({
               {/* Upper face - static portion above mouth line */}
               <div
                 className="absolute inset-0"
-                style={mouthOpen > 0.03 ? { clipPath: 'inset(0 0 35% 0)' } : undefined}
+                style={mouthOpen > 0.05 ? { clipPath: 'inset(0 0 30% 0)' } : undefined}
               >
                 <Image
                   src={tutor.imagePath}
@@ -280,27 +280,27 @@ export function TutorAvatarLarge({
               </div>
 
               {/* Jaw + mouth animation when lip-syncing */}
-              {mouthOpen > 0.03 && (
+              {mouthOpen > 0.05 && (
                 <>
                   {/* Dark mouth interior */}
                   <div
                     className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
                     style={{
-                      top: '63%',
+                      top: '68%',
                       width: `${18 + mouthOpen * 6}%`,
                       height: `${mouthOpen * 5}%`,
                       background: 'radial-gradient(ellipse, rgba(15,5,5,0.85) 30%, rgba(40,15,15,0.6))',
                       borderRadius: '35% 35% 45% 45%',
-                      transition: 'width 0.06s, height 0.06s',
+                      transition: 'width 0.1s ease-out, height 0.1s ease-out',
                     }}
                   />
                   {/* Lower jaw - displaced down */}
                   <div
                     className="absolute inset-0 pointer-events-none"
                     style={{
-                      clipPath: 'inset(66% 0 0 0)',
-                      transform: `translateY(${mouthOpen * 3.5}%)`,
-                      transition: 'transform 0.06s',
+                      clipPath: 'inset(69% 0 0 0)',
+                      transform: `translateY(${mouthOpen * 4.5}%)`,
+                      transition: 'transform 0.1s ease-out',
                     }}
                   >
                     <Image
