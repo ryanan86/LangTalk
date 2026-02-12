@@ -60,25 +60,57 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
 
   // Request notification permission and register web push subscription
   const requestNotificationPermission = useCallback(async () => {
+    console.log('[TapTalk Push] === Permission Request Start ===');
+
+    // Check if Notification API is available
     if (typeof window === 'undefined' || !('Notification' in window)) {
-      console.warn('[TapTalk Push] Notification API not available');
-      return true;
-    }
-    if (Notification.permission === 'granted') {
-      await registerWebPushSubscription();
-      return true;
+      console.warn('[TapTalk Push] Notification API not available in this browser');
+      setPushError(language === 'ko'
+        ? '이 브라우저에서는 알림을 지원하지 않습니다.'
+        : 'Notifications not supported in this browser.');
+      setPushStatus('error');
+      return false;
     }
 
-    const permission = await Notification.requestPermission();
-    setNotifPermission(permission);
-    console.log('[TapTalk Push] Permission result:', permission);
+    const currentPermission = Notification.permission;
+    console.log('[TapTalk Push] Current permission:', currentPermission);
 
-    if (permission === 'granted') {
-      await registerWebPushSubscription();
+    // Already denied - browser won't re-prompt, user must change in settings
+    if (currentPermission === 'denied') {
+      console.warn('[TapTalk Push] Permission previously denied by user');
+      setNotifPermission('denied');
+      return false;
     }
-    return permission === 'granted';
+
+    // Already granted - go straight to push registration
+    if (currentPermission === 'granted') {
+      console.log('[TapTalk Push] Permission already granted, registering push...');
+      const ok = await registerWebPushSubscription();
+      return ok;
+    }
+
+    // Permission is 'default' - show browser prompt
+    console.log('[TapTalk Push] Requesting permission from browser...');
+    try {
+      const permission = await Notification.requestPermission();
+      setNotifPermission(permission);
+      console.log('[TapTalk Push] Permission result:', permission);
+
+      if (permission === 'granted') {
+        const ok = await registerWebPushSubscription();
+        return ok;
+      }
+      return false;
+    } catch (err) {
+      console.error('[TapTalk Push] Permission request error:', err);
+      setPushError(language === 'ko'
+        ? '알림 권한 요청 중 오류가 발생했습니다.'
+        : 'Error requesting notification permission.');
+      setPushStatus('error');
+      return false;
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [language]);
 
   // Register web push subscription after permission is granted
   const registerWebPushSubscription = async (): Promise<boolean> => {
@@ -231,8 +263,10 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
           onClick={async () => {
             if (!enabled) {
               // Turning ON - request notification permission (user gesture required)
-              const granted = await requestNotificationPermission();
-              if (!granted) return; // Don't enable if permission denied
+              console.log('[TapTalk Push] Toggle ON clicked, requesting permission...');
+              const ok = await requestNotificationPermission();
+              console.log('[TapTalk Push] Permission + registration result:', ok);
+              if (!ok) return; // Don't enable if permission denied or registration failed
             }
             setEnabled(!enabled);
             setSaved(false);
