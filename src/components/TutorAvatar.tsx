@@ -268,58 +268,15 @@ export function TutorAvatarLarge({
           `}
         >
           {!imageError ? (
-            <>
-              {/* Upper face - static portion above mouth line (per-tutor splitY) */}
-              <div
-                className="absolute inset-0"
-                style={mouthOpen > 0.05 ? { clipPath: `inset(0 0 ${100 - tutor.splitY}% 0)` } : undefined}
-              >
-                <Image
-                  src={tutor.imagePath}
-                  alt={tutor.name}
-                  fill
-                  className="object-cover contrast-[1.02]"
-                  style={{ filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.3))' }}
-                  onError={() => setImageError(true)}
-                  priority
-                />
-              </div>
-
-              {/* Jaw + mouth animation when lip-syncing */}
-              {mouthOpen > 0.05 && (
-                <>
-                  {/* Dark mouth interior - positioned at lip line */}
-                  <div
-                    className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
-                    style={{
-                      top: `${tutor.splitY}%`,
-                      width: `${18 + mouthOpen * 6}%`,
-                      height: `${mouthOpen * 5}%`,
-                      background: 'radial-gradient(ellipse, rgba(15,5,5,0.85) 30%, rgba(40,15,15,0.6))',
-                      borderRadius: '35% 35% 45% 45%',
-                      transition: 'width 0.1s ease-out, height 0.1s ease-out',
-                    }}
-                  />
-                  {/* Lower jaw - displaced down from 1% below split */}
-                  <div
-                    className="absolute inset-0 pointer-events-none"
-                    style={{
-                      clipPath: `inset(${tutor.splitY + 1}% 0 0 0)`,
-                      transform: `translateY(${mouthOpen * 4.5}%)`,
-                      transition: 'transform 0.1s ease-out',
-                    }}
-                  >
-                    <Image
-                      src={tutor.imagePath}
-                      alt=""
-                      fill
-                      className="object-cover contrast-[1.02]"
-                      style={{ filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.3))' }}
-                    />
-                  </div>
-                </>
-              )}
-            </>
+            <Image
+              src={tutor.imagePath}
+              alt={tutor.name}
+              fill
+              className="object-cover contrast-[1.02]"
+              style={{ filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.3))' }}
+              onError={() => setImageError(true)}
+              priority
+            />
           ) : (
             <div className={`w-full h-full ${tutor.fallbackColor} flex items-center justify-center`}>
               <span className="text-6xl font-bold text-white drop-shadow-lg">

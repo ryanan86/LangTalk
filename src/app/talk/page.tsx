@@ -174,14 +174,11 @@ function TalkContent() {
   // Check if session is actively in progress (not ready or summary)
   const isSessionActive = phase !== 'ready' && phase !== 'summary';
 
-  // Lip-sync: start/stop analysis when audio plays/stops
-  useEffect(() => {
-    if (isPlaying) {
-      startAnalysis();
-    } else {
-      stopAnalysis();
-    }
-  }, [isPlaying, startAnalysis, stopAnalysis]);
+  // Lip-sync disabled - was causing face image split glitch on mobile
+  // useEffect(() => {
+  //   if (isPlaying) startAnalysis();
+  //   else stopAnalysis();
+  // }, [isPlaying, startAnalysis, stopAnalysis]);
 
   // Handle back button click - show confirmation if session is active
   const handleBackClick = useCallback(() => {
@@ -451,8 +448,8 @@ function TalkContent() {
 
   const startRecording = async () => {
     initialRecordingStoppedRef.current = false;
-    // Connect lip-sync to audio element on first user gesture
-    if (audioRef.current) connectAudio(audioRef.current);
+    // Lip-sync disabled
+    // if (audioRef.current) connectAudio(audioRef.current);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
@@ -1369,7 +1366,7 @@ function TalkContent() {
               <TutorAvatarLarge
                 tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
                 speaking={isPlaying}
-                mouthOpen={mouthShape.open}
+                mouthOpen={0}
                 status={
                   isPlaying ? 'speaking' :
                   isProcessing ? 'thinking' :
