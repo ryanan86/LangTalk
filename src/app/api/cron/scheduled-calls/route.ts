@@ -90,10 +90,11 @@ export async function GET(request: NextRequest) {
     const rows = response.data.values || [];
     const now = new Date();
 
-    // Get current time in KST (UTC+9)
-    const kstHour = (now.getUTCHours() + 9) % 24;
-    const kstMinute = now.getUTCMinutes();
-    const kstDay = new Date(now.getTime() + 9 * 60 * 60 * 1000).getDay(); // 0=Sun
+    // Get current time in KST (UTC+9) using single adjusted Date
+    const kstTime = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+    const kstHour = kstTime.getUTCHours();
+    const kstMinute = kstTime.getUTCMinutes();
+    const kstDay = kstTime.getUTCDay(); // 0=Sun
 
     // Round to nearest 30-min slot: "09:00" or "09:30"
     const roundedMinute = kstMinute < 15 ? '00' : kstMinute < 45 ? '30' : '00';
@@ -166,8 +167,6 @@ export async function GET(request: NextRequest) {
           const ok = await sendWebPush(webPushSub, title, body, pushData);
           if (ok) sentWeb++;
         }
-
-        if (!fcmToken && !webPushSub) skipped++;
       } catch {
         skipped++;
         continue;

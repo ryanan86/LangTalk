@@ -55,15 +55,60 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
       : 'default'
   );
 
-  // Request notification permission (must be called from user gesture)
+  // Request notification permission and register web push subscription
   const requestNotificationPermission = useCallback(async () => {
     if (typeof window === 'undefined' || !('Notification' in window)) return true;
-    if (Notification.permission === 'granted') return true;
+    if (Notification.permission === 'granted') {
+      // Already granted, ensure subscription is registered
+      registerWebPushSubscription();
+      return true;
+    }
 
     const permission = await Notification.requestPermission();
     setNotifPermission(permission);
+
+    if (permission === 'granted') {
+      // Permission just granted - register subscription now
+      registerWebPushSubscription();
+    }
     return permission === 'granted';
   }, []);
+
+  // Register web push subscription after permission is granted
+  const registerWebPushSubscription = async () => {
+    try {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidKey) return;
+
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.ready;
+
+      let subscription = await registration.pushManager.getSubscription();
+      if (!subscription) {
+        const padding = '='.repeat((4 - (vapidKey.length % 4)) % 4);
+        const base64 = (vapidKey + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const keyArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) keyArray[i] = rawData.charCodeAt(i);
+
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: keyArray.buffer as ArrayBuffer,
+        });
+      }
+
+      await fetch('/api/push/register-web', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription }),
+      });
+      console.log('[TapTalk] Web Push subscription registered from settings');
+    } catch (err) {
+      console.error('[TapTalk] Web Push registration error:', err);
+    }
+  };
 
   const toggleDay = (day: number) => {
     setDays(prev =>
