@@ -38,9 +38,10 @@ export interface ProfileData {
   // Scheduled call settings
   schedule?: {
     enabled: boolean;
-    times: string[];   // ["09:00", "19:00"] in KST
+    times: string[];   // ["09:00", "19:00"] in user's local timezone
     days: number[];    // [1,2,3,4,5] (0=Sun, 6=Sat)
     preferredTutor?: string; // "emma" | "random"
+    timezone?: string; // IANA timezone e.g. "Asia/Seoul", "Asia/Jakarta"
   };
 }
 

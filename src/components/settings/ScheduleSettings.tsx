@@ -7,6 +7,7 @@ interface ScheduleData {
   times: string[];
   days: number[];
   preferredTutor: string;
+  timezone?: string;
 }
 
 interface ScheduleSettingsProps {
@@ -143,7 +144,9 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await onSave({ enabled, times, days, preferredTutor });
+      // Auto-detect user's timezone
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      await onSave({ enabled, times, days, preferredTutor, timezone });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } finally {

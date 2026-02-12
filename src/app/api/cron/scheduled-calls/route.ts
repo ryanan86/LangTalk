@@ -51,6 +51,46 @@ async function sendWebPush(
 }
 
 /**
+ * Helper: get current hour, minute, day in a given IANA timezone.
+ * Falls back to Asia/Seoul if timezone is missing or invalid.
+ */
+function getUserLocalTime(now: Date, timezone?: string) {
+  const tz = timezone || 'Asia/Seoul';
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      hour: 'numeric',
+      minute: 'numeric',
+      weekday: 'short',
+      hour12: false,
+    });
+    const parts = formatter.formatToParts(now);
+    const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0');
+    const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0');
+    const dayMap: Record<string, number> = {
+      Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+    };
+    const dayStr = parts.find(p => p.type === 'weekday')?.value || 'Mon';
+    const day = dayMap[dayStr] ?? 1;
+    return { hour, minute, day };
+  } catch {
+    // Invalid timezone fallback to KST
+    const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+    return {
+      hour: kst.getUTCHours(),
+      minute: kst.getUTCMinutes(),
+      day: kst.getUTCDay(),
+    };
+  }
+}
+
+function getTimeSlot(hour: number, minute: number) {
+  const roundedMinute = minute < 15 ? '00' : minute < 45 ? '30' : '00';
+  const roundedHour = minute >= 45 ? (hour + 1) % 24 : hour;
+  return `${String(roundedHour).padStart(2, '0')}:${roundedMinute}`;
+}
+
+/**
  * GET /api/cron/scheduled-calls
  * Vercel Cron triggers this every 30 minutes.
  * Finds users whose scheduled time matches now and sends push (FCM + Web Push).
@@ -90,17 +130,6 @@ export async function GET(request: NextRequest) {
     const rows = response.data.values || [];
     const now = new Date();
 
-    // Get current time in KST (UTC+9) using single adjusted Date
-    const kstTime = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-    const kstHour = kstTime.getUTCHours();
-    const kstMinute = kstTime.getUTCMinutes();
-    const kstDay = kstTime.getUTCDay(); // 0=Sun
-
-    // Round to nearest 30-min slot: "09:00" or "09:30"
-    const roundedMinute = kstMinute < 15 ? '00' : kstMinute < 45 ? '30' : '00';
-    const roundedHour = kstMinute >= 45 ? (kstHour + 1) % 24 : kstHour;
-    const currentSlot = `${String(roundedHour).padStart(2, '0')}:${roundedMinute}`;
-
     let sentFcm = 0;
     let sentWeb = 0;
     let skipped = 0;
@@ -126,8 +155,12 @@ export async function GET(request: NextRequest) {
           continue;
         }
 
+        // Get current time in user's timezone
+        const userTime = getUserLocalTime(schedule.timezone);
+        const currentSlot = getTimeSlot(userTime.hour, userTime.minute);
+
         // Check if current day is in schedule
-        if (!schedule.days?.includes(kstDay)) {
+        if (!schedule.days?.includes(userTime.day)) {
           skipped++;
           continue;
         }
@@ -135,9 +168,7 @@ export async function GET(request: NextRequest) {
         // Check if current time slot matches any scheduled time
         const matchesTime = schedule.times?.some((time: string) => {
           const [h, m] = time.split(':').map(Number);
-          const scheduledSlotMinute = m < 15 ? '00' : m < 45 ? '30' : '00';
-          const scheduledSlotHour = m >= 45 ? (h + 1) % 24 : h;
-          const scheduledSlot = `${String(scheduledSlotHour).padStart(2, '0')}:${scheduledSlotMinute}`;
+          const scheduledSlot = getTimeSlot(h, m);
           return scheduledSlot === currentSlot;
         });
 
@@ -175,8 +206,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      currentSlot,
-      kstDay,
+      utcTime: now.toISOString(),
       sentFcm,
       sentWeb,
       skipped,
