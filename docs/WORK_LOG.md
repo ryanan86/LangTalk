@@ -67,6 +67,92 @@ Landing page major overhaul, global expansion, tutor system rename, conversation
 
 ---
 
+## 2026-02-12 (Wed)
+
+### Summary
+Scheduled call notification system (Firebase + Web Push + GitHub Actions cron), DeepSeek V3 analysis engine, lip-sync implementation and rollback, session/dashboard fixes.
+
+### Commits (25 total)
+| Hash | Type | Description |
+|------|------|-------------|
+| `c4400aa` | fix | Remove unused filler audio code to fix Vercel build |
+| `9a60d2c` | feat | Contextual first-sentence reactions in tutor prompt |
+| `5cff679` | feat | Real-time lip-sync for tutor avatars using Web Audio API |
+| `673e16b` | refactor | Optimize lip-sync parameters with team-reviewed values |
+| `6cd7036` | fix | Per-tutor lip-sync split positions based on actual mouth locations |
+| `d264aff` | fix | Session count not persisting + dashboard showing fake data |
+| `8a8be7b` | feat | AI tutor scheduled call notifications (Phase 1-4) |
+| `37f5252` | feat | Web Push support for browser users |
+| `7b505ae` | feat | Push notification test API for admin |
+| `c9d7274` | fix | Request notification permission on user gesture (toggle tap) |
+| `6aa9b04` | feat | Profile image now links to profile/settings page |
+| `ff017e6` | fix | Profile image Link + KST day calc fix + web push from settings |
+| `1ac17b3` | feat | Per-user timezone support for scheduled call notifications |
+| `89e94db` | fix | Pass now parameter to getUserLocalTime in cron scheduler |
+| `2de3ccf` | fix | Profile image not clickable on mobile Chrome |
+| `7d893c0` | chore | Trigger Vercel deployment after Git reconnect |
+| `deee4b1` | chore | Verify Vercel-GitHub integration after reinstall |
+| `c4d9663` | fix | Change cron to daily for Vercel Hobby plan |
+| `ba3ac26` | fix | Downgrade push-notifications to v6 for Capacitor 6 compat |
+| `c24fd38` | feat | Use GitHub Actions for 30-min cron instead of Vercel |
+| `92997a2` | feat | DeepSeek V3 analysis engine + profile integration + scoring differentiation |
+| `69fe236` | fix | Web push notification registration with error feedback and test button |
+| `f24453f` | fix | Notification permission prompt not showing + toggle guard |
+| `bc06ac5` | fix | Tutor name text ordering + mobile safe area for start button |
+| `222caeb` | fix | Disable lip sync animation causing face split glitch + reply stuck |
+| `b273f01` | fix | Remove unused lip sync imports to fix build lint errors |
+
+### Files Changed
+- `src/app/talk/page.tsx` - Filler audio removal, lip-sync integration/rollback, tutor name ordering, safe area
+- `src/app/api/chat/route.ts` - Contextual first-sentence reactions, DeepSeek V3 analysis engine (+107 lines)
+- `src/components/TutorAvatar.tsx` - Lip-sync animation added then disabled (face split glitch)
+- `src/hooks/useLipSync.ts` - **New** Web Audio API lip-sync hook (implemented then disabled)
+- `src/app/api/cron/scheduled-calls/route.ts` - **New** Cron scheduled call logic with timezone support
+- `src/app/api/push/register/route.ts` - **New** Push notification device registration
+- `src/app/api/push/register-web/route.ts` - **New** Web Push subscription registration
+- `src/app/api/push/test/route.ts` - **New** Admin push notification test endpoint
+- `src/app/incoming-call/page.tsx` - **New** Incoming call UI page
+- `src/components/settings/ScheduleSettings.tsx` - **New** Schedule settings UI with notification permission handling
+- `src/hooks/usePushNotifications.ts` - **New** Push notification hook (native + web)
+- `src/lib/firebaseAdmin.ts` - **New** Firebase Admin SDK initialization
+- `src/lib/sheetTypes.ts` - Push token + timezone fields added
+- `src/lib/sheetHelper.ts` - Session count persistence fix
+- `src/app/api/lesson-history/route.ts` - Session count query fix
+- `src/components/home/DashboardStats.tsx` - Fake data removed, real session data displayed
+- `src/app/page.tsx` - Profile image link to settings, session count fix
+- `src/app/profile/page.tsx` - Schedule settings integration
+- `src/lib/i18n.tsx` - Tutor name text ordering fix
+- `public/sw.js` - **New** Service worker for Web Push
+- `public/manifest.json` - App icon paths updated
+- `public/app-icon-192.png`, `public/app-icon-512.png` - **New** App icons for PWA
+- `.github/workflows/scheduled-calls.yml` - **New** GitHub Actions 30-min cron
+- `vercel.json` - Cron config added then replaced by GitHub Actions
+- `capacitor.config.ts` - Push notification plugin config
+- `package.json` - web-push, firebase-admin, @capacitor/push-notifications added
+
+### Key Decisions
+- Scheduled Notifications: Firebase Cloud Messaging (native) + Web Push API (browser) dual-stack
+- Cron: Vercel Hobby plan doesn't support frequent cron -> GitHub Actions 30-min interval
+- Lip-sync: Web Audio API frequency analysis approach, but rolled back due to face split glitch
+- DeepSeek V3: Separate analysis engine for scoring differentiation from GPT-4o-mini conversation
+- Push permissions: Request only on user gesture (toggle tap) to comply with browser policies
+- Capacitor: push-notifications downgraded to v6 for Capacitor 6 compatibility
+- Profile: Image now acts as navigation link to profile/settings page
+
+### Known Issues Resolved
+- Vercel build failure (unused filler audio imports)
+- Session count not persisting across sessions
+- Dashboard displaying fake/placeholder data instead of real stats
+- Notification permission prompt not appearing (browser policy - needs user gesture)
+- KST day calculation error in cron scheduler
+- Profile image not clickable on mobile Chrome (button -> Link)
+- Tutor name text ordering incorrect
+- Mobile start button overlapping with system UI (safe area)
+- Lip-sync face split glitch (resolved by disabling the feature)
+- Build lint errors from unused lip-sync imports
+
+---
+
 ## Template
 
 ```

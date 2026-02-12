@@ -260,7 +260,7 @@ export function TutorAvatarLarge({
 
         <div
           className={`
-            relative w-80 h-80 sm:w-96 sm:h-96 md:w-[28rem] md:h-[28rem] rounded-full overflow-hidden
+            relative w-56 h-56 sm:w-64 sm:h-64 md:w-72 md:h-72 rounded-full overflow-hidden
             ring-[6px] sm:ring-8 ${statusColors[status]}
             shadow-2xl
             transition-all duration-500

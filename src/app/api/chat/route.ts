@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
@@ -11,12 +12,9 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// DeepSeek V3 client (OpenAI-compatible API)
-const deepseek = process.env.DEEPSEEK_API_KEY
-  ? new OpenAI({
-      apiKey: process.env.DEEPSEEK_API_KEY,
-      baseURL: 'https://api.deepseek.com',
-    })
+// Gemini 2.0 Flash (primary: faster + better corrections + lower cost)
+const gemini = process.env.GEMINI_API_KEY
+  ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
   : null;
 
 interface Message {
@@ -456,7 +454,7 @@ Be specific, helpful, and maintain your teaching persona.`;
       }
     }
 
-    // Format messages for OpenAI
+    // Format messages for OpenAI (fallback)
     const openaiMessages = [
       { role: 'system' as const, content: systemPrompt },
       ...messages.map((msg: Message) => ({
@@ -465,11 +463,62 @@ Be specific, helpful, and maintain your teaching persona.`;
       })),
     ];
 
+    // Format messages for Gemini
+    const geminiContents = messages.map((msg: Message) => ({
+      role: msg.role === 'assistant' ? 'model' as const : 'user' as const,
+      parts: [{ text: msg.content }],
+    }));
+
     // Optimize max_tokens based on mode
     const maxTokens = mode === 'interview' ? 150 : mode === 'analysis' ? 2048 : 500;
+    const isAnalysis = mode === 'analysis';
 
     // Use streaming for interview mode when requested
     if (useStreaming && mode === 'interview') {
+      const encoder = new TextEncoder();
+
+      if (gemini) {
+        // Gemini 2.0 Flash streaming (primary)
+        try {
+          const model = gemini.getGenerativeModel({
+            model: 'gemini-2.0-flash',
+            systemInstruction: { role: 'user', parts: [{ text: systemPrompt }] },
+            generationConfig: { temperature: 0.8, maxOutputTokens: maxTokens },
+          });
+
+          const result = await model.generateContentStream({ contents: geminiContents });
+
+          const readableStream = new ReadableStream({
+            async start(controller) {
+              try {
+                for await (const chunk of result.stream) {
+                  const text = chunk.text();
+                  if (text) {
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
+                  }
+                }
+                controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                controller.close();
+              } catch (error) {
+                console.error('Gemini streaming error, client will retry:', error);
+                controller.error(error);
+              }
+            },
+          });
+
+          return new Response(readableStream, {
+            headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+            },
+          });
+        } catch (geminiError) {
+          console.error('Gemini streaming failed, falling back to OpenAI:', geminiError);
+        }
+      }
+
+      // OpenAI fallback for streaming
       const stream = await openai.chat.completions.create({
         model: 'gpt-4o-mini',
         max_tokens: maxTokens,
@@ -480,8 +529,6 @@ Be specific, helpful, and maintain your teaching persona.`;
         stream: true,
       });
 
-      // Create a readable stream for SSE
-      const encoder = new TextEncoder();
       const readableStream = new ReadableStream({
         async start(controller) {
           try {
@@ -508,40 +555,37 @@ Be specific, helpful, and maintain your teaching persona.`;
       });
     }
 
-    // Non-streaming mode (default)
-    // Use DeepSeek V3 for analysis mode (better quality at lower cost), fallback to GPT-4o-mini
+    // Non-streaming mode
     let assistantMessage = '';
-    const isAnalysis = mode === 'analysis';
 
-    if (isAnalysis && deepseek) {
+    if (gemini) {
+      // Gemini 2.0 Flash (primary: faster + better quality + lower cost)
       try {
-        const dsResponse = await deepseek.chat.completions.create({
-          model: 'deepseek-chat',
-          max_tokens: maxTokens,
-          temperature: 0.3, // Lower temperature for more consistent analysis
-          messages: openaiMessages,
-          response_format: { type: 'json_object' as const },
+        const model = gemini.getGenerativeModel({
+          model: 'gemini-2.0-flash',
+          systemInstruction: { role: 'user', parts: [{ text: systemPrompt }] },
+          generationConfig: {
+            temperature: isAnalysis ? 0.5 : 0.8,
+            maxOutputTokens: maxTokens,
+            ...(isAnalysis ? { responseMimeType: 'application/json' } : {}),
+          },
         });
-        assistantMessage = dsResponse.choices[0]?.message?.content || '';
-      } catch (deepseekError) {
-        console.error('DeepSeek analysis failed, falling back to GPT-4o-mini:', deepseekError);
-        // Fallback to GPT-4o-mini
-        const fallbackResponse = await openai.chat.completions.create({
-          model: 'gpt-4o-mini',
-          max_tokens: maxTokens,
-          temperature: 0.5,
-          messages: openaiMessages,
-          response_format: { type: 'json_object' as const },
-        });
-        assistantMessage = fallbackResponse.choices[0]?.message?.content || '';
+
+        const result = await model.generateContent({ contents: geminiContents });
+        assistantMessage = result.response.text();
+      } catch (geminiError) {
+        console.error('Gemini non-streaming failed, falling back to OpenAI:', geminiError);
+        assistantMessage = '';
       }
-    } else {
+    }
+
+    // OpenAI fallback (if Gemini unavailable or failed)
+    if (!assistantMessage) {
       const response = await openai.chat.completions.create({
         model: 'gpt-4o-mini',
         max_tokens: maxTokens,
-        temperature: 0.8,
-        presence_penalty: 0.6,
-        frequency_penalty: 0.3,
+        temperature: isAnalysis ? 0.5 : 0.8,
+        ...(isAnalysis ? {} : { presence_penalty: 0.6, frequency_penalty: 0.3 }),
         messages: openaiMessages,
         ...(isAnalysis ? { response_format: { type: 'json_object' as const } } : {}),
       });
@@ -613,6 +657,15 @@ Be specific, helpful, and maintain your teaching persona.`;
         }
         if (!data.overallLevel || typeof data.overallLevel !== 'string') {
           data.overallLevel = 'intermediate';
+        }
+
+        // Safety net: filter out corrections where original === corrected
+        if (Array.isArray(data.corrections)) {
+          data.corrections = (data.corrections as Array<{ original?: string; corrected?: string }>).filter(c => {
+            const orig = c.original?.trim().toLowerCase().replace(/[.,!?]/g, '');
+            const corr = c.corrected?.trim().toLowerCase().replace(/[.,!?]/g, '');
+            return orig !== corr;
+          });
         }
 
         return NextResponse.json({ analysis: data });

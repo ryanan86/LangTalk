@@ -1593,9 +1593,24 @@ function TalkContent() {
                   </div>
                 </div>
 
-                <button onClick={nextReview} className="btn-primary w-full text-sm sm:text-base py-3 sm:py-4">
-                  {currentReviewIndex < analysis.corrections.length - 1 ? t.nextCorrection : t.startShadowing}
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => playTTS(analysis.corrections[currentReviewIndex].corrected)}
+                    disabled={isPlaying}
+                    className="w-12 h-12 sm:w-14 sm:h-14 bg-green-100 dark:bg-green-500/20 rounded-xl flex items-center justify-center hover:bg-green-200 dark:hover:bg-green-500/30 transition-colors flex-shrink-0"
+                  >
+                    {isPlaying ? (
+                      <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    )}
+                  </button>
+                  <button onClick={nextReview} className="btn-primary flex-1 text-sm sm:text-base py-3 sm:py-4">
+                    {currentReviewIndex < analysis.corrections.length - 1 ? t.nextCorrection : t.startShadowing}
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center text-center">
