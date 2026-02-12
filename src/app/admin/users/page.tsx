@@ -222,7 +222,17 @@ export default function AdminUsersPage() {
     );
   }
 
-  if (!session?.user?.email || !ADMIN_EMAILS.includes(session.user.email)) {
+  if (!session?.user?.email) {
+    // Not logged in - redirect to login with callback
+    router.push('/login?callbackUrl=/admin/users');
+    return (
+      <div className="min-h-screen bg-neutral-900 flex items-center justify-center">
+        <div className="text-white">Redirecting to login...</div>
+      </div>
+    );
+  }
+
+  if (!ADMIN_EMAILS.includes(session.user.email)) {
     return (
       <div className="min-h-screen bg-neutral-900 flex items-center justify-center">
         <div className="text-center">
