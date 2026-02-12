@@ -1233,7 +1233,7 @@ function TalkContent() {
 
         {/* ========== READY PHASE ========== */}
         {phase === 'ready' && (
-          <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 pb-24 sm:pb-8 text-center">
+          <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 pb-32 sm:pb-8 text-center" style={{ paddingBottom: 'max(8rem, calc(2rem + env(safe-area-inset-bottom)))' }}>
             <div className="mb-4 sm:mb-6 animate-bounce-soft">
               <TutorAvatar
                 tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
@@ -1243,7 +1243,7 @@ function TalkContent() {
             </div>
 
             <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white mb-2">
-              {persona.name}{t.readyToStart}
+              {t.readyToStart.replace('{name}', persona.name)}
             </h2>
             <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-300 mb-6 sm:mb-8 max-w-md px-4">
               {t.readyDescription}
