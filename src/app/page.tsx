@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useLanguage, LanguageToggle } from '@/lib/i18n';
 import { Flag } from '@/components/Icons';
@@ -635,19 +634,20 @@ function HomePageContent() {
                     <span className="text-sm text-neutral-600 dark:text-neutral-600 dark:text-white/70">{session.user?.name?.split(' ')[0]}</span>
                   </div>
                   {session.user?.image && (
-                    <Link
+                    <a
                       href="/profile"
                       title={language === 'ko' ? '프로필 설정' : 'Profile Settings'}
-                      className="block"
+                      className="relative z-10 flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 -m-1 rounded-full"
                     >
-                      <Image
+                      <img
                         src={session.user.image}
                         alt=""
                         width={40}
                         height={40}
                         className="w-8 h-8 sm:w-10 sm:h-10 rounded-full ring-2 ring-neutral-200 dark:ring-white/10 hover:ring-primary-400 transition-all cursor-pointer"
+                        referrerPolicy="no-referrer"
                       />
-                    </Link>
+                    </a>
                   )}
                   <button
                     onClick={() => signOut()}
