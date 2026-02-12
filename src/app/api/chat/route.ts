@@ -5,10 +5,19 @@ import { authOptions } from '@/lib/auth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getPersona } from '@/lib/personas';
 import { getAgeGroup, calculateAdaptiveDifficulty } from '@/lib/speechMetrics';
+import { getUserData } from '@/lib/sheetHelper';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// DeepSeek V3 client (OpenAI-compatible API)
+const deepseek = process.env.DEEPSEEK_API_KEY
+  ? new OpenAI({
+      apiKey: process.env.DEEPSEEK_API_KEY,
+      baseURL: 'https://api.deepseek.com',
+    })
+  : null;
 
 interface Message {
   role: 'user' | 'assistant';
@@ -56,6 +65,28 @@ export async function POST(request: NextRequest) {
     const adaptiveDifficulty = ageGroup
       ? calculateAdaptiveDifficulty(ageGroup, previousGrade || null, previousLevelDetails || null, clientSpeechMetrics || null)
       : null;
+
+    // Fetch profile data for analysis mode (interests, customContext, difficulty preference)
+    let profileContext = '';
+    if (mode === 'analysis' && session.user.email) {
+      try {
+        const userData = await getUserData(session.user.email);
+        if (userData?.profile) {
+          const p = userData.profile;
+          const parts: string[] = [];
+          if (p.type) parts.push(`Learner type: ${p.type}`);
+          if (p.interests?.length) parts.push(`Interests: ${p.interests.join(', ')}`);
+          if (p.customContext) parts.push(`Custom context: ${p.customContext}`);
+          if (p.difficultyPreference) parts.push(`Difficulty preference: ${p.difficultyPreference}`);
+          if (p.grade) parts.push(`Korean grade: ${p.grade}`);
+          if (parts.length > 0) {
+            profileContext = `\n=== LEARNER PROFILE (from saved settings) ===\n${parts.join('\n')}\n\nUse this profile to personalize your evaluation. Reference their interests when giving examples or encouragement. Adjust correction complexity to match their type and difficulty preference.\n`;
+          }
+        }
+      } catch (e) {
+        console.error('Profile fetch for analysis failed (non-blocking):', e);
+      }
+    }
 
     const persona = getPersona(tutorId);
     if (!persona) {
@@ -353,7 +384,44 @@ RETURN THIS EXACT JSON FORMAT (no markdown, valid JSON only):
   "encouragement": "${exampleEncouragement}"
 }
 
-BE THOROUGH: Find at least 3-5 corrections. Focus on grammar errors, unnatural phrasing, and vocabulary that doesn't fit the register. Show them how a native speaker would express the same idea IN THE SAME CONVERSATIONAL CONTEXT. Do NOT turn casual chat into essay writing.`;
+BE THOROUGH: Find at least 3-5 corrections. Focus on grammar errors, unnatural phrasing, and vocabulary that doesn't fit the register. Show them how a native speaker would express the same idea IN THE SAME CONVERSATIONAL CONTEXT. Do NOT turn casual chat into essay writing.
+${profileContext}
+=== SCORING DIFFERENTIATION (CRITICAL) ===
+DO NOT cluster all scores around 60-75. Use the FULL 0-100 range with these anchors:
+
+Grammar scoring anchors:
+- 10-25: Frequent basic errors (wrong tense, missing subjects/verbs, broken structure)
+- 26-45: Basic structure OK but many errors (articles, prepositions, tense consistency)
+- 46-60: Some errors but communicates meaning, occasional complex structures
+- 61-75: Generally accurate with minor slips, attempts complex grammar
+- 76-90: Mostly accurate, natural sentence construction, rare errors
+- 91-100: Near-native accuracy, sophisticated grammar use
+
+Vocabulary scoring anchors:
+- 10-25: Very limited (repeats same 10-20 words), single-word responses
+- 26-45: Basic daily words only, no variety, frequent wrong word choice
+- 46-60: Adequate for basic topics, some variety, occasional apt choices
+- 61-75: Good range, some topic-specific words, generally appropriate
+- 76-90: Rich variety, idioms/collocations, register-appropriate choices
+- 91-100: Sophisticated, nuanced word choice, near-native range
+
+Fluency scoring anchors:
+- 10-25: 1-3 word fragments, cannot form sentences
+- 26-45: Short choppy sentences (3-5 words), many hesitations implied
+- 46-60: Can form basic sentences, some flow, limited elaboration
+- 61-75: Decent flow, can sustain topics, some natural connectors
+- 76-90: Smooth, natural pace, good topic development, varied length
+- 91-100: Native-like flow, effortless transitions, engaging rhythm
+
+Comprehension scoring anchors:
+- 10-25: Frequently misunderstands, off-topic responses
+- 26-45: Gets main idea but misses nuance, some irrelevant responses
+- 46-60: Understands direct questions, struggles with implied meaning
+- 61-75: Good understanding, appropriate responses, catches most context
+- 76-90: Excellent understanding, picks up nuance and humor
+- 91-100: Native-like comprehension, catches all subtlety
+
+IMPORTANT: Each sub-score MUST independently reflect actual performance. A student who uses good vocabulary but has poor grammar should show HIGH vocabulary and LOW grammar - not averaged-out middle scores for both.`;
     } else if (mode === 'feedback') {
       systemPrompt = `You are ${persona.name}, an English tutor providing feedback.
 
@@ -441,17 +509,44 @@ Be specific, helpful, and maintain your teaching persona.`;
     }
 
     // Non-streaming mode (default)
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      max_tokens: maxTokens,
-      temperature: 0.8,
-      presence_penalty: 0.6,
-      frequency_penalty: 0.3,
-      messages: openaiMessages,
-      ...(mode === 'analysis' ? { response_format: { type: 'json_object' as const } } : {}),
-    });
+    // Use DeepSeek V3 for analysis mode (better quality at lower cost), fallback to GPT-4o-mini
+    let assistantMessage = '';
+    const isAnalysis = mode === 'analysis';
 
-    const assistantMessage = response.choices[0]?.message?.content || '';
+    if (isAnalysis && deepseek) {
+      try {
+        const dsResponse = await deepseek.chat.completions.create({
+          model: 'deepseek-chat',
+          max_tokens: maxTokens,
+          temperature: 0.3, // Lower temperature for more consistent analysis
+          messages: openaiMessages,
+          response_format: { type: 'json_object' as const },
+        });
+        assistantMessage = dsResponse.choices[0]?.message?.content || '';
+      } catch (deepseekError) {
+        console.error('DeepSeek analysis failed, falling back to GPT-4o-mini:', deepseekError);
+        // Fallback to GPT-4o-mini
+        const fallbackResponse = await openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          max_tokens: maxTokens,
+          temperature: 0.5,
+          messages: openaiMessages,
+          response_format: { type: 'json_object' as const },
+        });
+        assistantMessage = fallbackResponse.choices[0]?.message?.content || '';
+      }
+    } else {
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        max_tokens: maxTokens,
+        temperature: 0.8,
+        presence_penalty: 0.6,
+        frequency_penalty: 0.3,
+        messages: openaiMessages,
+        ...(isAnalysis ? { response_format: { type: 'json_object' as const } } : {}),
+      });
+      assistantMessage = response.choices[0]?.message?.content || '';
+    }
 
     // Parse JSON for analysis mode
     if (mode === 'analysis') {
