@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { sendPushNotification } from '@/lib/firebaseAdmin';
+import webpush from 'web-push';
 
 const tutorNames: Record<string, string> = {
   emma: 'Emma',
@@ -13,10 +14,46 @@ const tutorNames: Record<string, string> = {
 
 const ALL_TUTORS = Object.keys(tutorNames);
 
+// Configure web-push with VAPID keys
+if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    'mailto:ryan@nuklabs.com',
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+}
+
+/**
+ * Send web push notification
+ */
+async function sendWebPush(
+  subscriptionJson: string,
+  title: string,
+  body: string,
+  data: Record<string, string>
+): Promise<boolean> {
+  try {
+    const subscription = JSON.parse(subscriptionJson);
+    await webpush.sendNotification(
+      subscription,
+      JSON.stringify({ title, body, ...data })
+    );
+    return true;
+  } catch (error: unknown) {
+    const pushError = error as { statusCode?: number };
+    console.error('Web push send error:', error);
+    // 410 Gone = subscription expired
+    if (pushError.statusCode === 410 || pushError.statusCode === 404) {
+      return false;
+    }
+    return false;
+  }
+}
+
 /**
  * GET /api/cron/scheduled-calls
  * Vercel Cron triggers this every 30 minutes.
- * Finds users whose scheduled time matches now and sends FCM push.
+ * Finds users whose scheduled time matches now and sends push (FCM + Web Push).
  */
 export async function GET(request: NextRequest) {
   // Verify cron secret to prevent unauthorized access
@@ -63,7 +100,8 @@ export async function GET(request: NextRequest) {
     const roundedHour = kstMinute >= 45 ? (kstHour + 1) % 24 : kstHour;
     const currentSlot = `${String(roundedHour).padStart(2, '0')}:${roundedMinute}`;
 
-    let sent = 0;
+    let sentFcm = 0;
+    let sentWeb = 0;
     let skipped = 0;
 
     for (let i = 1; i < rows.length; i++) {
@@ -74,8 +112,15 @@ export async function GET(request: NextRequest) {
         const profile = JSON.parse(row[2]);
         const schedule = profile.schedule;
         const fcmToken = profile.fcmToken;
+        const webPushSub = profile.webPushSubscription;
 
-        if (!schedule?.enabled || !fcmToken) {
+        if (!schedule?.enabled) {
+          skipped++;
+          continue;
+        }
+
+        // Need at least one push channel
+        if (!fcmToken && !webPushSub) {
           skipped++;
           continue;
         }
@@ -88,7 +133,6 @@ export async function GET(request: NextRequest) {
 
         // Check if current time slot matches any scheduled time
         const matchesTime = schedule.times?.some((time: string) => {
-          // Match if within the same 30-min window
           const [h, m] = time.split(':').map(Number);
           const scheduledSlotMinute = m < 15 ? '00' : m < 45 ? '30' : '00';
           const scheduledSlotHour = m >= 45 ? (h + 1) % 24 : h;
@@ -107,21 +151,23 @@ export async function GET(request: NextRequest) {
           : schedule.preferredTutor || ALL_TUTORS[Math.floor(Math.random() * ALL_TUTORS.length)];
 
         const tutorName = tutorNames[tutorId] || 'Emma';
+        const title = `${tutorName} is calling you!`;
+        const body = 'Time for your English practice session!';
+        const pushData = { type: 'scheduled_call', tutorId, tutorName };
 
-        // Send push notification
-        const success = await sendPushNotification(
-          fcmToken,
-          `${tutorName} is calling you!`,
-          "Time for your English practice session!",
-          {
-            type: 'scheduled_call',
-            tutorId,
-            tutorName,
-          }
-        );
+        // Send FCM push (native app)
+        if (fcmToken) {
+          const ok = await sendPushNotification(fcmToken, title, body, pushData);
+          if (ok) sentFcm++;
+        }
 
-        if (success) sent++;
-        else skipped++;
+        // Send Web Push (browser)
+        if (webPushSub) {
+          const ok = await sendWebPush(webPushSub, title, body, pushData);
+          if (ok) sentWeb++;
+        }
+
+        if (!fcmToken && !webPushSub) skipped++;
       } catch {
         skipped++;
         continue;
@@ -132,7 +178,8 @@ export async function GET(request: NextRequest) {
       success: true,
       currentSlot,
       kstDay,
-      sent,
+      sentFcm,
+      sentWeb,
       skipped,
     });
   } catch (error) {

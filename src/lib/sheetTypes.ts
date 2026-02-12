@@ -33,6 +33,7 @@ export interface ProfileData {
 
   // Push Notifications
   fcmToken?: string;
+  webPushSubscription?: string; // JSON-stringified PushSubscription
 
   // Scheduled call settings
   schedule?: {
