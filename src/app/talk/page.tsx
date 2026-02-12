@@ -13,7 +13,7 @@ import {
 } from '@/lib/speechMetrics';
 import html2canvas from 'html2canvas';
 import TapTalkLogo from '@/components/TapTalkLogo';
-import { useLipSync } from '@/hooks/useLipSync';
+// import { useLipSync } from '@/hooks/useLipSync';
 import AnalysisReview from '@/components/AnalysisReview';
 
 type Phase = 'ready' | 'recording' | 'interview' | 'analysis' | 'review' | 'shadowing' | 'summary';
@@ -76,8 +76,7 @@ function TalkContent() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRecordingReply, setIsRecordingReply] = useState(false);
 
-  // Lip-sync
-  const { mouthShape, connectAudio, startAnalysis, stopAnalysis } = useLipSync();
+  // Lip-sync disabled - was causing face image split glitch on mobile
 
   // Analysis & Review state
   const [analysis, setAnalysis] = useState<Analysis | null>(null);

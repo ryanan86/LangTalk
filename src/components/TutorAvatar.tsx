@@ -217,12 +217,11 @@ export function TutorAvatarLarge({
   tutorId,
   speaking = false,
   status = 'idle',
-  mouthOpen = 0,
 }: {
   tutorId: 'emma' | 'james' | 'charlotte' | 'oliver' | 'alina' | 'henry';
   speaking?: boolean;
   status?: 'idle' | 'listening' | 'thinking' | 'speaking';
-  mouthOpen?: number; // 0-1 from lip-sync analysis
+  mouthOpen?: number;
 }) {
   const tutor = tutorData[tutorId];
   const [imageError, setImageError] = useState(false);
