@@ -11,8 +11,8 @@ self.addEventListener('push', (event) => {
 
     const options = {
       body: data.body || 'Time for your English practice!',
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
+      icon: '/app-icon-192.png',
+      badge: '/app-icon-192.png',
       vibrate: [200, 100, 200, 100, 200],
       tag: 'scheduled-call',
       renotify: true,

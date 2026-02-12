@@ -50,6 +50,8 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
   const [preferredTutor, setPreferredTutor] = useState(initialSchedule?.preferredTutor ?? 'random');
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [pushStatus, setPushStatus] = useState<'idle' | 'registering' | 'success' | 'error'>('idle');
+  const [pushError, setPushError] = useState<string>('');
   const [notifPermission, setNotifPermission] = useState<string>(
     typeof window !== 'undefined' && 'Notification' in window
       ? Notification.permission
@@ -58,36 +60,60 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
 
   // Request notification permission and register web push subscription
   const requestNotificationPermission = useCallback(async () => {
-    if (typeof window === 'undefined' || !('Notification' in window)) return true;
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      console.warn('[TapTalk Push] Notification API not available');
+      return true;
+    }
     if (Notification.permission === 'granted') {
-      // Already granted, ensure subscription is registered
-      registerWebPushSubscription();
+      await registerWebPushSubscription();
       return true;
     }
 
     const permission = await Notification.requestPermission();
     setNotifPermission(permission);
+    console.log('[TapTalk Push] Permission result:', permission);
 
     if (permission === 'granted') {
-      // Permission just granted - register subscription now
-      registerWebPushSubscription();
+      await registerWebPushSubscription();
     }
     return permission === 'granted';
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Register web push subscription after permission is granted
-  const registerWebPushSubscription = async () => {
+  const registerWebPushSubscription = async (): Promise<boolean> => {
+    setPushStatus('registering');
+    setPushError('');
     try {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      if (!('serviceWorker' in navigator)) {
+        setPushError('Service Worker not supported');
+        setPushStatus('error');
+        console.error('[TapTalk Push] Service Worker not supported');
+        return false;
+      }
+      if (!('PushManager' in window)) {
+        setPushError('Push API not supported');
+        setPushStatus('error');
+        console.error('[TapTalk Push] PushManager not supported');
+        return false;
+      }
 
       const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      if (!vapidKey) return;
+      if (!vapidKey) {
+        setPushError('VAPID key not configured');
+        setPushStatus('error');
+        console.error('[TapTalk Push] NEXT_PUBLIC_VAPID_PUBLIC_KEY is empty/undefined');
+        return false;
+      }
+      console.log('[TapTalk Push] VAPID key found:', vapidKey.substring(0, 10) + '...');
 
       const registration = await navigator.serviceWorker.register('/sw.js');
+      console.log('[TapTalk Push] SW registered, scope:', registration.scope);
       await navigator.serviceWorker.ready;
 
       let subscription = await registration.pushManager.getSubscription();
       if (!subscription) {
+        console.log('[TapTalk Push] No existing subscription, creating new...');
         const padding = '='.repeat((4 - (vapidKey.length % 4)) % 4);
         const base64 = (vapidKey + padding).replace(/-/g, '+').replace(/_/g, '/');
         const rawData = window.atob(base64);
@@ -98,16 +124,49 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
           userVisibleOnly: true,
           applicationServerKey: keyArray.buffer as ArrayBuffer,
         });
+        console.log('[TapTalk Push] New subscription created');
+      } else {
+        console.log('[TapTalk Push] Using existing subscription');
       }
 
-      await fetch('/api/push/register-web', {
+      const res = await fetch('/api/push/register-web', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subscription }),
       });
-      console.log('[TapTalk] Web Push subscription registered from settings');
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        setPushError(`Server error: ${res.status}`);
+        setPushStatus('error');
+        console.error('[TapTalk Push] Server registration failed:', res.status, errData);
+        return false;
+      }
+
+      setPushStatus('success');
+      console.log('[TapTalk Push] Subscription registered successfully');
+      return true;
     } catch (err) {
-      console.error('[TapTalk] Web Push registration error:', err);
+      const msg = err instanceof Error ? err.message : String(err);
+      setPushError(msg);
+      setPushStatus('error');
+      console.error('[TapTalk Push] Registration error:', err);
+      return false;
+    }
+  };
+
+  // Send test notification to self
+  const sendTestNotification = async () => {
+    try {
+      const res = await fetch('/api/push/test', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        alert(language === 'ko' ? 'Test 알림을 전송했습니다!' : 'Test notification sent!');
+      } else {
+        alert(language === 'ko' ? `알림 전송 실패: ${data.error}` : `Notification failed: ${data.error}`);
+      }
+    } catch {
+      alert(language === 'ko' ? '테스트 실패' : 'Test failed');
     }
   };
 
@@ -197,6 +256,28 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
             {language === 'ko'
               ? '알림이 차단되어 있습니다. 브라우저 설정에서 taptalk.xyz의 알림을 허용해주세요.'
               : 'Notifications are blocked. Please enable notifications for taptalk.xyz in your browser settings.'}
+          </p>
+        </div>
+      )}
+
+      {/* Push registration status */}
+      {pushStatus === 'error' && (
+        <div className="p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl">
+          <p className="text-sm text-red-700 dark:text-red-300">
+            {language === 'ko' ? `Push 등록 실패: ${pushError}` : `Push registration failed: ${pushError}`}
+          </p>
+          <button
+            onClick={() => registerWebPushSubscription()}
+            className="mt-2 text-xs text-red-600 dark:text-red-400 underline"
+          >
+            {language === 'ko' ? '다시 시도' : 'Retry'}
+          </button>
+        </div>
+      )}
+      {pushStatus === 'success' && (
+        <div className="p-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl">
+          <p className="text-sm text-green-700 dark:text-green-300">
+            {language === 'ko' ? 'Push 알림이 활성화되었습니다.' : 'Push notifications enabled.'}
           </p>
         </div>
       )}
@@ -303,6 +384,16 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
                 ? (language === 'ko' ? '저장 완료' : 'Saved')
                 : (language === 'ko' ? '알림 설정 저장' : 'Save Schedule')}
           </button>
+
+          {/* Test notification button */}
+          {pushStatus === 'success' && (
+            <button
+              onClick={sendTestNotification}
+              className="w-full py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-sm text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+            >
+              {language === 'ko' ? '테스트 알림 보내기' : 'Send Test Notification'}
+            </button>
+          )}
         </div>
       )}
     </section>

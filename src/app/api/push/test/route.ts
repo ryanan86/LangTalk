@@ -14,17 +14,15 @@ if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   );
 }
 
-const ADMIN_EMAILS = ['ryan@nuklabs.com', 'taewoongan@gmail.com'];
-
 /**
  * POST /api/push/test
- * Admin-only: send a test push notification to yourself
+ * Send a test push notification to the logged-in user
  */
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email || !ADMIN_EMAILS.includes(session.user.email)) {
-      return NextResponse.json({ error: 'Admin only' }, { status: 403 });
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     const { tutorId = 'emma' } = await request.json().catch(() => ({}));
