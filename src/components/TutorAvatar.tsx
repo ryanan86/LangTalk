@@ -23,6 +23,7 @@ export const tutorData = {
     glowColor: 'shadow-rose-500/50',
     imagePath: '/tutors/emma.png',
     fallbackColor: 'bg-gradient-to-br from-rose-400 to-pink-500',
+    splitY: 55, // lip line at 55% from top (1280x720, adult woman)
   },
   james: {
     name: 'James',
@@ -34,6 +35,7 @@ export const tutorData = {
     glowColor: 'shadow-blue-500/50',
     imagePath: '/tutors/james.png',
     fallbackColor: 'bg-gradient-to-br from-blue-400 to-indigo-500',
+    splitY: 58, // lip line at 58% (adult man with beard)
   },
   charlotte: {
     name: 'Charlotte',
@@ -45,6 +47,7 @@ export const tutorData = {
     glowColor: 'shadow-violet-500/50',
     imagePath: '/tutors/charlotte.png',
     fallbackColor: 'bg-gradient-to-br from-violet-400 to-purple-500',
+    splitY: 58, // lip line at 58% (adult woman with glasses)
   },
   oliver: {
     name: 'Oliver',
@@ -56,6 +59,7 @@ export const tutorData = {
     glowColor: 'shadow-emerald-500/50',
     imagePath: '/tutors/oliver.png',
     fallbackColor: 'bg-gradient-to-br from-emerald-400 to-teal-500',
+    splitY: 55, // lip line at 55% (adult man with beard)
   },
   alina: {
     name: 'Alina',
@@ -67,6 +71,7 @@ export const tutorData = {
     glowColor: 'shadow-amber-500/50',
     imagePath: '/tutors/alina.png',
     fallbackColor: 'bg-gradient-to-br from-amber-400 to-orange-500',
+    splitY: 50, // lip line at 50% (child, face higher in frame)
   },
   henry: {
     name: 'Henry',
@@ -78,6 +83,7 @@ export const tutorData = {
     glowColor: 'shadow-lime-500/50',
     imagePath: '/tutors/henry.png',
     fallbackColor: 'bg-gradient-to-br from-lime-400 to-green-500',
+    splitY: 52, // lip line at 52% (child, face slightly higher)
   },
 };
 
@@ -263,10 +269,10 @@ export function TutorAvatarLarge({
         >
           {!imageError ? (
             <>
-              {/* Upper face - static portion above mouth line */}
+              {/* Upper face - static portion above mouth line (per-tutor splitY) */}
               <div
                 className="absolute inset-0"
-                style={mouthOpen > 0.05 ? { clipPath: 'inset(0 0 30% 0)' } : undefined}
+                style={mouthOpen > 0.05 ? { clipPath: `inset(0 0 ${100 - tutor.splitY}% 0)` } : undefined}
               >
                 <Image
                   src={tutor.imagePath}
@@ -282,11 +288,11 @@ export function TutorAvatarLarge({
               {/* Jaw + mouth animation when lip-syncing */}
               {mouthOpen > 0.05 && (
                 <>
-                  {/* Dark mouth interior */}
+                  {/* Dark mouth interior - positioned at lip line */}
                   <div
                     className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
                     style={{
-                      top: '68%',
+                      top: `${tutor.splitY}%`,
                       width: `${18 + mouthOpen * 6}%`,
                       height: `${mouthOpen * 5}%`,
                       background: 'radial-gradient(ellipse, rgba(15,5,5,0.85) 30%, rgba(40,15,15,0.6))',
@@ -294,11 +300,11 @@ export function TutorAvatarLarge({
                       transition: 'width 0.1s ease-out, height 0.1s ease-out',
                     }}
                   />
-                  {/* Lower jaw - displaced down */}
+                  {/* Lower jaw - displaced down from 1% below split */}
                   <div
                     className="absolute inset-0 pointer-events-none"
                     style={{
-                      clipPath: 'inset(69% 0 0 0)',
+                      clipPath: `inset(${tutor.splitY + 1}% 0 0 0)`,
                       transform: `translateY(${mouthOpen * 4.5}%)`,
                       transition: 'transform 0.1s ease-out',
                     }}
