@@ -165,14 +165,15 @@ export async function POST(request: NextRequest) {
       await addCorrections(email, correctionItems);
     }
 
-    // Update user stats
+    // Update user stats (sessionCount is handled by /api/session-count)
+    const statsUpdate: Record<string, unknown> = {
+      lastSessionAt: koreaDate,
+    };
+    if (level) statsUpdate.currentLevel = level;
+    if (levelDetails) statsUpdate.levelDetails = levelDetails;
+
     await updateUserFields(email, {
-      stats: {
-        sessionCount: undefined, // Will be incremented
-        lastSessionAt: koreaDate,
-        currentLevel: level || undefined,
-        levelDetails: levelDetails || undefined,
-      },
+      stats: statsUpdate as Partial<import('@/lib/sheetTypes').StatsData>,
     });
 
     return NextResponse.json({

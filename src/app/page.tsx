@@ -790,6 +790,7 @@ function HomePageContent() {
               {session && isSubscribed && sessionCount > 0 && (
                 <DashboardStats
                   sessionCount={sessionCount}
+                  currentStreak={currentStreak}
                   currentLevel={currentLevel}
                   language={language}
                   canAccessDebate={canAccessDebate}

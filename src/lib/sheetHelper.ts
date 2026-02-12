@@ -176,12 +176,20 @@ export async function updateUserFields(
     return saveUserData(newUser);
   }
 
-  // Merge updates
+  // Filter out undefined values to prevent overwriting existing data
+  const filterUndefined = <T extends Record<string, unknown>>(obj?: Partial<T>): Partial<T> => {
+    if (!obj) return {} as Partial<T>;
+    return Object.fromEntries(
+      Object.entries(obj).filter(([, v]) => v !== undefined)
+    ) as Partial<T>;
+  };
+
+  // Merge updates (undefined values are excluded to avoid data loss)
   const updatedUser: UserRow = {
     ...user,
-    subscription: { ...user.subscription, ...updates.subscription },
-    profile: { ...user.profile, ...updates.profile },
-    stats: { ...user.stats, ...updates.stats },
+    subscription: { ...user.subscription, ...filterUndefined(updates.subscription) },
+    profile: { ...user.profile, ...filterUndefined(updates.profile) },
+    stats: { ...user.stats, ...filterUndefined(updates.stats) },
     updatedAt: getKoreaTime(),
   };
 

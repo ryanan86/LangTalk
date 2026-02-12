@@ -35,6 +35,7 @@ function AnimatedCounter({ target, duration = 1500 }: { target: number; duration
 
 interface DashboardStatsProps {
   sessionCount: number;
+  currentStreak: number;
   currentLevel: { grade: string; name: string; nameKo: string } | null;
   language: Language;
   canAccessDebate: boolean;
@@ -42,10 +43,14 @@ interface DashboardStatsProps {
 
 export default function DashboardStats({
   sessionCount,
+  currentStreak,
   currentLevel,
   language,
   canAccessDebate,
 }: DashboardStatsProps) {
+  // Debate: every 5 sessions = 1 debate ticket
+  const sessionsTowardDebate = sessionCount % 5;
+  const debateTickets = Math.floor(sessionCount / 5);
   const cardBase = "relative overflow-hidden rounded-3xl bg-white p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] transition-all duration-300 hover:scale-[1.02] hover:shadow-lg dark:bg-neutral-900 dark:shadow-none border border-neutral-100 dark:border-white/[0.06]";
 
   return (
@@ -79,15 +84,13 @@ export default function DashboardStats({
         </div>
       </div>
 
-      {/* Debate Progress */}
+      {/* Debate Progress - 5 sessions = 1 debate ticket */}
       <div className={`${cardBase} group`}>
         <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-amber-500/10 blur-2xl dark:bg-amber-500/20" />
         <div className="relative">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-              {canAccessDebate
-                ? (language === 'ko' ? '디베이트' : 'Debate')
-                : (language === 'ko' ? '디베이트' : 'Debate')}
+              {language === 'ko' ? '디베이트' : 'Debate'}
             </span>
             <div className="rounded-full bg-amber-100 p-1.5 dark:bg-amber-500/20">
               <svg className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -96,15 +99,28 @@ export default function DashboardStats({
             </div>
           </div>
           <div className="flex items-end gap-1.5 mb-3">
-            <span className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
-              <AnimatedCounter target={Math.min(sessionCount, 5)} />
-            </span>
-            <span className="mb-1 text-sm font-medium text-neutral-400 dark:text-neutral-500">/ 5</span>
+            {canAccessDebate ? (
+              <>
+                <span className="text-3xl font-bold tracking-tight text-amber-500 dark:text-amber-400">
+                  <AnimatedCounter target={debateTickets} />
+                </span>
+                <span className="mb-1 text-sm font-medium text-neutral-400 dark:text-neutral-500">
+                  {language === 'ko' ? '회 가능' : 'available'}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
+                  <AnimatedCounter target={sessionsTowardDebate} />
+                </span>
+                <span className="mb-1 text-sm font-medium text-neutral-400 dark:text-neutral-500">/ 5</span>
+              </>
+            )}
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
             <div
               className="h-full rounded-full bg-amber-500 dark:bg-amber-400 transition-all duration-1000"
-              style={{ width: `${Math.min((sessionCount / 5) * 100, 100)}%` }}
+              style={{ width: `${(sessionsTowardDebate / 5) * 100}%` }}
             />
           </div>
         </div>
@@ -126,7 +142,7 @@ export default function DashboardStats({
           </div>
           <div className="flex items-end gap-1.5">
             <span className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
-              <AnimatedCounter target={sessionCount > 0 ? Math.min(sessionCount, 7) : 0} />
+              <AnimatedCounter target={currentStreak} />
             </span>
             <span className="mb-1 text-sm font-medium text-neutral-400 dark:text-neutral-500">
               {language === 'ko' ? '일' : 'days'}
