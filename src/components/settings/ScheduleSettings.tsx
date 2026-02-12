@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 interface ScheduleData {
   enabled: boolean;
@@ -49,6 +49,21 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
   const [preferredTutor, setPreferredTutor] = useState(initialSchedule?.preferredTutor ?? 'random');
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [notifPermission, setNotifPermission] = useState<string>(
+    typeof window !== 'undefined' && 'Notification' in window
+      ? Notification.permission
+      : 'default'
+  );
+
+  // Request notification permission (must be called from user gesture)
+  const requestNotificationPermission = useCallback(async () => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return true;
+    if (Notification.permission === 'granted') return true;
+
+    const permission = await Notification.requestPermission();
+    setNotifPermission(permission);
+    return permission === 'granted';
+  }, []);
 
   const toggleDay = (day: number) => {
     setDays(prev =>
@@ -106,7 +121,15 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
         </div>
         {/* Toggle switch */}
         <button
-          onClick={() => { setEnabled(!enabled); setSaved(false); }}
+          onClick={async () => {
+            if (!enabled) {
+              // Turning ON - request notification permission (user gesture required)
+              const granted = await requestNotificationPermission();
+              if (!granted) return; // Don't enable if permission denied
+            }
+            setEnabled(!enabled);
+            setSaved(false);
+          }}
           className={`relative w-12 h-7 rounded-full transition-colors ${
             enabled ? 'bg-primary-500' : 'bg-neutral-300 dark:bg-neutral-600'
           }`}
@@ -118,6 +141,17 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
           />
         </button>
       </div>
+
+      {/* Permission denied warning */}
+      {notifPermission === 'denied' && (
+        <div className="p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl">
+          <p className="text-sm text-red-700 dark:text-red-300">
+            {language === 'ko'
+              ? '알림이 차단되어 있습니다. 브라우저 설정에서 taptalk.xyz의 알림을 허용해주세요.'
+              : 'Notifications are blocked. Please enable notifications for taptalk.xyz in your browser settings.'}
+          </p>
+        </div>
+      )}
 
       {enabled && (
         <div className="space-y-5 pl-1">

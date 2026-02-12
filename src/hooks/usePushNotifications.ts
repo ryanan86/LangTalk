@@ -135,10 +135,9 @@ async function initWebPush(registered: React.MutableRefObject<boolean>) {
     let subscription = await registration.pushManager.getSubscription();
 
     if (!subscription) {
-      // Request permission
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        console.log('[TapTalk Push] Web notification permission denied');
+      // Only subscribe if permission is already granted (requested from ScheduleSettings UI)
+      if (Notification.permission !== 'granted') {
+        console.log('[TapTalk Push] Web notification not yet granted, skipping auto-subscribe');
         return;
       }
 
