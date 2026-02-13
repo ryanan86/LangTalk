@@ -58,11 +58,22 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
       : 'default'
   );
 
-  // Request notification permission and register web push subscription
+  // Detect Capacitor native environment
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const isNative = typeof window !== 'undefined' && !!(window as any).Capacitor?.isNativePlatform?.();
+
+  // Request notification permission and register push subscription
   const requestNotificationPermission = useCallback(async () => {
     console.log('[TapTalk Push] === Permission Request Start ===');
 
-    // Check if Notification API is available
+    // Native Capacitor: permission handled inside registerPushSubscription
+    if (isNative) {
+      console.log('[TapTalk Push] Native environment detected, using Capacitor push');
+      const ok = await registerPushSubscription();
+      return ok;
+    }
+
+    // Web: Check if Notification API is available
     if (typeof window === 'undefined' || !('Notification' in window)) {
       console.warn('[TapTalk Push] Notification API not available in this browser');
       setPushError(language === 'ko'
@@ -85,7 +96,7 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
     // Already granted - go straight to push registration
     if (currentPermission === 'granted') {
       console.log('[TapTalk Push] Permission already granted, registering push...');
-      const ok = await registerWebPushSubscription();
+      const ok = await registerPushSubscription();
       return ok;
     }
 
@@ -97,7 +108,7 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
       console.log('[TapTalk Push] Permission result:', permission);
 
       if (permission === 'granted') {
-        const ok = await registerWebPushSubscription();
+        const ok = await registerPushSubscription();
         return ok;
       }
       return false;
@@ -110,12 +121,100 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
       return false;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [language]);
+  }, [language, isNative]);
 
-  // Register web push subscription after permission is granted
-  const registerWebPushSubscription = async (): Promise<boolean> => {
+  // Register push subscription (native FCM or web push)
+  const registerPushSubscription = async (): Promise<boolean> => {
     setPushStatus('registering');
     setPushError('');
+
+    if (isNative) {
+      return registerNativePush();
+    }
+    return registerWebPush();
+  };
+
+  // Native (Capacitor) FCM push registration
+  const registerNativePush = async (): Promise<boolean> => {
+    try {
+      const { PushNotifications } = await import('@capacitor/push-notifications');
+
+      const permStatus = await PushNotifications.checkPermissions();
+      console.log('[TapTalk Push] Native permission status:', permStatus.receive);
+
+      if (permStatus.receive === 'prompt' || permStatus.receive === 'prompt-with-rationale') {
+        const requested = await PushNotifications.requestPermissions();
+        if (requested.receive !== 'granted') {
+          setPushError(language === 'ko' ? '알림 권한이 거부되었습니다.' : 'Notification permission denied.');
+          setPushStatus('error');
+          return false;
+        }
+      } else if (permStatus.receive !== 'granted') {
+        setPushError(language === 'ko'
+          ? '알림이 차단되어 있습니다. 설정에서 TapTalk의 알림을 허용해주세요.'
+          : 'Notifications are blocked. Please enable in device Settings.');
+        setPushStatus('error');
+        return false;
+      }
+
+      await PushNotifications.register();
+
+      // Wait for FCM token via listener
+      return new Promise<boolean>((resolve) => {
+        const timeout = setTimeout(() => {
+          setPushError(language === 'ko' ? 'FCM 토큰 수신 시간 초과' : 'FCM token timeout');
+          setPushStatus('error');
+          resolve(false);
+        }, 10000);
+
+        PushNotifications.addListener('registration', async (token) => {
+          clearTimeout(timeout);
+          console.log('[TapTalk Push] FCM token received');
+
+          try {
+            const res = await fetch('/api/push/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ fcmToken: token.value }),
+            });
+
+            if (!res.ok) {
+              setPushError(`Server error: ${res.status}`);
+              setPushStatus('error');
+              resolve(false);
+              return;
+            }
+
+            setPushStatus('success');
+            console.log('[TapTalk Push] FCM token registered');
+            resolve(true);
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            setPushError(msg);
+            setPushStatus('error');
+            resolve(false);
+          }
+        });
+
+        PushNotifications.addListener('registrationError', (error) => {
+          clearTimeout(timeout);
+          console.error('[TapTalk Push] Native registration error:', error);
+          setPushError(language === 'ko' ? 'FCM 등록 실패' : 'FCM registration failed');
+          setPushStatus('error');
+          resolve(false);
+        });
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setPushError(msg);
+      setPushStatus('error');
+      console.error('[TapTalk Push] Native push error:', err);
+      return false;
+    }
+  };
+
+  // Web Push via Service Worker
+  const registerWebPush = async (): Promise<boolean> => {
     try {
       if (!('serviceWorker' in navigator)) {
         setPushError('Service Worker not supported');
@@ -301,7 +400,7 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
             {language === 'ko' ? `Push 등록 실패: ${pushError}` : `Push registration failed: ${pushError}`}
           </p>
           <button
-            onClick={() => registerWebPushSubscription()}
+            onClick={() => registerPushSubscription()}
             className="mt-2 text-xs text-red-600 dark:text-red-400 underline"
           >
             {language === 'ko' ? '다시 시도' : 'Retry'}
