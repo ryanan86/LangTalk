@@ -58,9 +58,9 @@ start_bot() {
   echo "   세션: $SESSION_NAME"
   echo "   로그: $LOG_FILE"
 
-  # tmux 세션 생성 + 봇 실행
+  # tmux 세션 생성 + 봇 실행 (크래시 시 5초 후 자동 재시작)
   tmux new-session -d -s "$SESSION_NAME" \
-    "export PATH=\"$NODE_PATH:\$PATH\"; cd \"$SCRIPT_DIR\"; node \"$BOT_SCRIPT\" 2>&1 | tee -a \"$LOG_FILE\""
+    "export PATH=\"$NODE_PATH:\$PATH\"; cd \"$SCRIPT_DIR\"; while true; do node \"$BOT_SCRIPT\" 2>&1 | tee -a \"$LOG_FILE\"; echo \"[$(date)] Bot crashed. Restarting in 5s...\" | tee -a \"$LOG_FILE\"; sleep 5; done"
 
   sleep 1
 

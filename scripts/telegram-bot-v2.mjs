@@ -693,6 +693,49 @@ setTimeout(async () => {
 
 onCallbackQuery(async (query) => {
   const data = query.data;
+
+  // Permission 응답 처리
+  if (data.startsWith('perm:')) {
+    const parts = data.split(':');
+    const requestId = parts[1];
+    const action = parts[2]; // allow, deny, always
+
+    const PERM_RESPONSE_FILE = join(DECISIONS_DIR, 'permission-response.json');
+
+    if (action === 'allow' || action === 'always') {
+      writeFileSync(PERM_RESPONSE_FILE, JSON.stringify({
+        id: requestId,
+        decision: 'allow',
+        always: action === 'always',
+        timestamp: new Date().toISOString(),
+      }, null, 2));
+
+      await bot.answerCallbackQuery(query.id, { text: action === 'always' ? 'Always Allowed' : 'Allowed' });
+      try {
+        await bot.editMessageText(
+          `[Permission] Allowed${action === 'always' ? ' (always)' : ''}`,
+          { chat_id: query.message.chat.id, message_id: query.message.message_id }
+        );
+      } catch {}
+    } else {
+      writeFileSync(PERM_RESPONSE_FILE, JSON.stringify({
+        id: requestId,
+        decision: 'deny',
+        reason: 'User denied from Telegram',
+        timestamp: new Date().toISOString(),
+      }, null, 2));
+
+      await bot.answerCallbackQuery(query.id, { text: 'Denied' });
+      try {
+        await bot.editMessageText(
+          `[Permission] Denied`,
+          { chat_id: query.message.chat.id, message_id: query.message.message_id }
+        );
+      } catch {}
+    }
+    return;
+  }
+
   if (!data.startsWith('decision:')) return;
 
   const parts = data.split(':');
@@ -758,13 +801,14 @@ onText(/\/start/, (msg) => {
     ``,
     `━━━━━━━━━━━━━━━`,
     ``,
-    `📋 *작업 명령어*`,
-    `\`/run 작업\` — 자동 라운드 토론 + 실행`,
-    `\`/discuss 작업\` — 팀 토론 (자동 라운드)`,
-    `\`/discuss N 작업\` — N라운드 강제 지정`,
-    `\`/ralph 작업\` — 완료까지 반복 (ralph)`,
-    `\`/swarm 작업\` — 병렬 에이전트`,
-    `\`/analyze 대상\` — 프로젝트 분석`,
+    `[작업 명령어]`,
+    `\`/here 작업\` -- 현재 터미널 세션에 주입 (권장)`,
+    `\`/run 작업\` -- 별도 Claude 실행`,
+    `\`/discuss 작업\` -- 팀 토론 (자동 라운드)`,
+    `\`/discuss N 작업\` -- N라운드 강제 지정`,
+    `\`/ralph 작업\` -- 완료까지 반복 (ralph)`,
+    `\`/swarm 작업\` -- 병렬 에이전트`,
+    `\`/analyze 대상\` -- 프로젝트 분석`,
     ``,
     `💬 *소통 명령어*`,
     `\`/reply 답변\` — Claude의 질문에 응답`,
@@ -893,6 +937,31 @@ onText(/\/history/, (msg) => {
   }
 });
 
+// /here - 현재 터미널 세션에 명령 주입 (새 Claude spawn 안 함)
+onText(/\/here (.+)/, (msg, match) => {
+  const chatId = msg.chat.id;
+  const prompt = match[1].trim();
+  const COMMAND_FILE = join(DECISIONS_DIR, 'command.json');
+
+  writeFileSync(COMMAND_FILE, JSON.stringify({
+    prompt,
+    from: 'telegram',
+    timestamp: new Date().toISOString(),
+  }, null, 2));
+
+  bot.sendMessage(chatId, [
+    `[CMD] 현재 터미널 세션에 주입됨`,
+    ``,
+    `${prompt}`,
+    ``,
+    `Claude의 현재 턴이 끝나면 자동 처리됩니다.`,
+  ].join('\n')).then(() => {
+    console.log(`/here 명령 처리 완료: ${prompt.substring(0, 50)}`);
+  }).catch(err => {
+    console.error(`/here 응답 전송 실패: ${err.message}`);
+  });
+});
+
 // /stop
 onText(/\/stop/, (msg) => {
   const chatId = msg.chat.id;
@@ -1005,13 +1074,21 @@ onMessage((msg) => {
     return;
   }
 
+  // 활성 세션 없어도 현재 터미널 Claude 세션에 주입
+  const COMMAND_FILE = join(DECISIONS_DIR, 'command.json');
+  writeFileSync(COMMAND_FILE, JSON.stringify({
+    prompt: msg.text,
+    from: 'telegram',
+    timestamp: new Date().toISOString(),
+  }, null, 2));
+
   bot.sendMessage(msg.chat.id, [
-    `💡 사용 가능한 명령어:`,
-    `\`/run 작업\` — Claude Code 실행`,
-    `\`/ralph 작업\` — 반복 완료 모드`,
-    `\`/reply 답변\` — 질문 응답`,
-    `\`/stop\` — 중단`,
-  ].join('\n'), { parse_mode: 'Markdown' });
+    `[CMD] 현재 터미널 세션에 전달됨`,
+    ``,
+    `${msg.text}`,
+    ``,
+    `Claude의 현재 턴이 끝나면 자동 처리됩니다.`,
+  ].join('\n'));
 });
 
 // ─── 팀원 호출 (Gemini / GPT) ────────────────────────────
