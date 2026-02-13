@@ -13,10 +13,10 @@ interface HeroSectionProps {
   };
   mounted: boolean;
   onCtaClick?: () => void;
+  isLoggedIn?: boolean;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export default function HeroSection({ typingText, language, t, mounted, onCtaClick }: HeroSectionProps) {
+export default function HeroSection({ typingText, language, t, mounted, onCtaClick, isLoggedIn }: HeroSectionProps) {
   return (
     <section
       className={`pt-12 sm:pt-20 pb-8 sm:pb-12 transition-all duration-1000 ${
@@ -78,8 +78,8 @@ export default function HeroSection({ typingText, language, t, mounted, onCtaCli
 
             {/* CTA Button */}
             <div className="flex flex-col items-center lg:items-start gap-3">
-              <a
-                href="/login"
+              <button
+                onClick={onCtaClick}
                 className="group relative px-8 py-4 rounded-2xl text-white font-bold text-lg overflow-hidden transition-all duration-300 hover:scale-[1.02] shadow-lg shadow-purple-500/20 hover:shadow-[0_8px_40px_rgba(124,58,237,0.4)] active:scale-[0.98] inline-block text-center"
               >
                 {/* Gradient background */}
@@ -87,11 +87,17 @@ export default function HeroSection({ typingText, language, t, mounted, onCtaCli
                 {/* Shine effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
                 <span className="relative">
-                  {language === 'ko' ? '무료로 시작하기' : 'Start Free'}
+                  {isLoggedIn
+                    ? (language === 'ko' ? '튜터 선택하기' : 'Choose Tutor')
+                    : (language === 'ko' ? '무료로 시작하기' : 'Start Free')
+                  }
                 </span>
-              </a>
+              </button>
               <span className="text-xs text-[var(--text-muted)]">
-                {language === 'ko' ? '결제 정보 불필요 · 가입 후 바로 시작' : 'No credit card required · Start instantly'}
+                {isLoggedIn
+                  ? (language === 'ko' ? '아래에서 원하는 튜터를 선택하세요' : 'Select your preferred tutor below')
+                  : (language === 'ko' ? '결제 정보 불필요 · 가입 후 바로 시작' : 'No credit card required · Start instantly')
+                }
               </span>
             </div>
           </div>

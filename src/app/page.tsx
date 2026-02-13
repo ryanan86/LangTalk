@@ -793,9 +793,10 @@ function HomePageContent() {
           language={language}
           t={t}
           mounted={mounted}
+          isLoggedIn={!!session}
           onCtaClick={() => {
             if (session) {
-              router.push('/talk');
+              document.getElementById('tutor-selection')?.scrollIntoView({ behavior: 'smooth' });
             } else {
               signIn('google');
             }
