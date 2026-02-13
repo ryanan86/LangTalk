@@ -84,10 +84,22 @@ function getUserLocalTime(now: Date, timezone?: string) {
   }
 }
 
-function getTimeSlot(hour: number, minute: number) {
-  const roundedMinute = minute < 15 ? '00' : minute < 45 ? '30' : '00';
-  const roundedHour = minute >= 45 ? (hour + 1) % 24 : hour;
-  return `${String(roundedHour).padStart(2, '0')}:${roundedMinute}`;
+/**
+ * Check if current time is within ±windowMinutes of a scheduled time.
+ * Handles midnight wrap-around (e.g., 23:50 vs 00:05 = 15 min diff).
+ */
+function isWithinWindow(
+  currentHour: number,
+  currentMinute: number,
+  scheduledTime: string,
+  windowMinutes: number = 15
+): boolean {
+  const [schedH, schedM] = scheduledTime.split(':').map(Number);
+  const currentTotal = currentHour * 60 + currentMinute;
+  const scheduledTotal = schedH * 60 + schedM;
+  const diff = Math.abs(currentTotal - scheduledTotal);
+  const wrappedDiff = Math.min(diff, 1440 - diff);
+  return wrappedDiff <= windowMinutes;
 }
 
 /**
@@ -157,7 +169,6 @@ export async function GET(request: NextRequest) {
 
         // Get current time in user's timezone
         const userTime = getUserLocalTime(now, schedule.timezone);
-        const currentSlot = getTimeSlot(userTime.hour, userTime.minute);
 
         // Check if current day is in schedule
         if (!schedule.days?.includes(userTime.day)) {
@@ -165,12 +176,10 @@ export async function GET(request: NextRequest) {
           continue;
         }
 
-        // Check if current time slot matches any scheduled time
-        const matchesTime = schedule.times?.some((time: string) => {
-          const [h, m] = time.split(':').map(Number);
-          const scheduledSlot = getTimeSlot(h, m);
-          return scheduledSlot === currentSlot;
-        });
+        // Check if current time is within ±15 min of any scheduled time
+        const matchesTime = schedule.times?.some((time: string) =>
+          isWithinWindow(userTime.hour, userTime.minute, time, 15)
+        );
 
         if (!matchesTime) {
           skipped++;
