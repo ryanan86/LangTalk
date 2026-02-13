@@ -88,10 +88,10 @@ export const tutorData = {
 };
 
 const sizeMap = {
-  sm: { width: 48, height: 48, text: 'text-lg', ring: 'ring-2', glow: 'shadow-md' },
-  md: { width: 80, height: 80, text: 'text-2xl', ring: 'ring-2', glow: 'shadow-lg' },
-  lg: { width: 120, height: 120, text: 'text-4xl', ring: 'ring-3', glow: 'shadow-xl' },
-  xl: { width: 200, height: 200, text: 'text-6xl', ring: 'ring-4', glow: 'shadow-2xl' },
+  sm: { width: 40, height: 40, text: 'text-lg', ring: 'ring-2', glow: 'shadow-md' },
+  md: { width: 64, height: 64, text: 'text-2xl', ring: 'ring-[3px]', glow: 'shadow-lg' },
+  lg: { width: 120, height: 120, text: 'text-4xl', ring: 'ring-[4px]', glow: 'shadow-xl' },
+  xl: { width: 200, height: 200, text: 'text-6xl', ring: 'ring-[6px]', glow: 'shadow-2xl' },
 };
 
 export default function TutorAvatar({
@@ -139,37 +139,39 @@ export default function TutorAvatar({
         {/* Main Avatar Container */}
         <div
           className={`
-            relative w-full h-full rounded-full overflow-hidden
-            ${dimensions.ring} ${tutor.ringColor}
+            relative w-full h-full rounded-full
+            ${size === 'xl' || size === 'lg' ? 'p-[3px]' : 'p-[2px]'}
+            bg-gradient-to-br ${tutor.gradient}
             ${speaking ? `${dimensions.glow} ${tutor.glowColor}` : ''}
             transition-all duration-300
             ${isHovered ? 'scale-105' : 'scale-100'}
           `}
         >
-          {/* Image or Fallback */}
-          {!imageError ? (
-            <Image
-              src={tutor.imagePath}
-              alt={tutor.name}
-              fill
-              className="object-cover contrast-[1.02]"
-              style={{ filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.3))' }}
-              onError={() => setImageError(true)}
-              priority={size === 'xl' || size === 'lg'}
-            />
-          ) : (
-            // Stylized fallback when image is not available
-            <div className={`w-full h-full ${tutor.fallbackColor} flex items-center justify-center`}>
-              <span className={`${dimensions.text} font-bold text-white drop-shadow-lg`}>
-                {tutor.name[0]}
-              </span>
-            </div>
-          )}
+          <div className="relative w-full h-full rounded-full overflow-hidden bg-white dark:bg-neutral-900">
+            {/* Image or Fallback */}
+            {!imageError ? (
+              <Image
+                src={tutor.imagePath}
+                alt={tutor.name}
+                fill
+                className="object-cover contrast-[1.02]"
+                style={{ filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.3))' }}
+                onError={() => setImageError(true)}
+                priority={size === 'xl' || size === 'lg'}
+              />
+            ) : (
+              <div className={`w-full h-full ${tutor.fallbackColor} flex items-center justify-center`}>
+                <span className={`${dimensions.text} font-bold text-white drop-shadow-lg`}>
+                  {tutor.name[0]}
+                </span>
+              </div>
+            )}
 
-          {/* Speaking mouth animation overlay */}
-          {speaking && !imageError && (
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
-          )}
+            {/* Speaking mouth animation overlay */}
+            {speaking && !imageError && (
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+            )}
+          </div>
         </div>
 
         {/* Flag indicator */}
@@ -226,13 +228,6 @@ export function TutorAvatarLarge({
   const tutor = tutorData[tutorId];
   const [imageError, setImageError] = useState(false);
 
-  const statusColors = {
-    idle: 'ring-neutral-300 dark:ring-white/20',
-    listening: 'ring-green-400 shadow-green-500/30',
-    thinking: 'ring-amber-400 shadow-amber-500/30',
-    speaking: `${tutor.ringColor} ${tutor.glowColor}`,
-  };
-
   const statusText = {
     idle: '',
     listening: 'Listening...',
@@ -260,29 +255,33 @@ export function TutorAvatarLarge({
 
         <div
           className={`
-            relative w-56 h-56 sm:w-64 sm:h-64 md:w-72 md:h-72 rounded-full overflow-hidden
-            ring-[6px] sm:ring-8 ${statusColors[status]}
+            relative w-56 h-56 sm:w-64 sm:h-64 md:w-72 md:h-72 rounded-full
+            p-1 sm:p-1.5
+            bg-gradient-to-br ${tutor.gradient}
             shadow-2xl
             transition-all duration-500
+            ${status !== 'idle' ? `${tutor.glowColor}` : ''}
           `}
         >
-          {!imageError ? (
-            <Image
-              src={tutor.imagePath}
-              alt={tutor.name}
-              fill
-              className="object-cover contrast-[1.02]"
-              style={{ filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.3))' }}
-              onError={() => setImageError(true)}
-              priority
-            />
-          ) : (
-            <div className={`w-full h-full ${tutor.fallbackColor} flex items-center justify-center`}>
-              <span className="text-6xl font-bold text-white drop-shadow-lg">
-                {tutor.name[0]}
-              </span>
-            </div>
-          )}
+          <div className="relative w-full h-full rounded-full overflow-hidden bg-white dark:bg-neutral-900">
+            {!imageError ? (
+              <Image
+                src={tutor.imagePath}
+                alt={tutor.name}
+                fill
+                className="object-cover contrast-[1.02]"
+                style={{ filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.3))' }}
+                onError={() => setImageError(true)}
+                priority
+              />
+            ) : (
+              <div className={`w-full h-full ${tutor.fallbackColor} flex items-center justify-center`}>
+                <span className="text-6xl font-bold text-white drop-shadow-lg">
+                  {tutor.name[0]}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Flag */}

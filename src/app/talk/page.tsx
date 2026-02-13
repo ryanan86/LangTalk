@@ -1161,7 +1161,7 @@ function TalkContent() {
       <audio ref={fillerAudioRef} />
 
       {/* Header - Premium Glass Effect */}
-      <header className={`px-4 sm:px-6 pb-3 sm:pb-4 sticky top-0 z-50 pt-12 transition-colors duration-500 ${
+      <header className={`px-4 sm:px-6 pb-2 sm:pb-3 sticky top-0 z-50 pt-12 transition-colors duration-500 ${
         isDarkPhase
           ? 'bg-neutral-950/80 backdrop-blur-xl border-b border-white/5'
           : 'bg-white/80 dark:bg-dark-surface/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800'
@@ -1178,12 +1178,7 @@ function TalkContent() {
             </svg>
           </button>
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            <TutorAvatar
-              tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
-              size="md"
-              speaking={isPlaying}
-            />
+          <div className="flex items-center gap-2">
             <div>
               <h2 className={`font-semibold text-sm sm:text-base ${isDarkPhase ? 'text-white' : 'text-neutral-900'}`}>
                 {persona.name}
