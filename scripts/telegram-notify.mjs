@@ -168,6 +168,13 @@ process.stdin.on('end', async () => {
             const cleaned = stdout.replace(/^===.*===\s*\n?/, '').trim();
             if (cleaned) message += `\nA: ${cleaned}`;
           }
+        } else if (cmd.includes('git commit') || cmd.includes('git push') || cmd.includes('npm run build')) {
+          // git/build 명령 중계
+          const shortCmd = cmd.substring(0, 120);
+          const stdout = data.tool_response?.stdout || '';
+          const firstLine = stdout.split('\n')[0]?.substring(0, 100) || '';
+          message = `[Bash] ${shortCmd}`;
+          if (firstLine) message += `\n> ${firstLine}`;
         }
         // 그 외 Bash 명령은 무시
 
@@ -201,11 +208,31 @@ process.stdin.on('end', async () => {
         const query = data.tool_input?.query || '';
         message = `[Search] ${query.substring(0, 100)}`;
 
-      } else if (data.tool_name === 'Edit' || data.tool_name === 'Write') {
-        // 파일 수정/생성 알림 (경로만)
+      } else if (data.tool_name === 'Edit') {
+        // 파일 수정 알림 (경로 + 변경 요약)
         const filePath = data.tool_input?.file_path || '';
         const fileName = filePath.split('/').pop() || filePath;
-        message = `[${data.tool_name}] ${fileName}`;
+        const oldStr = (data.tool_input?.old_string || '').trim();
+        const newStr = (data.tool_input?.new_string || '').trim();
+        message = `[Edit] ${fileName}`;
+        if (oldStr || newStr) {
+          const oldPreview = oldStr.split('\n')[0].substring(0, 80);
+          const newPreview = newStr.split('\n')[0].substring(0, 80);
+          if (oldPreview && newPreview) {
+            message += `\n- ${oldPreview}\n+ ${newPreview}`;
+          } else if (newPreview) {
+            message += `\n+ ${newPreview}`;
+          }
+        }
+
+      } else if (data.tool_name === 'Write') {
+        // 파일 생성 알림 (경로 + 첫 줄)
+        const filePath = data.tool_input?.file_path || '';
+        const fileName = filePath.split('/').pop() || filePath;
+        const content = (data.tool_input?.content || '').trim();
+        const firstLine = content.split('\n')[0].substring(0, 80);
+        message = `[Write] ${fileName}`;
+        if (firstLine) message += `\n${firstLine}`;
 
       }
       // Read, Glob, Grep 등 읽기 전용 도구는 무시

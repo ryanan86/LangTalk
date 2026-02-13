@@ -761,12 +761,21 @@ function HomePageContent() {
               </div>
 
               {/* CTA */}
-              <a
-                href="/login"
-                className="block w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold text-lg shadow-lg shadow-purple-500/25 hover:shadow-xl hover:scale-[1.02] transition-all text-center"
-              >
-                {language === 'ko' ? '무료로 시작하기' : 'Start Free'}
-              </a>
+              {session ? (
+                <button
+                  onClick={() => { document.getElementById('tutor-selection')?.scrollIntoView({ behavior: 'smooth' }); }}
+                  className="block w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold text-lg shadow-lg shadow-purple-500/25 hover:shadow-xl hover:scale-[1.02] transition-all text-center"
+                >
+                  {language === 'ko' ? '튜터 선택하기' : 'Choose Tutor'}
+                </button>
+              ) : (
+                <a
+                  href="/login"
+                  className="block w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold text-lg shadow-lg shadow-purple-500/25 hover:shadow-xl hover:scale-[1.02] transition-all text-center"
+                >
+                  {language === 'ko' ? '무료로 시작하기' : 'Start Free'}
+                </a>
+              )}
 
               {/* Scroll hint */}
               <div className="mt-6 animate-bounce">
@@ -1087,7 +1096,7 @@ function HomePageContent() {
                   </div>
 
                   {/* Tutor Selection - Team Style */}
-                  <div className="mb-12">
+                  <div id="tutor-selection" className="mb-12">
                     <div className="text-center mb-10">
                       <h2 className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white mb-3">
                         {language === 'ko' ? 'AI 튜터를 선택하세요' : 'Meet Your AI Tutors'}
@@ -1501,20 +1510,34 @@ function HomePageContent() {
 
                 {/* CTA */}
                 <div className="text-center mt-16 sm:mt-20">
-                  <a
-                    href="/login"
-                    className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-semibold text-lg text-white overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    {/* Button background */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-500 transition-all" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    {/* Button shadow */}
-                    <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-500 rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity" />
-                    <span className="relative">{language === 'ko' ? '무료로 시작하기' : 'Get Started Free'}</span>
-                    <svg className="relative w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-                  </a>
+                  {session ? (
+                    <button
+                      onClick={() => { document.getElementById('tutor-selection')?.scrollIntoView({ behavior: 'smooth' }); }}
+                      className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-semibold text-lg text-white overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-500 transition-all" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-500 rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity" />
+                      <span className="relative">{language === 'ko' ? '튜터 선택하기' : 'Choose Tutor'}</span>
+                      <svg className="relative w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
+                    </button>
+                  ) : (
+                    <a
+                      href="/login"
+                      className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-semibold text-lg text-white overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-500 transition-all" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-500 rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity" />
+                      <span className="relative">{language === 'ko' ? '무료로 시작하기' : 'Get Started Free'}</span>
+                      <svg className="relative w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                    </a>
+                  )}
                   <p className="text-neutral-400 dark:text-white/25 text-xs mt-4 tracking-wide">
-                    {language === 'ko' ? '가입만 하면 바로 시작 — 결제 정보 불필요' : 'Sign up and start immediately — no payment info needed'}
+                    {session
+                      ? (language === 'ko' ? '아래에서 원하는 튜터를 선택하세요' : 'Select your preferred tutor below')
+                      : (language === 'ko' ? '가입만 하면 바로 시작 — 결제 정보 불필요' : 'Sign up and start immediately — no payment info needed')
+                    }
                   </p>
                 </div>
               </div>

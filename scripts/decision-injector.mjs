@@ -13,6 +13,28 @@
 
 import { existsSync, readFileSync, writeFileSync, unlinkSync, appendFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { homedir } from 'os';
+
+// 텔레그램 알림 전송
+async function notifyTelegram(text) {
+  try {
+    const envPath = join(homedir(), '.claude', '.env');
+    if (!existsSync(envPath)) return;
+    const envContent = readFileSync(envPath, 'utf-8');
+    let token = '', chatId = '';
+    for (const line of envContent.split('\n')) {
+      const m = line.match(/^(\w+)=["']?(.+?)["']?$/);
+      if (m?.[1] === 'TELEGRAM_BOT_TOKEN') token = m[2];
+      if (m?.[1] === 'TELEGRAM_CHAT_ID') chatId = m[2];
+    }
+    if (!token || !chatId) return;
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text, disable_notification: true }),
+    });
+  } catch {}
+}
 
 const DECISIONS_DIR = '/tmp/claude-telegram-decisions';
 const RESPONSE_FILE = join(DECISIONS_DIR, 'response.json');
@@ -66,7 +88,53 @@ async function main() {
     let data = {};
     try { data = JSON.parse(input); } catch {}
 
-    // response.json이 없으면 즉시 continue 반환 (1ms 이내)
+    const COMMAND_FILE = join(DECISIONS_DIR, 'command.json');
+
+    // 1. 텔레그램 명령 주입 확인 (command.json)
+    if (existsSync(COMMAND_FILE)) {
+      let command;
+      try {
+        command = JSON.parse(readFileSync(COMMAND_FILE, 'utf-8'));
+      } catch {
+        try { unlinkSync(COMMAND_FILE); } catch {}
+      }
+
+      if (command?.prompt) {
+        // 명령 파일 삭제 (한 번만 주입)
+        try { unlinkSync(COMMAND_FILE); } catch {}
+
+        // 히스토리 기록
+        try {
+          mkdirSync(DECISIONS_DIR, { recursive: true });
+          appendFileSync(HISTORY_FILE, JSON.stringify({
+            timestamp: new Date().toISOString(),
+            type: 'command',
+            prompt: command.prompt,
+            from: 'telegram',
+          }) + '\n');
+        } catch {}
+
+        const reason = [
+          `[TELEGRAM COMMAND]`,
+          `사용자가 텔레그램에서 다음 작업을 요청했습니다:`,
+          ``,
+          command.prompt,
+          ``,
+          `이 요청을 이 세션에서 바로 처리하세요. 처리 완료 후 반드시 텔레그램으로 결과를 보내주세요: node ${join(homedir(), 'Projects/langtalk/scripts/telegram-notify.mjs')} "처리결과"`,
+        ].join('\n');
+
+        // 텔레그램에 처리 시작 알림
+        await notifyTelegram(`[처리 시작] ${command.prompt.substring(0, 200)}`);
+
+        console.log(JSON.stringify({
+          decision: 'block',
+          reason,
+        }));
+        return;
+      }
+    }
+
+    // 2. 질문 응답 주입 확인 (response.json)
     if (!existsSync(RESPONSE_FILE)) {
       console.log(JSON.stringify({ continue: true }));
       return;
