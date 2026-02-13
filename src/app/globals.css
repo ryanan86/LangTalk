@@ -309,7 +309,7 @@ body {
 
 /* Feedback Highlight */
 .correction-original {
-  @apply line-through text-red-400;
+  @apply text-red-400 pl-2 border-l-2 border-red-400;
 }
 
 .correction-fixed {

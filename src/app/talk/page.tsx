@@ -1518,8 +1518,8 @@ function TalkContent() {
                 <div className="card-premium p-4 sm:p-6 mb-4 sm:mb-6">
                   {/* Original */}
                   <div className="mb-4 sm:mb-6">
-                    <span className="text-xs font-medium text-red-500 uppercase tracking-wider">{t.whatYouSaid}</span>
-                    <p className="text-base sm:text-lg text-neutral-800 mt-2 line-through decoration-red-300">
+                    <span className="text-xs font-medium text-red-500 dark:text-red-400 uppercase tracking-wider">{t.whatYouSaid}</span>
+                    <p className="text-base sm:text-lg text-red-700 dark:text-red-300 mt-2 pl-3 border-l-2 border-red-300 dark:border-red-500">
                       {analysis.corrections[currentReviewIndex].original}
                     </p>
                   </div>

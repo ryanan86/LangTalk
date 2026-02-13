@@ -820,7 +820,7 @@ function DebateContent() {
                     <div className="space-y-4">
                       {analysis.userPerformance.grammarCorrections.map((c, i) => (
                         <div key={i} className="p-3 bg-neutral-50 dark:bg-neutral-800 rounded-xl">
-                          <p className="text-red-600 dark:text-red-400 text-sm line-through">{c.original}</p>
+                          <p className="text-red-600 dark:text-red-400 text-sm pl-2 border-l-2 border-red-300 dark:border-red-500">{c.original}</p>
                           <p className="text-green-600 dark:text-green-400 text-sm font-medium mt-1">{c.corrected}</p>
                           <p className="text-neutral-500 dark:text-neutral-400 text-xs mt-1">{c.explanation}</p>
                         </div>
