@@ -274,7 +274,7 @@ export default function TutorIntroCarousel({ onComplete, language }: TutorIntroC
                 onClick={() => setSelectedTutor(tutor.id === selectedTutor ? null : tutor.id)}
                 className={`
                   relative rounded-2xl overflow-hidden cursor-pointer
-                  border-2 transition-all duration-300
+                  border-2 transition-colors transition-shadow duration-300
                   ${selectedTutor === tutor.id
                     ? 'border-primary-500 shadow-lg shadow-primary-500/20'
                     : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
@@ -283,7 +283,7 @@ export default function TutorIntroCarousel({ onComplete, language }: TutorIntroC
                 `}
               >
                 {/* Avatar Area with Gradient */}
-                <div className={`relative h-48 sm:h-56 bg-gradient-to-br ${tutor.bgGradient}`}>
+                <div className={`relative h-48 sm:h-56 rounded-t-2xl overflow-hidden bg-gradient-to-br ${tutor.bgGradient}`}>
                   <div className={`absolute inset-0 bg-gradient-to-br ${tutor.gradient} opacity-20`} />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-full overflow-hidden ring-4 ring-white/30 shadow-xl">
