@@ -1192,16 +1192,23 @@ function HomePageContent() {
                             }`}>
                               {/* Video / Image Area */}
                               <div className="relative h-44 sm:h-56 lg:h-72 overflow-hidden bg-white">
-                                {/* Tutor Video (first frame as still, plays on hover) */}
+                                {/* Tutor Image (always visible as base layer) */}
+                                <img
+                                  src={`/tutors/${getTutorFileName(persona.id)}.jpg`}
+                                  alt={persona.name}
+                                  className="absolute inset-0 w-full h-full object-cover"
+                                />
+                                {/* Tutor Video (plays on hover/tap, overlays image) */}
                                 <video
                                   ref={(el) => { videoRefs.current[persona.id] = el; }}
                                   src={`/tutors/${getTutorFileName(persona.id)}_greeting.mp4`}
-                                  poster={`/tutors/${getTutorFileName(persona.id)}.jpg`}
                                   muted
                                   loop
                                   playsInline
                                   preload="metadata"
-                                  className="absolute inset-0 w-full h-full object-cover"
+                                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                                    hoveredTutor === persona.id ? 'opacity-100' : 'opacity-0'
+                                  }`}
                                 />
 
                                 {/* Selection Check */}
@@ -1229,10 +1236,10 @@ function HomePageContent() {
                               </div>
 
                               {/* Info Section */}
-                              <div className="relative p-4 sm:p-5">
+                              <div className="relative p-4 sm:p-5 min-h-[100px] sm:min-h-[120px]">
                                 <h3 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white mb-1">{persona.name}</h3>
-                                <p className="text-neutral-500 dark:text-white/60 text-sm mb-1">{desc}</p>
-                                <p className="text-neutral-400 dark:text-white/40 text-xs">{style}</p>
+                                <p className="text-neutral-500 dark:text-white/60 text-sm mb-1 line-clamp-1">{desc}</p>
+                                <p className="text-neutral-400 dark:text-white/40 text-xs line-clamp-2">{style}</p>
                               </div>
                             </div>
                           </button>
