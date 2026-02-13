@@ -598,10 +598,10 @@ function HomePageContent() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,#0a0a0f_70%)] hidden dark:block" />
       </div>
 
-      {/* Header - pt-12 for Android status bar + notch clearance */}
-      <header className={`z-50 pt-12 ${
+      {/* Header - safe area for notch/status bar */}
+      <header style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }} className={`z-50 ${
         session
-          ? 'relative border-b border-neutral-200 dark:border-white/5 bg-white dark:bg-[#0a0a0f] md:bg-white/70 md:dark:bg-transparent md:backdrop-blur-md md:dark:backdrop-blur-none'
+          ? 'relative border-b border-neutral-200 dark:border-white/5 bg-white/80 backdrop-blur-md dark:bg-[#0a0a0f]/80 dark:backdrop-blur-md'
           : 'absolute top-0 left-0 right-0 bg-transparent border-b border-white/10 md:relative md:bg-white/70 md:dark:bg-transparent md:backdrop-blur-md md:dark:backdrop-blur-none md:border-neutral-200 md:dark:border-white/5'
       }`}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6">

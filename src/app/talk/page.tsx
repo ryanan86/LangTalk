@@ -1161,7 +1161,7 @@ function TalkContent() {
       <audio ref={fillerAudioRef} />
 
       {/* Header - Premium Glass Effect */}
-      <header className={`px-4 sm:px-6 pb-2 sm:pb-3 sticky top-0 z-50 pt-12 transition-colors duration-500 ${
+      <header style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }} className={`px-4 sm:px-6 pb-2 sm:pb-3 sticky top-0 z-50 transition-colors duration-500 ${
         isDarkPhase
           ? 'bg-neutral-950/80 backdrop-blur-xl border-b border-white/5'
           : 'bg-white/80 dark:bg-dark-surface/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800'
