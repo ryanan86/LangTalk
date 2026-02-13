@@ -136,12 +136,15 @@ function TalkContent() {
   const [speakingEval, setSpeakingEval] = useState<any>(null);
   const [isLoadingEval, setIsLoadingEval] = useState(false);
 
-  // Save summary as image
+  // Save summary as image (split into multiple pages)
   const saveAsImage = async () => {
     if (!summaryRef.current) return;
 
     setIsSavingImage(true);
     try {
+      // Wait for fonts to load before capturing
+      await document.fonts.ready;
+
       const isDark = document.documentElement.classList.contains('dark');
       const bgColor = isDark ? '#1a1a1a' : '#f5f5f5';
       const sections = summaryRef.current.querySelectorAll<HTMLElement>('[data-report-section]');
@@ -151,13 +154,14 @@ function TalkContent() {
       for (let i = 0; i < total; i++) {
         const canvas = await html2canvas(sections[i], {
           backgroundColor: bgColor,
-          scale: 2,
+          scale: 3,
           useCORS: true,
           logging: false,
+          allowTaint: true,
         });
         const link = document.createElement('a');
         link.download = `taptalk-report-${date}-${i + 1}of${total}.jpg`;
-        link.href = canvas.toDataURL('image/jpeg', 0.85);
+        link.href = canvas.toDataURL('image/jpeg', 0.9);
         link.click();
         if (i < total - 1) {
           await new Promise(resolve => setTimeout(resolve, 500));
@@ -1687,8 +1691,8 @@ function TalkContent() {
 
             {/* Report Content - for image capture */}
             <div ref={summaryRef} className="rounded-2xl overflow-hidden">
-              {/* Section 1: Overview + Analysis */}
-              <div data-report-section className="bg-neutral-50 dark:bg-dark-surface p-4">
+              {/* Section: Header + Tutor */}
+              <div data-report-section className="bg-neutral-50 dark:bg-[#1a1a1a] p-4">
                 <div className="flex items-center justify-between text-xs mb-4 pb-3 border-b border-neutral-200 dark:border-neutral-700">
                   <div className="flex items-center gap-2">
                     <TapTalkLogo size="sm" theme="light" iconOnly />
@@ -1702,7 +1706,7 @@ function TalkContent() {
                   <span className="text-neutral-500 dark:text-neutral-400">{new Date().toLocaleDateString()}</span>
                 </div>
 
-                <div className="text-center mb-6 sm:mb-8">
+                <div className="text-center">
                   <div className="flex justify-center mb-4">
                     <TutorAvatar
                       tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
@@ -1711,11 +1715,12 @@ function TalkContent() {
                   </div>
                   <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">{t.sessionComplete}</h2>
                 </div>
-
-                {speechMetrics && (
-                  <AnalysisReview speechMetrics={speechMetrics} language={language} />
-                )}
               </div>
+
+              {/* AnalysisReview renders its own data-report-sections */}
+              {speechMetrics && (
+                <AnalysisReview speechMetrics={speechMetrics} language={language} />
+              )}
 
             {analysis && (
               <>

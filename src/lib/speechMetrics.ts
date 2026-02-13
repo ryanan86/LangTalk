@@ -441,11 +441,47 @@ export function formatMetricsForDisplay(metrics: SpeechMetrics, language: Langua
   const sentLenPercent = Math.max(0, Math.min(100, Math.round(((metrics.avgSentenceLength - 2) / 13) * 100)));
 
   return [
-    { label: l.wordsPerMinute, value: `${metrics.wordsPerMinute} WPM`, level: getMetricLevel('wordsPerMinute', metrics.wordsPerMinute), percent: wpmPercent },
-    { label: l.avgSentenceLength, value: `${metrics.avgSentenceLength} words`, level: getMetricLevel('avgSentenceLength', metrics.avgSentenceLength), percent: sentLenPercent },
-    { label: l.vocabularyDiversity, value: `${Math.round(metrics.vocabularyDiversity * 100)}%`, level: getMetricLevel('vocabularyDiversity', metrics.vocabularyDiversity), percent: Math.round(metrics.vocabularyDiversity * 100) },
-    { label: l.complexSentenceRatio, value: `${Math.round(metrics.complexSentenceRatio * 100)}%`, level: getMetricLevel('complexSentenceRatio', metrics.complexSentenceRatio), percent: Math.round(metrics.complexSentenceRatio * 100) },
-    { label: l.grammarErrorRate, value: `${grammarAccuracy}%`, level: getMetricLevel('grammarErrorRate', metrics.grammarErrorRate), percent: grammarAccuracy },
-    { label: l.avgResponseTime, value: `${responseSpeed}%`, level: getMetricLevel('avgResponseTime', metrics.avgResponseTime), percent: responseSpeed },
+    { key: 'wordsPerMinute', label: l.wordsPerMinute, value: `${metrics.wordsPerMinute} WPM`, level: getMetricLevel('wordsPerMinute', metrics.wordsPerMinute), percent: wpmPercent },
+    { key: 'avgSentenceLength', label: l.avgSentenceLength, value: `${metrics.avgSentenceLength} words`, level: getMetricLevel('avgSentenceLength', metrics.avgSentenceLength), percent: sentLenPercent },
+    { key: 'vocabularyDiversity', label: l.vocabularyDiversity, value: `${Math.round(metrics.vocabularyDiversity * 100)}%`, level: getMetricLevel('vocabularyDiversity', metrics.vocabularyDiversity), percent: Math.round(metrics.vocabularyDiversity * 100) },
+    { key: 'complexSentenceRatio', label: l.complexSentenceRatio, value: `${Math.round(metrics.complexSentenceRatio * 100)}%`, level: getMetricLevel('complexSentenceRatio', metrics.complexSentenceRatio), percent: Math.round(metrics.complexSentenceRatio * 100) },
+    { key: 'grammarErrorRate', label: l.grammarErrorRate, value: `${grammarAccuracy}%`, level: getMetricLevel('grammarErrorRate', metrics.grammarErrorRate), percent: grammarAccuracy },
+    { key: 'avgResponseTime', label: l.avgResponseTime, value: `${responseSpeed}%`, level: getMetricLevel('avgResponseTime', metrics.avgResponseTime), percent: responseSpeed },
   ];
+}
+
+/**
+ * Get improvement tip for a specific metric
+ */
+export function getImprovementTip(metricKey: string, language: Language = 'ko'): string {
+  const tips: Record<string, Record<string, string>> = {
+    wordsPerMinute: {
+      ko: '영어 팟캐스트나 드라마 대사를 따라 말하기(섀도잉)를 연습해보세요. 매일 1분씩 소리 내어 읽기도 효과적입니다.',
+      en: 'Practice shadowing with English podcasts or shows. Daily 1-minute read-aloud exercises also help build speaking speed.',
+    },
+    avgSentenceLength: {
+      ko: 'because, when, if 같은 접속사로 문장을 연결해보세요. "I like it. It is fun." 대신 "I like it because it is fun." 처럼요.',
+      en: 'Connect sentences with conjunctions like because, when, if. Instead of "I like it. It is fun." try "I like it because it is fun."',
+    },
+    vocabularyDiversity: {
+      ko: '같은 단어를 반복하지 말고 동의어를 사용해보세요. good 대신 great, awesome, wonderful 등으로 바꿔보세요.',
+      en: 'Replace repeated words with synonyms. Instead of always saying "good," try great, awesome, wonderful, or excellent.',
+    },
+    complexSentenceRatio: {
+      ko: 'although, however, while 같은 연결어로 복잡한 문장을 만들어보세요. "I was tired. I kept studying." 대신 "Although I was tired, I kept studying."',
+      en: 'Build complex sentences with although, however, while. Instead of "I was tired. I kept studying." try "Although I was tired, I kept studying."',
+    },
+    grammarErrorRate: {
+      ko: '자주 틀리는 패턴을 메모하세요. 특히 시제(과거/현재/미래)와 관사(a/the) 사용에 주의하면 빠르게 개선됩니다.',
+      en: 'Note your common grammar mistakes. Focus on tenses (past/present/future) and articles (a/the) for quick improvement.',
+    },
+    avgResponseTime: {
+      ko: '"I think...", "Well...", "That\'s interesting..." 같은 표현을 미리 연습해두면 생각할 시간을 자연스럽게 벌 수 있어요.',
+      en: 'Pre-practice filler phrases like "I think...", "Well...", "That\'s interesting..." to buy thinking time naturally.',
+    },
+  };
+
+  const tip = tips[metricKey];
+  if (!tip) return '';
+  return tip[language] || tip['en'] || '';
 }
