@@ -14,6 +14,8 @@ self.addEventListener('push', (event) => {
       icon: '/app-icon-192.png',
       badge: '/app-icon-192.png',
       vibrate: [200, 100, 200, 100, 200],
+      sound: 'default',
+      silent: false,
       tag: 'scheduled-call',
       renotify: true,
       requireInteraction: true,

@@ -309,10 +309,19 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
         </div>
       )}
       {pushStatus === 'success' && (
-        <div className="p-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl">
-          <p className="text-sm text-green-700 dark:text-green-300">
-            {language === 'ko' ? 'Push 알림이 활성화되었습니다.' : 'Push notifications enabled.'}
-          </p>
+        <div className="space-y-2">
+          <div className="p-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl">
+            <p className="text-sm text-green-700 dark:text-green-300">
+              {language === 'ko' ? 'Push 알림이 활성화되었습니다.' : 'Push notifications enabled.'}
+            </p>
+          </div>
+          <div className="p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl">
+            <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
+              {language === 'ko'
+                ? 'iPhone/iPad: 무음 모드(사이드 스위치)에서는 알림 소리가 지원되지 않습니다. 소리 알림을 받으려면 설정 > 알림 > TapTalk에서 소리를 켜고, 무음 모드를 해제해주세요.'
+                : 'iPhone/iPad: Notification sounds are not supported in silent mode. To receive sound alerts, go to Settings > Notifications > TapTalk and enable Sound, then turn off silent mode.'}
+            </p>
+          </div>
         </div>
       )}
 
