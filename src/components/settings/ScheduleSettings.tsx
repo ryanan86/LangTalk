@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 
 interface ScheduleData {
   enabled: boolean;
@@ -14,6 +14,7 @@ interface ScheduleSettingsProps {
   language: 'ko' | 'en';
   initialSchedule?: ScheduleData;
   onSave: (schedule: ScheduleData) => Promise<void>;
+  onDirtyChange?: (isDirty: boolean) => void;
 }
 
 const TUTORS = [
@@ -43,13 +44,30 @@ for (let h = 6; h <= 23; h++) {
   if (h < 23) TIME_SLOTS.push(`${String(h).padStart(2, '0')}:30`);
 }
 
-export default function ScheduleSettings({ language, initialSchedule, onSave }: ScheduleSettingsProps) {
+export default function ScheduleSettings({ language, initialSchedule, onSave, onDirtyChange }: ScheduleSettingsProps) {
   const [enabled, setEnabled] = useState(initialSchedule?.enabled ?? false);
   const [times, setTimes] = useState<string[]>(initialSchedule?.times ?? ['09:00']);
   const [days, setDays] = useState<number[]>(initialSchedule?.days ?? [1, 2, 3, 4, 5]);
   const [preferredTutor, setPreferredTutor] = useState(initialSchedule?.preferredTutor ?? 'random');
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const isDirty = useRef(false);
+
+  // Notify parent when dirty state changes
+  const markDirty = useCallback(() => {
+    setSaved(false);
+    if (!isDirty.current) {
+      isDirty.current = true;
+      onDirtyChange?.(true);
+    }
+  }, [onDirtyChange]);
+
+  const markClean = useCallback(() => {
+    if (isDirty.current) {
+      isDirty.current = false;
+      onDirtyChange?.(false);
+    }
+  }, [onDirtyChange]);
   const [pushStatus, setPushStatus] = useState<'idle' | 'registering' | 'success' | 'error'>('idle');
   const [pushError, setPushError] = useState<string>('');
   const [notifPermission, setNotifPermission] = useState<string>(
@@ -305,7 +323,7 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
     setDays(prev =>
       prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day].sort()
     );
-    setSaved(false);
+    markDirty();
   };
 
   const addTime = () => {
@@ -313,13 +331,13 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
     // Find next available slot
     const next = TIME_SLOTS.find(t => !times.includes(t)) || '12:00';
     setTimes(prev => [...prev, next].sort());
-    setSaved(false);
+    markDirty();
   };
 
   const removeTime = (index: number) => {
     if (times.length <= 1) return;
     setTimes(prev => prev.filter((_, i) => i !== index));
-    setSaved(false);
+    markDirty();
   };
 
   const updateTime = (index: number, value: string) => {
@@ -328,7 +346,7 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
       next[index] = value;
       return next.sort();
     });
-    setSaved(false);
+    markDirty();
   };
 
   const handleSave = async () => {
@@ -338,6 +356,7 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       await onSave({ enabled, times, days, preferredTutor, timezone });
       setSaved(true);
+      markClean();
       setTimeout(() => setSaved(false), 2000);
     } finally {
       setIsSaving(false);
@@ -368,7 +387,7 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
               if (!ok) return; // Don't enable if permission denied or registration failed
             }
             setEnabled(!enabled);
-            setSaved(false);
+            markDirty();
           }}
           className={`relative w-12 h-7 rounded-full transition-colors ${
             enabled ? 'bg-primary-500' : 'bg-neutral-300 dark:bg-neutral-600'
@@ -497,7 +516,7 @@ export default function ScheduleSettings({ language, initialSchedule, onSave }: 
               {TUTORS.map(tutor => (
                 <button
                   key={tutor.id}
-                  onClick={() => { setPreferredTutor(tutor.id); setSaved(false); }}
+                  onClick={() => { setPreferredTutor(tutor.id); markDirty(); }}
                   className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                     preferredTutor === tutor.id
                       ? 'bg-primary-500 text-white'

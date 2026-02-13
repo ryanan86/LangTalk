@@ -88,6 +88,8 @@ export default function ProfilePage() {
     days: number[];
     preferredTutor: string;
   } | undefined>(undefined);
+  const [hasUnsavedSchedule, setHasUnsavedSchedule] = useState(false);
+  const [showScheduleWarning, setShowScheduleWarning] = useState(false);
 
   // Load existing profile
   useEffect(() => {
@@ -142,6 +144,18 @@ export default function ProfilePage() {
   };
 
   const handleSave = async () => {
+    // Show warning if schedule has unsaved changes
+    if (hasUnsavedSchedule) {
+      setShowScheduleWarning(true);
+      // Auto-hide after 5 seconds
+      setTimeout(() => setShowScheduleWarning(false), 5000);
+      return;
+    }
+
+    await saveProfile();
+  };
+
+  const saveProfile = async () => {
     setIsSaving(true);
     try {
       const response = await fetch('/api/user-profile', {
@@ -297,13 +311,46 @@ export default function ProfilePage() {
         </section>
 
         {/* Schedule Settings */}
-        <div className="p-4 bg-white dark:bg-dark-surface rounded-xl border border-neutral-200 dark:border-neutral-700">
+        <div data-schedule-section className="p-4 bg-white dark:bg-dark-surface rounded-xl border border-neutral-200 dark:border-neutral-700">
           <ScheduleSettings
             language={language as 'ko' | 'en'}
             initialSchedule={schedule}
             onSave={handleScheduleSave}
+            onDirtyChange={setHasUnsavedSchedule}
           />
         </div>
+
+        {/* Unsaved schedule warning */}
+        {showScheduleWarning && (
+          <div className="p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 rounded-xl">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+              {language === 'ko'
+                ? '알림 스케줄이 아직 저장되지 않았습니다. 위의 "알림 설정 저장" 버튼을 먼저 눌러주세요.'
+                : 'Schedule changes are not saved yet. Please click "Save Schedule" above first.'}
+            </p>
+            <div className="flex gap-3 mt-3">
+              <button
+                onClick={() => {
+                  setShowScheduleWarning(false);
+                  // Scroll to schedule section
+                  document.querySelector('[data-schedule-section]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }}
+                className="flex-1 py-2 rounded-lg bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 transition-colors"
+              >
+                {language === 'ko' ? '스케줄 저장하러 가기' : 'Go Save Schedule'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowScheduleWarning(false);
+                  saveProfile();
+                }}
+                className="flex-1 py-2 rounded-lg border border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              >
+                {language === 'ko' ? '프로필만 저장' : 'Save Profile Only'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Save Button */}
         <div className="pt-4 pb-8">
