@@ -1183,7 +1183,7 @@ function HomePageContent() {
                                 <video
                                   ref={(el) => { videoRefs.current[persona.id] = el; }}
                                   src={`/tutors/${getTutorFileName(persona.id)}_greeting.mp4`}
-                                  poster={`/tutors/${getTutorFileName(persona.id)}.jpg`}
+                                  poster={`/tutors/${getTutorFileName(persona.id)}.png`}
                                   muted
                                   loop
                                   playsInline
@@ -1398,7 +1398,7 @@ function HomePageContent() {
                         <video
                           ref={(el) => { videoRefs.current[`demo-${tutor.id}`] = el; }}
                           src={`/tutors/${getTutorFileName(tutor.id)}_greeting.mp4`}
-                          poster={`/tutors/${getTutorFileName(tutor.id)}.jpg`}
+                          poster={`/tutors/${getTutorFileName(tutor.id)}.png`}
                           muted
                           playsInline
                           preload="metadata"
