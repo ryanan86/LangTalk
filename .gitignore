@@ -43,3 +43,6 @@ android/
 
 # Telegram bot session logs
 logs/
+
+# Setup bundle (contains API keys)
+setup-bundle/
