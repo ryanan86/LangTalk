@@ -503,6 +503,19 @@ function HomePageContent() {
       const profileData = await profileRes.json();
       setHasProfile(!!profileData.profile);
 
+      // Auto-sync device timezone if schedule exists and timezone changed
+      const schedule = profileData.profile?.schedule;
+      if (schedule?.enabled) {
+        const deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (schedule.timezone !== deviceTz) {
+          fetch('/api/user-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ schedule: { ...schedule, timezone: deviceTz } }),
+          }).catch(() => {});
+        }
+      }
+
       // Show onboarding only for logged-in subscribers who haven't completed it
       const onboardingComplete = localStorage?.getItem('taptalk-onboarding-complete');
       if (!onboardingComplete && data.subscribed && !profileData.profile) {
