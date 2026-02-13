@@ -165,15 +165,13 @@ export async function updateUserFields(
 ): Promise<boolean> {
   const user = await getUserData(email);
   if (!user) {
-    // Create new user with defaults
-    const newUser: UserRow = {
-      email,
-      subscription: { ...getDefaultSubscription(), ...updates.subscription },
-      profile: { ...getDefaultProfile(), ...updates.profile },
-      stats: { ...getDefaultStats(), ...updates.stats },
-      updatedAt: getKoreaTime(),
-    };
-    return saveUserData(newUser);
+    // Do NOT create a new user here — getUserData returns null on both
+    // "user not found" AND "API error". Creating a user with default
+    // subscription (status: 'pending') would overwrite an existing active
+    // user if the error was transient. Callers that need to create new
+    // users should use saveUserData directly.
+    console.warn(`updateUserFields: user not found or API error for ${email}, skipping update`);
+    return false;
   }
 
   // Filter out undefined values to prevent overwriting existing data
