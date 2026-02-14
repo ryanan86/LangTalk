@@ -32,6 +32,12 @@ const config: CapacitorConfig = {
     webContentsDebuggingEnabled: true, // Enable for debugging
     appendUserAgent: 'TapTalkNative', // For detecting native app in web code
   },
+  ios: {
+    scheme: 'TapTalk',
+    contentInset: 'automatic', // Safe area handling
+    appendUserAgent: 'TapTalkNative', // For detecting native app in web code
+    preferredContentMode: 'mobile', // Force mobile viewport
+  },
 };
 
 export default config;
