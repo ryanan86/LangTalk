@@ -73,13 +73,13 @@ export default function ReviewPage() {
 
   const currentCorrection = corrections[currentIndex];
 
-  const playTTS = async (text: string) => {
+  const playTTS = async (text: string, speed?: number) => {
     setIsPlaying(true);
     try {
       const response = await fetch('/api/text-to-speech', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voice: 'shimmer' }),
+        body: JSON.stringify({ text, voice: 'shimmer', ...(speed && { speed }) }),
       });
 
       const audioBlob = await response.blob();
@@ -328,7 +328,7 @@ export default function ReviewPage() {
                       {language === 'ko' ? '올바른 표현' : 'Correct way'}
                     </span>
                     <button
-                      onClick={() => playTTS(currentCorrection.corrected)}
+                      onClick={() => playTTS(currentCorrection.corrected, 0.85)}
                       disabled={isPlaying}
                       className="w-8 h-8 bg-green-100 dark:bg-green-500/20 rounded-full flex items-center justify-center hover:bg-green-200 dark:hover:bg-green-500/30 transition-colors"
                     >

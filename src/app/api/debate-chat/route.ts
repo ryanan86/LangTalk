@@ -269,12 +269,13 @@ Return ONLY valid JSON in this exact format:
 }`;
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o',
       max_tokens: 1500,
-      temperature: 0.7,
+      temperature: 0.5,
       messages: [
         { role: 'system', content: analysisPrompt },
       ],
+      response_format: { type: 'json_object' as const },
     });
 
     const analysisText = response.choices[0]?.message?.content || '';

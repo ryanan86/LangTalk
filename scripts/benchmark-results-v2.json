@@ -1,0 +1,646 @@
+{
+  "version": 2,
+  "timestamp": "2026-02-14T15:44:44.495Z",
+  "testProfile": {
+    "age": 14,
+    "level": "intermediate",
+    "messageCount": 12,
+    "studentMessages": 6
+  },
+  "results": [
+    {
+      "model": "Gemini 2.0 Flash Lite",
+      "modelId": "gemini-2.0-flash-lite",
+      "provider": "gemini",
+      "tier": "free",
+      "inputPricePerM": 0,
+      "outputPricePerM": 0,
+      "success": true,
+      "elapsed": 12360,
+      "inputTokens": 2752,
+      "outputTokens": 1793,
+      "cost": 0,
+      "qualityScore": 98,
+      "jsonValid": true,
+      "grade": "9-10",
+      "scores": {
+        "grammar": 65,
+        "vocabulary": 68,
+        "fluency": 70,
+        "comprehension": 80
+      },
+      "correctionCount": 10,
+      "avgCorrectionLength": 65,
+      "patternCount": 3,
+      "hasIntended": true,
+      "hasPracticeMethod": true,
+      "hasExampleSentences": true,
+      "koreanCharCount": 800,
+      "scoreDifferentiation": 5.629165124598851,
+      "correctionCategories": [
+        "grammar",
+        "vocabulary",
+        "naturalness"
+      ],
+      "sampleCorrections": [
+        {
+          "original": "On Saturday I go to the science museum with my family because my little sister wanted to see the dinosaur exhibition. It was really crowded but I enjoyed it very much.",
+          "intended": "주말에 있었던 일에 대해 더 자연스럽게 말하고 싶었어요.",
+          "corrected": "On Saturday, I went to the science museum with my family because my little sister really wanted to see the dinosaur exhibition. It was super crowded, but I actually had a blast.",
+          "explanation": "과거 시제를 사용하고, 'but'을 사용하여 문장을 연결하고, 'really wanted'와 'had a blast'와 같은 더 자연스러운 표현을 사용하면 더 자연스럽게 들립니다.",
+          "category": "grammar"
+        },
+        {
+          "original": "Yes she was so exciting!",
+          "intended": "동생이 신나했던 모습을 묘사하고 싶었어요.",
+          "corrected": "Yeah, she was so excited!",
+          "explanation": "감정을 표현할 때는 'exciting' 대신 'excited'를 사용하고, 'Yeah'와 같은 짧은 감탄사를 사용하여 더 자연스럽게 표현할 수 있습니다.",
+          "category": "vocabulary"
+        },
+        {
+          "original": "My mom was very embarrassing because of her behavior.",
+          "intended": "엄마가 동생의 행동 때문에 당황스러워했다는 것을 표현하고 싶었어요.",
+          "corrected": "My mom was pretty embarrassed by her behavior.",
+          "explanation": "상황을 묘사할 때 'embarrassing' 대신 'embarrassed'를 사용하고, 'pretty'와 같은 부사를 사용하여 뉘앙스를 더할 수 있습니다.",
+          "category": "vocabulary"
+        }
+      ],
+      "samplePatterns": [
+        {
+          "type": "과거 시제 사용",
+          "count": 5,
+          "tip": "과거에 일어난 일을 말할 때 과거 시제를 사용하세요.",
+          "practiceMethod": "과거에 있었던 일에 대해 일기를 써보세요.",
+          "exampleSentences": [
+            "I went to the park yesterday.",
+            "She ate dinner with her family last night."
+          ]
+        },
+        {
+          "type": "문장 연결",
+          "count": 4,
+          "tip": "문장들을 연결하여 더 자연스럽게 표현하세요.",
+          "practiceMethod": "짧은 문장들을 연결하는 연습을 해보세요.",
+          "exampleSentences": [
+            "I like coffee, and I drink it every morning.",
+            "She was tired, so she went to bed early."
+          ]
+        }
+      ],
+      "encouragement": "영어를 배우는 과정에서 꾸준히 노력하면 훌륭한 결과를 얻을 수 있을 거예요! 포기하지 말고 계속 연습하세요!",
+      "levelSummary": "전반적으로 좋은 영어 실력을 가지고 있으며, 문법과 어휘를 향상시키면 더욱 자연스러운 대화가 가능합니다."
+    },
+    {
+      "model": "Claude Sonnet 4.5",
+      "modelId": "claude-sonnet-4-5-20250929",
+      "provider": "anthropic",
+      "tier": "premium",
+      "inputPricePerM": 3,
+      "outputPricePerM": 15,
+      "success": true,
+      "elapsed": 81449,
+      "inputTokens": 2980,
+      "outputTokens": 5026,
+      "cost": 0.08433,
+      "qualityScore": 98,
+      "jsonValid": true,
+      "grade": "7-8",
+      "scores": {
+        "grammar": 58,
+        "vocabulary": 64,
+        "fluency": 71,
+        "comprehension": 82
+      },
+      "correctionCount": 18,
+      "avgCorrectionLength": 104,
+      "patternCount": 6,
+      "hasIntended": true,
+      "hasPracticeMethod": true,
+      "hasExampleSentences": true,
+      "koreanCharCount": 1900,
+      "scoreDifferentiation": 8.926785535678562,
+      "correctionCategories": [
+        "grammar",
+        "vocabulary",
+        "naturalness"
+      ],
+      "sampleCorrections": [
+        {
+          "original": "On Saturday I go to the science museum with my family",
+          "intended": "토요일에 과학관에 갔다는 과거 사실을 말하고 싶었어요",
+          "corrected": "On Saturday I went to the science museum with my family",
+          "explanation": "과거에 일어난 일은 과거 시제를 써야 해요. 'go' 대신 'went'를 사용하세요. 이미 끝난 주말 이야기이므로 과거형이 자연스러워요.",
+          "category": "grammar"
+        },
+        {
+          "original": "Yes she was so exciting!",
+          "intended": "여동생이 정말 신나했다는 감정을 표현하고 싶었어요",
+          "corrected": "Yes, she was so excited!",
+          "explanation": "'Exciting'은 무언가가 흥미롭다는 뜻이고, 'excited'는 사람이 신나는 감정을 느낀다는 뜻이에요. 사람의 감정을 말할 때는 '-ed' 형태를 써요. 'I'm bored'(지루해), 'I'm interested'(관심있어) 같은 패턴이에요.",
+          "category": "vocabulary"
+        },
+        {
+          "original": "the guard told her don't touch",
+          "intended": "경비원이 만지지 말라고 말했다는 것을 표현하고 싶었어요",
+          "corrected": "the guard told her not to touch",
+          "explanation": "'Tell someone to do' 구조에서 부정은 'not to'를 써요. 'Don't'는 직접 명령할 때만 쓰고, 간접 화법에서는 'not to + 동사원형'이 맞아요.",
+          "category": "grammar"
+        }
+      ],
+      "samplePatterns": [
+        {
+          "type": "감정 형용사 (-ed vs -ing)",
+          "count": 3,
+          "tip": "사람의 감정은 -ed(excited, embarrassed, interested), 사물의 특성은 -ing(exciting, embarrassing, interesting)를 써요. '나는 지루해'는 'I'm bored', '이 영화는 지루해'는 'This movie is boring'이에요.",
+          "practiceMethod": "매일 자신의 감정을 영어로 3문장씩 말해보세요. 'I feel excited/bored/interested/tired' 같은 패턴으로요.",
+          "exampleSentences": [
+            "I was really excited about the museum trip.",
+            "The documentary was fascinating, so I watched it twice.",
+            "My mom felt embarrassed when my sister screamed."
+          ]
+        },
+        {
+          "type": "과거 시제 일관성",
+          "count": 4,
+          "tip": "과거 이야기를 할 때는 모든 동사를 과거형으로 바꿔야 해요. 'go→went', 'feel→felt', 'can→could'처럼요. 불규칙 동사는 따로 외워야 해요.",
+          "practiceMethod": "어제 한 일을 5문장으로 말하되, 모든 동사를 과거형으로 쓰는 연습을 해보세요. 녹음해서 들어보면 실수를 찾기 쉬워요.",
+          "exampleSentences": [
+            "Last Saturday, I went to the museum and saw dinosaurs.",
+            "The experience felt strange but amazing.",
+            "We could touch some exhibits, but not all of them."
+          ]
+        }
+      ],
+      "encouragement": "과학에 대한 열정이 영어에도 그대로 느껴져요! 항공우주 엔지니어의 꿈을 이루려면 영어가 꼭 필요한데, 지금처럼 꾸준히 연습하면 다음 달 발표도 멋지게 해낼 거예요. 화이팅! 🚀",
+      "levelSummary": "한국 나이 15세(미국 9-10학년 수준)에 해당하는 학생이 7-8학년으로 평가되었어요. 기대 수준보다 약간 낮지만, 복잡한 생각을 표현하는 유창성과 이해력은 뛰어나요. 문법과 어휘를 조금만 더 다듬으면 빠르게 성장할 수 있어요!"
+    },
+    {
+      "model": "Gemini 2.0 Flash",
+      "modelId": "gemini-2.0-flash",
+      "provider": "gemini",
+      "tier": "budget",
+      "inputPricePerM": 0.1,
+      "outputPricePerM": 0.4,
+      "success": true,
+      "elapsed": 10261,
+      "inputTokens": 2752,
+      "outputTokens": 1596,
+      "cost": 0.0009136000000000001,
+      "qualityScore": 97,
+      "jsonValid": true,
+      "grade": "7-8",
+      "scores": {
+        "grammar": 65,
+        "vocabulary": 70,
+        "fluency": 60,
+        "comprehension": 75
+      },
+      "correctionCount": 7,
+      "avgCorrectionLength": 113,
+      "patternCount": 2,
+      "hasIntended": true,
+      "hasPracticeMethod": true,
+      "hasExampleSentences": true,
+      "koreanCharCount": 830,
+      "scoreDifferentiation": 5.5901699437494745,
+      "correctionCategories": [
+        "word choice",
+        "grammar",
+        "naturalness"
+      ],
+      "sampleCorrections": [
+        {
+          "original": "Yes she was so exciting!",
+          "intended": "여동생이 매우 신났다는 것을 표현하고 싶었어요.",
+          "corrected": "Yeah, she was super excited!",
+          "explanation": "'exciting' 대신 'excited'를 사용해서 여동생의 감정을 더 정확하게 표현하고, 'so' 대신 'super'를 써서 더 자연스러운 캐주얼 표현을 만들었어요.",
+          "category": "word choice"
+        },
+        {
+          "original": "My mom was very embarrassing because of her behavior.",
+          "intended": "엄마가 여동생 행동 때문에 당황스러워했다는 것을 말하고 싶었어요.",
+          "corrected": "My mom was super embarrassed by her behavior, haha.",
+          "explanation": "'embarrassing'은 '당황스러운 상황을 만드는'이라는 뜻이라 엄마의 감정을 표현하려면 'embarrassed'를 써야 해요. 끝에 'haha'를 붙여서 좀 더 가벼운 분위기를 만들었어요.",
+          "category": "word choice"
+        },
+        {
+          "original": "I tried the zero gravity experience and it feeled so strange like my body is floating.",
+          "intended": "무중력 체험을 했을 때 몸이 붕 뜨는 느낌이 이상했다는 것을 설명하고 싶었어요.",
+          "corrected": "I tried the zero-gravity thing and it felt so weird, like I was floating!",
+          "explanation": "'feeled' 대신 'felt'를 사용해서 과거 시제를 정확하게 표현했어요. 'experience' 대신 'thing'을 써서 더 캐주얼하게 만들고, 'is floating' 대신 'was floating'을 써서 시제를 일치시켰어요.",
+          "category": "grammar"
+        }
+      ],
+      "samplePatterns": [
+        {
+          "type": "문장 연결하기 (Connecting Sentences)",
+          "count": 3,
+          "tip": "'and', 'but', 'so', 'because' 같은 접속사를 사용해서 짧은 문장들을 연결해 보세요.",
+          "practiceMethod": "짧은 문장들을 여러 개 써보고, 접속사를 사용해서 하나의 긴 문장으로 합쳐보는 연습을 해보세요.",
+          "exampleSentences": [
+            "I like pizza, but it's not my favorite food.",
+            "She was tired, so she went to bed early."
+          ]
+        },
+        {
+          "type": "줄임말 사용하기 (Using Contractions)",
+          "count": 4,
+          "tip": "'I'm', 'you're', 'it's', 'gonna', 'wanna' 같은 줄임말을 사용해서 더 자연스러운 대화를 만들어 보세요.",
+          "practiceMethod": "일상 대화에서 줄임말을 의식적으로 사용해보세요. 예를 들어, 'I am' 대신 'I'm'을 사용하는 연습을 해보세요.",
+          "exampleSentences": [
+            "I'm going to the store.",
+            "She's not here right now."
+          ]
+        }
+      ],
+      "encouragement": "정말 잘하고 있어요! 꾸준히 연습하면 영어 실력이 훨씬 더 좋아질 거예요. 발표 준비도 응원할게요!",
+      "levelSummary": "한국 나이 15세는 미국 학년 기준으로 9-10학년에 해당합니다. 탭톡은 7-8학년 수준으로 평가했는데, 이는 예상 수준보다 약간 낮습니다. 문법과 유창성에서 약간의 개선이 필요합니다."
+    },
+    {
+      "model": "Claude Haiku 4.5",
+      "modelId": "claude-haiku-4-5-20251001",
+      "provider": "anthropic",
+      "tier": "mid",
+      "inputPricePerM": 1,
+      "outputPricePerM": 5,
+      "success": true,
+      "elapsed": 28774,
+      "inputTokens": 2980,
+      "outputTokens": 3945,
+      "cost": 0.022705,
+      "qualityScore": 95,
+      "jsonValid": true,
+      "grade": "7-8",
+      "scores": {
+        "grammar": 72,
+        "vocabulary": 76,
+        "fluency": 74,
+        "comprehension": 85
+      },
+      "correctionCount": 9,
+      "avgCorrectionLength": 136,
+      "patternCount": 5,
+      "hasIntended": true,
+      "hasPracticeMethod": true,
+      "hasExampleSentences": true,
+      "koreanCharCount": 1435,
+      "scoreDifferentiation": 4.968651728587948,
+      "correctionCategories": [
+        "grammar",
+        "naturalness"
+      ],
+      "sampleCorrections": [
+        {
+          "original": "On Saturday I go to the science museum with my family because my little sister wanted to see the dinosaur exhibition.",
+          "intended": "토요일에 박물관에 간 경험을 설명하고 싶었어요",
+          "corrected": "On Saturday, I went to the science museum with my family because my little sister wanted to see the dinosaur exhibition.",
+          "explanation": "과거 시제를 사용해야 해요. 이미 지나간 일이므로 'go'가 아니라 'went'를 써야 합니다. 과거의 사건을 이야기할 때는 일관되게 과거형을 유지하세요.",
+          "type": "grammar - verb tense",
+          "category": "grammar"
+        },
+        {
+          "original": "Yes she was so exciting!",
+          "intended": "여동생이 흥분했다는 것을 표현하고 싶었어요",
+          "corrected": "Yeah, she was so excited!",
+          "explanation": "'Exciting'은 '흥미로운'이라는 뜻이고, 'excited'는 '흥분한'이라는 뜻이에요. 사람의 감정을 설명할 때는 'excited'를 써야 합니다. 또한 casual한 대화에서는 'Yes' 대신 'Yeah'가 더 자연스러워요.",
+          "type": "grammar - adjective choice",
+          "category": "grammar"
+        },
+        {
+          "original": "My mom was very embarrassing because of her behavior.",
+          "intended": "엄마가 딸의 행동 때문에 창피해했다는 것을 표현하고 싶었어요",
+          "corrected": "My mom was really embarrassed by her behavior.",
+          "explanation": "'Embarrassing'은 '창피를 주는'이라는 뜻이고, 'embarrassed'는 '창피한'이라는 뜻이에요. 엄마의 감정을 설명하는 것이므로 'embarrassed'를 써야 합니다. 'because of' 대신 'by'가 더 자연스러워요.",
+          "type": "grammar - adjective choice",
+          "category": "grammar"
+        }
+      ],
+      "samplePatterns": [
+        {
+          "type": "과거 시제 일관성 (Past Tense Consistency)",
+          "count": 3,
+          "tip": "이미 지나간 일을 이야기할 때는 처음부터 끝까지 과거형을 유지하세요. 'go' → 'went', 'is' → 'was'",
+          "practiceMethod": "지난 주말 활동을 3-4문장으로 작성하고, 모든 동사가 과거형인지 확인하세요. 그 다음 소리내어 읽으면서 자연스러운지 확인해보세요.",
+          "exampleSentences": [
+            "Last weekend, I went to the museum and saw dinosaurs. It was crowded, but I enjoyed it.",
+            "Yesterday, I watched a science video and learned about black holes."
+          ]
+        },
+        {
+          "type": "형용사 선택 (Adjective Choice: -ed vs -ing)",
+          "count": 2,
+          "tip": "사람의 감정이나 상태를 설명할 때는 -ed 형태를 써요. 'excited', 'embarrassed', 'fascinated' 등. -ing 형태는 그것이 '흥미로운' 또는 '창피를 주는' 것 자체를 설명할 때 써요.",
+          "practiceMethod": "excited/exciting, embarrassed/embarrassing, fascinated/fascinating 3쌍을 선택해서 각각 사람의 감정과 사물을 설명하는 문장을 만들어보세요. 예: 'I was excited' vs 'The show was exciting'",
+          "exampleSentences": [
+            "She was so excited about the trip.",
+            "The movie was really exciting.",
+            "I'm fascinated by space technology.",
+            "Space technology is fascinating."
+          ]
+        }
+      ],
+      "encouragement": "정말 훌륭한 진전이에요! 과학 지식과 영어 학습 모두에 열정적인 모습이 정말 멋있어요. 지금 배우고 있는 문법 패턴들을 계속 연습하면, 다음 달 학교 축제 발표에서 완벽하게 할 수 있을 거예요. 화이팅! 💪",
+      "levelSummary": "한국 나이 15세(미국 학년 9-10학년)에 해당하는 학생이 현재 7-8학년(중학교) 수준의 영어를 구사하고 있습니다. 과거 시제, 형용사 선택, 전치사 사용 등에서 실수가 있지만, 주제별 어휘가 풍부하고 대화 이해력이 뛰어나며 자신의 생각을 명확하게 표현하려는 의지가 강합니다."
+    },
+    {
+      "model": "GPT-4o",
+      "modelId": "gpt-4o",
+      "provider": "openai",
+      "tier": "premium",
+      "inputPricePerM": 2.5,
+      "outputPricePerM": 10,
+      "success": true,
+      "elapsed": 27134,
+      "inputTokens": 2658,
+      "outputTokens": 1355,
+      "cost": 0.020195,
+      "qualityScore": 94,
+      "jsonValid": true,
+      "grade": "7-8",
+      "scores": {
+        "grammar": 65,
+        "vocabulary": 70,
+        "fluency": 68,
+        "comprehension": 75
+      },
+      "correctionCount": 8,
+      "avgCorrectionLength": 75,
+      "patternCount": 2,
+      "hasIntended": true,
+      "hasPracticeMethod": true,
+      "hasExampleSentences": true,
+      "koreanCharCount": 639,
+      "scoreDifferentiation": 3.640054944640259,
+      "correctionCategories": [
+        "grammar",
+        "vocabulary"
+      ],
+      "sampleCorrections": [
+        {
+          "original": "On Saturday I go to the science museum with my family because my little sister wanted to see the dinosaur exhibition.",
+          "intended": "토요일에 가족과 함께 과학 박물관에 갔어요. 제 여동생이 공룡 전시회를 보고 싶어했거든요.",
+          "corrected": "On Saturday, I went to the science museum with my family because my little sister wanted to see the dinosaur exhibition.",
+          "explanation": "'go'는 현재형이므로 과거형인 'went'로 바꿔야 해요. 문장에 시간을 나타내는 'On Saturday'가 있으니 과거형을 사용하는 게 맞습니다.",
+          "category": "grammar"
+        },
+        {
+          "original": "Yes she was so exciting!",
+          "intended": "네, 그녀는 정말 신났어요!",
+          "corrected": "Yes, she was so excited!",
+          "explanation": "'exciting'은 사람을 신나게 하는 것이고, 'excited'는 사람이 신난 상태를 말해요. 여동생이 신났던 상황이므로 'excited'를 사용해야 합니다.",
+          "category": "vocabulary"
+        },
+        {
+          "original": "My mom was very embarrassing because of her behavior.",
+          "intended": "엄마는 여동생의 행동 때문에 매우 창피해 하셨어요.",
+          "corrected": "My mom was very embarrassed because of her behavior.",
+          "explanation": "'embarrassing'은 무언가가 창피하게 만드는 것이고, 'embarrassed'는 사람이 창피함을 느끼는 상태를 말해요. 엄마가 창피함을 느꼈으니 'embarrassed'를 사용해야 합니다.",
+          "category": "vocabulary"
+        }
+      ],
+      "samplePatterns": [
+        {
+          "type": "시제 일치",
+          "count": 3,
+          "tip": "과거에 일어난 일은 과거형으로, 현재 일어나는 일은 현재형으로 적어보세요.",
+          "practiceMethod": "과거와 현재를 섞어서 일기를 써보고 시제에 주의해서 고쳐보세요.",
+          "exampleSentences": [
+            "Yesterday, I went to the park.",
+            "I go to school every day."
+          ]
+        },
+        {
+          "type": "형용사와 분사 구분",
+          "count": 2,
+          "tip": "'-ing'는 무언가를 설명할 때, '-ed'는 사람의 감정을 설명할 때 사용하세요.",
+          "practiceMethod": "예문을 만들고 두 종류의 형용사를 구분해서 사용해보세요.",
+          "exampleSentences": [
+            "The movie was exciting.",
+            "I was excited to watch the movie."
+          ]
+        }
+      ],
+      "encouragement": "너무 잘하고 있어요! 조금만 더 연습하면 영어로도 멋진 발표를 할 수 있을 거예요. 화이팅!",
+      "levelSummary": "Korean age 15 corresponds to US Grade 9-10. TapTalk evaluated at G7-8, which is slightly below the expected level for this age."
+    },
+    {
+      "model": "GPT-4o Mini",
+      "modelId": "gpt-4o-mini",
+      "provider": "openai",
+      "tier": "budget",
+      "inputPricePerM": 0.15,
+      "outputPricePerM": 0.6,
+      "success": true,
+      "elapsed": 31073,
+      "inputTokens": 2658,
+      "outputTokens": 1374,
+      "cost": 0.0012231,
+      "qualityScore": 94,
+      "jsonValid": true,
+      "grade": "9-10",
+      "scores": {
+        "grammar": 65,
+        "vocabulary": 70,
+        "fluency": 68,
+        "comprehension": 75
+      },
+      "correctionCount": 8,
+      "avgCorrectionLength": 78,
+      "patternCount": 2,
+      "hasIntended": true,
+      "hasPracticeMethod": true,
+      "hasExampleSentences": true,
+      "koreanCharCount": 628,
+      "scoreDifferentiation": 3.640054944640259,
+      "correctionCategories": [
+        "grammar",
+        "naturalness"
+      ],
+      "sampleCorrections": [
+        {
+          "original": "Yes she was so exciting!",
+          "intended": "내 여동생이 얼마나 신났는지 표현하고 싶었어요",
+          "corrected": "Yes, she was so excited!",
+          "explanation": "‘exciting’은 무언가가 흥미롭다는 의미이고, ‘excited’는 누군가가 흥분한 상태를 나타내요. 여동생의 감정을 표현할 때는 ‘excited’를 사용해야 해요.",
+          "category": "grammar"
+        },
+        {
+          "original": "My mom was very embarrassing because of her behavior.",
+          "intended": "엄마가 여동생의 행동 때문에 당황하셨다는 것을 표현하고 싶었어요",
+          "corrected": "My mom was very embarrassed by her behavior.",
+          "explanation": "‘embarrassing’은 다른 사람을 당황하게 만드는 것을 의미하고, ‘embarrassed’는 당황한 상태를 나타내요. 여기에선 엄마가 당황한 상태를 말하고 싶으니 ‘embarrassed’를 써야 해요.",
+          "category": "grammar"
+        },
+        {
+          "original": "But actually I think the space section was more interesting than dinosaur part.",
+          "intended": "사실 우주 섹션이 공룡 부분보다 더 흥미로웠다는 것을 표현하고 싶었어요",
+          "corrected": "But I actually think the space section was more interesting than the dinosaur part.",
+          "explanation": "‘the’라는 정관사를 추가해서 특정한 공룡 부분을 명확하게 언급해야 해요. 그리고 ‘actually’는 문장 중간에 위치하는 것이 자연스러워요.",
+          "category": "naturalness"
+        }
+      ],
+      "samplePatterns": [
+        {
+          "type": "비교 표현 (Comparative expressions)",
+          "count": 3,
+          "tip": "비교할 때는 ‘as...as’ 또는 ‘more...than’ 구조를 사용하세요.",
+          "practiceMethod": "비교 문장을 만들어서 연습해보세요. 예: ‘My English is better than my math.’",
+          "exampleSentences": [
+            "I think pizza is better than burgers.",
+            "My brother is taller than me."
+          ]
+        },
+        {
+          "type": "감정 표현 (Expressing feelings)",
+          "count": 2,
+          "tip": "감정을 표현할 때는 ‘excited’, ‘embarrassed’와 같은 형용사를 사용하세요.",
+          "practiceMethod": "자신의 감정을 표현하는 문장을 만들어보세요. 예: ‘I felt happy when I got a good grade.’",
+          "exampleSentences": [
+            "I was excited about the trip.",
+            "She felt embarrassed after tripping."
+          ]
+        }
+      ],
+      "encouragement": "너무 잘하고 있어요! 계속해서 연습하면 더욱 발전할 거예요.",
+      "levelSummary": "Korean age 15 corresponds to US Grade 9-10. TapTalk evaluated at G9-10, which is at the expected level for this age."
+    },
+    {
+      "model": "Claude 3.5 Haiku",
+      "modelId": "claude-3-5-haiku-20241022",
+      "provider": "anthropic",
+      "tier": "mid",
+      "inputPricePerM": 1,
+      "outputPricePerM": 5,
+      "success": true,
+      "elapsed": 25017,
+      "inputTokens": 2980,
+      "outputTokens": 1400,
+      "cost": 0.00998,
+      "qualityScore": 92,
+      "jsonValid": true,
+      "grade": "9-10",
+      "scores": {
+        "grammar": 65,
+        "vocabulary": 70,
+        "fluency": 60,
+        "comprehension": 75
+      },
+      "correctionCount": 6,
+      "avgCorrectionLength": 80,
+      "patternCount": 2,
+      "hasIntended": true,
+      "hasPracticeMethod": true,
+      "hasExampleSentences": true,
+      "koreanCharCount": 547,
+      "scoreDifferentiation": 5.5901699437494745,
+      "correctionCategories": [],
+      "sampleCorrections": [
+        {
+          "original": "I go to the science museum with my family",
+          "intended": "박물관에 갔던 시간을 정확하게 표현하고 싶었어요",
+          "corrected": "I went to the science museum with my family",
+          "explanation": "과거 사건을 말할 때는 과거 시제(went)를 사용해야 해요. 현재 시제(go)는 지금 하고 있는 일을 표현할 때 씁니다.",
+          "type": "verb tense"
+        },
+        {
+          "original": "She was so exciting",
+          "intended": "동생의 감정 상태를 표현하고 싶었어요",
+          "corrected": "She was so excited",
+          "explanation": "'exciting'은 무언가가 흥분되게 만드는 것이고, 'excited'는 사람이 흥분된 상태를 의미해요. 여기서는 동생의 감정 상태를 말하고 싶었으니 'excited'가 맞습니다.",
+          "type": "adjective usage"
+        },
+        {
+          "original": "My mom was very embarrassing",
+          "intended": "엄마의 행동에 대한 감정을 표현하고 싶었어요",
+          "corrected": "My mom was very embarrassed",
+          "explanation": "'embarrassing'은 누군가를 부끄럽게 만드는 상황을, 'embarrassed'는 부끄러워하는 사람의 감정을 표현해요. 여기서는 엄마의 감정을 말하고 싶었으니 'embarrassed'가 맞습니다.",
+          "type": "adjective usage"
+        }
+      ],
+      "samplePatterns": [
+        {
+          "type": "시제 사용",
+          "count": 2,
+          "tip": "과거에 일어난 일은 과거 시제로 말하세요",
+          "practiceMethod": "일기 쓰기나 주말 활동 말하기를 과거 시제로 연습하세요",
+          "exampleSentences": [
+            "I went to the museum",
+            "We watched a movie"
+          ]
+        },
+        {
+          "type": "형용사 구분",
+          "count": 3,
+          "tip": "형용사의 미묘한 차이를 이해하세요",
+          "practiceMethod": "형용사 카드 만들어 연습하기",
+          "exampleSentences": [
+            "I am excited",
+            "This is exciting"
+          ]
+        }
+      ],
+      "encouragement": "과학에 대한 열정과 영어 학습 의지가 정말 대단해요! 조금씩 연습하다 보면 꼭 꿈을 이룰 수 있을 거예요. 화이팅!",
+      "levelSummary": "과학 분야에서 뛰어난 능력을 보이며, 영어 실력도 중간 수준으로 꾸준히 발전 중"
+    },
+    {
+      "model": "GPT-3.5 Turbo",
+      "modelId": "gpt-3.5-turbo",
+      "provider": "openai",
+      "tier": "legacy",
+      "inputPricePerM": 0.5,
+      "outputPricePerM": 1.5,
+      "success": true,
+      "elapsed": 1086,
+      "inputTokens": 2736,
+      "outputTokens": 24,
+      "cost": 0.001404,
+      "qualityScore": 0,
+      "jsonValid": false,
+      "grade": "",
+      "scores": null,
+      "correctionCount": 0,
+      "avgCorrectionLength": 0,
+      "patternCount": 0,
+      "hasIntended": false,
+      "hasPracticeMethod": false,
+      "hasExampleSentences": false,
+      "koreanCharCount": 0,
+      "scoreDifferentiation": 0,
+      "correctionCategories": [],
+      "sampleCorrections": [],
+      "samplePatterns": [],
+      "encouragement": "",
+      "levelSummary": ""
+    },
+    {
+      "model": "O3 Mini",
+      "modelId": "o3-mini",
+      "provider": "openai",
+      "tier": "reasoning",
+      "inputPricePerM": 1.1,
+      "outputPricePerM": 4.4,
+      "success": true,
+      "elapsed": 21278,
+      "inputTokens": 2649,
+      "outputTokens": 4096,
+      "cost": 0.0209363,
+      "qualityScore": 0,
+      "jsonValid": false,
+      "grade": "",
+      "scores": null,
+      "correctionCount": 0,
+      "avgCorrectionLength": 0,
+      "patternCount": 0,
+      "hasIntended": false,
+      "hasPracticeMethod": false,
+      "hasExampleSentences": false,
+      "koreanCharCount": 0,
+      "scoreDifferentiation": 0,
+      "correctionCategories": [],
+      "sampleCorrections": [],
+      "samplePatterns": [],
+      "encouragement": "",
+      "levelSummary": ""
+    }
+  ]
+}

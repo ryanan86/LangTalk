@@ -18,7 +18,7 @@ const FISH_AUDIO_VOICE_MAP: Record<string, string> = {
   alloy: '12d3a04e3dca4e49a40ee52fea6e7c0e',    // Henry - Mackenzie Bluey (young boy)
 };
 
-async function generateWithFishAudio(text: string, voice: string): Promise<ArrayBuffer> {
+async function generateWithFishAudio(text: string, voice: string, speed?: number): Promise<ArrayBuffer> {
   const apiKey = process.env.FISH_AUDIO_API_KEY;
   if (!apiKey) {
     throw new Error('Fish Audio API key not configured');
@@ -34,6 +34,11 @@ async function generateWithFishAudio(text: string, voice: string): Promise<Array
   };
   if (referenceId) {
     body.reference_id = referenceId;
+  }
+
+  // Fish Audio prosody speed control (0.5 ~ 2.0, default 1.0)
+  if (speed && speed >= 0.5 && speed <= 2.0) {
+    body.prosody = { speed };
   }
 
   const response = await fetch('https://api.fish.audio/v1/tts', {
@@ -78,7 +83,7 @@ export async function POST(request: NextRequest) {
     const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.audio);
     if (rateLimitResult) return rateLimitResult;
 
-    const { text, voice = 'shimmer' } = await request.json();
+    const { text, voice = 'shimmer', speed } = await request.json();
 
     if (!text || typeof text !== 'string') {
       return NextResponse.json({ error: 'No text provided' }, { status: 400 });
@@ -91,13 +96,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid voice' }, { status: 400 });
     }
 
+    // Validate speed parameter (0.5 ~ 2.0)
+    const validSpeed = typeof speed === 'number' && speed >= 0.5 && speed <= 2.0 ? speed : undefined;
+
     // TTS priority: Fish Audio -> OpenAI (fallback)
     let audioBuffer: ArrayBuffer;
     let provider = 'OpenAI';
 
     if (process.env.FISH_AUDIO_API_KEY?.trim()) {
       try {
-        audioBuffer = await generateWithFishAudio(text, voice);
+        audioBuffer = await generateWithFishAudio(text, voice, validSpeed);
         provider = 'FishAudio';
       } catch (fishError) {
         console.error('Fish Audio failed, falling back to OpenAI:', fishError);

@@ -258,97 +258,92 @@ function TalkContent() {
   }, [phase]);
 
   // Increment session count and store evaluated level when session is completed (summary phase)
+  // IMPORTANT: API calls are chained sequentially to avoid race conditions on shared
+  // Google Sheets rows (LearningData and Users). Previously, parallel fire-and-forget
+  // calls caused data loss (last-write-wins on the same row).
   useEffect(() => {
     if (phase === 'summary') {
-      // Increment session count and store AI-evaluated level
-      const body: { evaluatedGrade?: string; levelDetails?: LevelDetails } = {};
-
-      if (analysis?.evaluatedGrade) {
-        body.evaluatedGrade = analysis.evaluatedGrade;
-      }
-      if (analysis?.levelDetails) {
-        body.levelDetails = analysis.levelDetails;
-      }
-
-      fetch('/api/session-count', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            console.log('Session count incremented:', data.newCount, 'Level:', data.evaluatedGrade);
+      const saveSessionData = async () => {
+        try {
+          // Step 1: Increment session count first (updates Users + Subscriptions sheets)
+          // Must complete before lesson-history to avoid overwriting sessionCount
+          const countBody: { evaluatedGrade?: string; levelDetails?: LevelDetails } = {};
+          if (analysis?.evaluatedGrade) {
+            countBody.evaluatedGrade = analysis.evaluatedGrade;
           }
-        })
-        .catch(err => console.error('Failed to increment session count:', err));
-
-      // Save lesson history
-      const userMessages = messages.filter(m => m.role === 'user');
-      const topicSummary = userMessages.length > 0
-        ? userMessages.slice(0, 3).map(m => m.content.slice(0, 50)).join(' / ')
-        : 'Free conversation';
-
-      const feedbackSummary = analysis
-        ? `${analysis.overallLevel}. ${analysis.encouragement.slice(0, 100)}`
-        : '';
-
-      const keyCorrections = analysis?.corrections
-        ?.slice(0, 5)
-        .map(c => `${c.original} -> ${c.corrected}`)
-        .join('; ') || '';
-
-      fetch('/api/lesson-history', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tutor: tutorId,
-          duration: Math.floor(conversationTime / 60),
-          topicSummary,
-          feedbackSummary,
-          keyCorrections,
-          level: analysis?.evaluatedGrade || '',
-          levelDetails: analysis?.levelDetails || null,
-        }),
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            console.log('Lesson history saved');
+          if (analysis?.levelDetails) {
+            countBody.levelDetails = analysis.levelDetails;
           }
-        })
-        .catch(err => console.error('Failed to save lesson history:', err));
 
-      // Save individual corrections for spaced repetition review
-      if (analysis?.corrections && analysis.corrections.length > 0) {
-        // Calculate adaptive difficulty for correction storage
-        const ageGroup = birthYear ? getAgeGroup(birthYear) : null;
-        const adaptiveDifficulty = ageGroup
-          ? calculateAdaptiveDifficulty(ageGroup, previousGrade, previousLevelDetails, speechMetrics)
-          : null;
-        const correctionDifficulty = adaptiveDifficulty?.difficulty ?? 3;
+          const countRes = await fetch('/api/session-count', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(countBody),
+          });
+          const countData = await countRes.json();
+          if (countData.success) {
+            console.log('Session count incremented:', countData.newCount, 'Level:', countData.evaluatedGrade);
+          }
 
-        const correctionsToSave = analysis.corrections.map(c => ({
-          original: c.original,
-          corrected: c.corrected,
-          explanation: c.explanation,
-          category: c.category || 'general',
-          difficulty: correctionDifficulty,
-        }));
+          // Step 2: Save lesson history WITH corrections in a single call
+          // This avoids the race condition where addSession and addCorrections
+          // would read-modify-write the same LearningData row concurrently
+          const userMessages = messages.filter(m => m.role === 'user');
+          const topicSummary = userMessages.length > 0
+            ? userMessages.slice(0, 3).map(m => m.content.slice(0, 50)).join(' / ')
+            : 'Free conversation';
 
-        fetch('/api/corrections', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(correctionsToSave),
-        })
-          .then(res => res.json())
-          .then(data => {
-            if (data.success) {
-              console.log(`${data.count} corrections saved for review`);
-            }
-          })
-          .catch(err => console.error('Failed to save corrections:', err));
-      }
+          const feedbackSummary = analysis
+            ? `${analysis.overallLevel}. ${analysis.encouragement.slice(0, 100)}`
+            : '';
+
+          const keyCorrections = analysis?.corrections
+            ?.slice(0, 5)
+            .map(c => `${c.original} -> ${c.corrected}`)
+            .join('; ') || '';
+
+          // Prepare corrections to include in the same request
+          let correctionsToSave;
+          if (analysis?.corrections && analysis.corrections.length > 0) {
+            const ageGroup = birthYear ? getAgeGroup(birthYear) : null;
+            const adaptiveDifficulty = ageGroup
+              ? calculateAdaptiveDifficulty(ageGroup, previousGrade, previousLevelDetails, speechMetrics)
+              : null;
+            const correctionDifficulty = adaptiveDifficulty?.difficulty ?? 3;
+
+            correctionsToSave = analysis.corrections.map(c => ({
+              original: c.original,
+              corrected: c.corrected,
+              explanation: c.explanation,
+              category: c.category || 'general',
+              difficulty: correctionDifficulty,
+            }));
+          }
+
+          const historyRes = await fetch('/api/lesson-history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tutor: tutorId,
+              duration: Math.floor(conversationTime / 60),
+              topicSummary,
+              feedbackSummary,
+              keyCorrections,
+              level: analysis?.evaluatedGrade || '',
+              levelDetails: analysis?.levelDetails || null,
+              corrections: correctionsToSave,
+            }),
+          });
+          const historyData = await historyRes.json();
+          if (historyData.success) {
+            console.log('Lesson history saved' + (correctionsToSave ? ` with ${correctionsToSave.length} corrections` : ''));
+          }
+        } catch (err) {
+          console.error('Failed to save session data:', err);
+        }
+      };
+
+      saveSessionData();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, analysis, messages, tutorId, conversationTime, birthYear, previousGrade, previousLevelDetails, speechMetrics]);
@@ -914,14 +909,14 @@ function TalkContent() {
 
   // ========== TTS Function ==========
 
-  const playTTS = async (text: string) => {
+  const playTTS = async (text: string, speed?: number) => {
     setIsPlaying(true);
     stopFiller();
     try {
       const response = await fetch('/api/text-to-speech', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voice: persona.voice }),
+        body: JSON.stringify({ text, voice: persona.voice, ...(speed && { speed }) }),
       });
 
       const audioBlob = await response.blob();
@@ -1544,7 +1539,7 @@ function TalkContent() {
                         {analysis.corrections[currentReviewIndex].corrected}
                       </p>
                       <button
-                        onClick={() => playTTS(analysis.corrections[currentReviewIndex].corrected)}
+                        onClick={() => playTTS(analysis.corrections[currentReviewIndex].corrected, 0.85)}
                         disabled={isPlaying}
                         className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 dark:bg-green-500/20 rounded-xl flex items-center justify-center hover:bg-green-200 dark:hover:bg-green-500/30 transition-colors flex-shrink-0"
                       >
@@ -1574,7 +1569,7 @@ function TalkContent() {
                       <button
                         onClick={() => {
                           const correction = analysis.corrections[currentReviewIndex];
-                          playTTS(`You said: "${correction.original}". A better way is: "${correction.corrected}". ${correction.explanation}`);
+                          playTTS(`You said: "${correction.original}". A better way is: "${correction.corrected}". ${correction.explanation}`, 0.85);
                         }}
                         disabled={isPlaying}
                         className="w-9 h-9 bg-primary-100 dark:bg-primary-500/20 rounded-lg flex items-center justify-center hover:bg-primary-200 transition-colors flex-shrink-0"
@@ -1594,7 +1589,7 @@ function TalkContent() {
 
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => playTTS(analysis.corrections[currentReviewIndex].corrected)}
+                    onClick={() => playTTS(analysis.corrections[currentReviewIndex].corrected, 0.85)}
                     disabled={isPlaying}
                     className="w-12 h-12 sm:w-14 sm:h-14 bg-green-100 dark:bg-green-500/20 rounded-xl flex items-center justify-center hover:bg-green-200 dark:hover:bg-green-500/30 transition-colors flex-shrink-0"
                   >
@@ -1643,7 +1638,7 @@ function TalkContent() {
                 </p>
 
                 <button
-                  onClick={() => playTTS(analysis.corrections[shadowingIndex].corrected)}
+                  onClick={() => playTTS(analysis.corrections[shadowingIndex].corrected, 0.8)}
                   disabled={isPlaying}
                   className="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-primary-100 rounded-full flex items-center justify-center hover:bg-primary-200 transition-colors mb-4 sm:mb-6"
                 >

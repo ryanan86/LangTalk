@@ -558,38 +558,74 @@ Be specific, helpful, and maintain your teaching persona.`;
     // Non-streaming mode
     let assistantMessage = '';
 
-    if (gemini) {
-      // Gemini 2.0 Flash (primary: faster + better quality + lower cost)
-      try {
-        const model = gemini.getGenerativeModel({
-          model: 'gemini-2.0-flash',
-          systemInstruction: { role: 'user', parts: [{ text: systemPrompt }] },
-          generationConfig: {
-            temperature: isAnalysis ? 0.5 : 0.8,
-            maxOutputTokens: maxTokens,
-            ...(isAnalysis ? { responseMimeType: 'application/json' } : {}),
-          },
-        });
-
-        const result = await model.generateContent({ contents: geminiContents });
-        assistantMessage = result.response.text();
-      } catch (geminiError) {
-        console.error('Gemini non-streaming failed, falling back to OpenAI:', geminiError);
-        assistantMessage = '';
+    if (isAnalysis) {
+      // Analysis mode: Gemini 2.0 Flash primary (Q98 benchmark, fastest, cheapest)
+      if (gemini) {
+        try {
+          const model = gemini.getGenerativeModel({
+            model: 'gemini-2.0-flash',
+            systemInstruction: { role: 'user', parts: [{ text: systemPrompt }] },
+            generationConfig: {
+              temperature: 0.5,
+              maxOutputTokens: maxTokens,
+              responseMimeType: 'application/json',
+            },
+          });
+          const result = await model.generateContent({ contents: geminiContents });
+          assistantMessage = result.response.text();
+        } catch (geminiError) {
+          console.error('Gemini analysis failed, falling back to GPT-4o:', geminiError);
+          assistantMessage = '';
+        }
       }
-    }
 
-    // OpenAI fallback (if Gemini unavailable or failed)
-    if (!assistantMessage) {
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        max_tokens: maxTokens,
-        temperature: isAnalysis ? 0.5 : 0.8,
-        ...(isAnalysis ? {} : { presence_penalty: 0.6, frequency_penalty: 0.3 }),
-        messages: openaiMessages,
-        ...(isAnalysis ? { response_format: { type: 'json_object' as const } } : {}),
-      });
-      assistantMessage = response.choices[0]?.message?.content || '';
+      // GPT-4o fallback for analysis
+      if (!assistantMessage) {
+        try {
+          const response = await openai.chat.completions.create({
+            model: 'gpt-4o',
+            max_tokens: maxTokens,
+            temperature: 0.5,
+            messages: openaiMessages,
+            response_format: { type: 'json_object' as const },
+          });
+          assistantMessage = response.choices[0]?.message?.content || '';
+        } catch (gpt4oError) {
+          console.error('GPT-4o analysis fallback also failed:', gpt4oError);
+        }
+      }
+    } else {
+      // Conversation/interview mode: Gemini primary (faster response)
+      if (gemini) {
+        try {
+          const model = gemini.getGenerativeModel({
+            model: 'gemini-2.0-flash',
+            systemInstruction: { role: 'user', parts: [{ text: systemPrompt }] },
+            generationConfig: {
+              temperature: 0.8,
+              maxOutputTokens: maxTokens,
+            },
+          });
+          const result = await model.generateContent({ contents: geminiContents });
+          assistantMessage = result.response.text();
+        } catch (geminiError) {
+          console.error('Gemini conversation failed, falling back to OpenAI:', geminiError);
+          assistantMessage = '';
+        }
+      }
+
+      // OpenAI fallback for conversation
+      if (!assistantMessage) {
+        const response = await openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          max_tokens: maxTokens,
+          temperature: 0.8,
+          presence_penalty: 0.6,
+          frequency_penalty: 0.3,
+          messages: openaiMessages,
+        });
+        assistantMessage = response.choices[0]?.message?.content || '';
+      }
     }
 
     // Parse JSON for analysis mode
