@@ -140,6 +140,7 @@ function TalkContent() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [speakingEval, setSpeakingEval] = useState<any>(null);
   const [isLoadingEval, setIsLoadingEval] = useState(false);
+  const [repeatedCategories, setRepeatedCategories] = useState<Set<string>>(new Set());
 
   // Save summary as image (split into multiple pages)
   const saveAsImage = async () => {
@@ -374,6 +375,31 @@ function TalkContent() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, analysis, currentReviewIndex, hasPlayedReviewIntro, lastPlayedReviewIndex, isPlaying]);
+
+  // Detect repeated mistake categories when entering review phase
+  useEffect(() => {
+    if (phase === 'review' && analysis?.corrections?.length) {
+      fetch('/api/corrections?due=false&limit=100')
+        .then(res => res.json())
+        .then(data => {
+          if (data.corrections?.length) {
+            const catCounts: Record<string, number> = {};
+            for (const c of data.corrections) {
+              catCounts[c.category] = (catCounts[c.category] || 0) + 1;
+            }
+            // Categories with existing corrections = repeated if new session also has them
+            const newCategories = analysis.corrections.map((c: { category: string }) => c.category);
+            const repeated = new Set<string>();
+            newCategories.forEach((cat: string) => {
+              if (catCounts[cat]) repeated.add(cat);
+            });
+            setRepeatedCategories(repeated);
+          }
+        })
+        .catch(err => console.error('Repeat detection error:', err));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, analysis]);
 
   // Fetch speaking evaluation when entering review phase
   useEffect(() => {
@@ -1653,7 +1679,25 @@ function TalkContent() {
 
             {analysis.corrections.length > 0 ? (
               <div className="flex-1 flex flex-col justify-center">
-                <div className="card-premium p-4 sm:p-6 mb-4 sm:mb-6">
+                <div className={`p-4 sm:p-6 mb-4 sm:mb-6 rounded-2xl ${
+                  repeatedCategories.has(analysis.corrections[currentReviewIndex].category)
+                    ? 'bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 dark:border-amber-500/50 shadow-lg'
+                    : 'card-premium'
+                }`}>
+                  {/* Repeated Pattern Warning */}
+                  {repeatedCategories.has(analysis.corrections[currentReviewIndex].category) && (
+                    <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-amber-100 dark:bg-amber-500/20 rounded-lg">
+                      <svg className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                        {language === 'ko'
+                          ? `반복되는 실수 패턴 - 이전 세션에서도 "${analysis.corrections[currentReviewIndex].category}" 관련 교정이 있었습니다`
+                          : `Recurring pattern - you had "${analysis.corrections[currentReviewIndex].category}" corrections in previous sessions too`}
+                      </span>
+                    </div>
+                  )}
+
                   {/* Original */}
                   <div className="mb-4 sm:mb-6">
                     <span className="text-xs font-medium text-red-500 dark:text-red-400 uppercase tracking-wider">{t.whatYouSaid}</span>
@@ -1701,9 +1745,20 @@ function TalkContent() {
                         <p className="text-primary-900 dark:text-primary-200 mt-2 text-xs sm:text-sm">
                           {analysis.corrections[currentReviewIndex].explanation}
                         </p>
-                        <span className="inline-block mt-2 px-2 py-1 bg-primary-100 dark:bg-primary-500/20 text-primary-700 dark:text-primary-300 text-xs rounded-full">
-                          {analysis.corrections[currentReviewIndex].category}
-                        </span>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className={`inline-block px-2 py-1 text-xs rounded-full ${
+                            repeatedCategories.has(analysis.corrections[currentReviewIndex].category)
+                              ? 'bg-amber-200 dark:bg-amber-500/30 text-amber-700 dark:text-amber-300'
+                              : 'bg-primary-100 dark:bg-primary-500/20 text-primary-700 dark:text-primary-300'
+                          }`}>
+                            {analysis.corrections[currentReviewIndex].category}
+                          </span>
+                          {repeatedCategories.has(analysis.corrections[currentReviewIndex].category) && (
+                            <span className="inline-block px-2 py-0.5 bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-[10px] font-bold rounded-full uppercase tracking-wider">
+                              {language === 'ko' ? '습관 주의' : 'Habit Alert'}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <button
                         onClick={() => {

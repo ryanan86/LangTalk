@@ -38,13 +38,43 @@ if (!API_KEY) {
 }
 
 const genAI = new GoogleGenerativeAI(API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+const geminiModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-async function askGemini(prompt) {
+// 역할별 시스템 프롬프트
+const ROLES = {
+  researcher: `You are "젬팀장" (Team Lead Gem), the senior researcher for TapTalk, an AI English conversation practice app.
+Your role: Latest tech research, documentation verification, frontend/backend trend analysis, library updates.
+Tech stack: Next.js 14, TypeScript, Tailwind CSS, Vercel, Google Sheets as DB, Capacitor for mobile.
+Respond in Korean unless asked otherwise. Be thorough but concise with citations when possible.`,
+
+  meeting: `You are "젬팀장" (Team Lead Gem), a senior researcher and technical advisor in a TapTalk team meeting.
+TapTalk: AI English conversation practice app for Korean learners.
+Tech stack: Next.js 14, TypeScript, Tailwind CSS, Vercel, Google Sheets as DB, Fish Audio TTS, Deepgram STT, Capacitor for mobile.
+
+Team meeting rules:
+- Present your expert opinion with concrete reasoning
+- If you disagree with a proposed approach, clearly state WHY with alternatives
+- Do NOT just agree with others - provide counterarguments where appropriate
+- Consider cost, implementation complexity, and user experience tradeoffs
+- Respond in Korean`,
+
+  ux: `You are "젬팀장" (Team Lead Gem), a UX/UI research specialist for TapTalk mobile app.
+Your role: Research latest UI trends, mobile UX patterns, accessibility, and design system recommendations.
+Focus on: mobile-first, Korean/international UX patterns, PWA/native considerations.
+Respond in Korean unless asked otherwise.`,
+
+  default: `You are "젬팀장" (Team Lead Gem), a versatile senior researcher for TapTalk, an AI English conversation practice app.
+You help with tech research, documentation, trend analysis, and technical decisions.
+Respond in Korean unless asked otherwise. Be concise and actionable.`,
+};
+
+async function askGemini(prompt, role) {
   try {
     const maxTokens = parseInt(process.env.MAX_TOKENS || "16384", 10);
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    const systemPrompt = ROLES[role] || ROLES.default;
+    const fullPrompt = `[Role Context]\n${systemPrompt}\n\n[Question]\n${prompt}`;
+    const result = await geminiModel.generateContent({
+      contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
       generationConfig: { maxOutputTokens: maxTokens },
     });
     const response = await result.response;
@@ -55,25 +85,43 @@ async function askGemini(prompt) {
   }
 }
 
-// 메인 실행
+// 인자 파싱
 const args = process.argv.slice(2);
 
 if (args.length === 0) {
-  console.error("사용법: node ask_gemini.mjs \"질문 내용\"");
+  console.error(`사용법:
+  node ask_gemini.mjs "질문 내용"
+  node ask_gemini.mjs --role meeting "회의 안건"
+  node ask_gemini.mjs --role researcher "리서치 질문"
+  node ask_gemini.mjs --role ux "UX 관련 질문"
+  node ask_gemini.mjs --file prompt.txt`);
   process.exit(1);
 }
 
+let role = "default";
 let prompt;
+const remaining = [];
 
-if (args[0] === "--file" && args[1]) {
-  // 파일에서 프롬프트 읽기
-  const fs = await import("fs");
-  prompt = fs.readFileSync(args[1], "utf-8");
-} else {
-  // 직접 프롬프트
-  prompt = args.join(" ");
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === "--role" && args[i + 1]) {
+    role = args[++i];
+  } else if (args[i] === "--file" && args[i + 1]) {
+    const filePath = args[++i];
+    prompt = readFileSync(filePath, "utf-8");
+  } else {
+    remaining.push(args[i]);
+  }
 }
 
-console.log("=== Gemini 응답 ===\n");
-const answer = await askGemini(prompt);
+if (!prompt) {
+  prompt = remaining.join(" ");
+}
+
+if (!prompt.trim()) {
+  console.error("질문 내용을 입력해주세요.");
+  process.exit(1);
+}
+
+console.log(`=== 젬팀장 (gemini-2.5-flash, role: ${role}) ===\n`);
+const answer = await askGemini(prompt, role);
 console.log(answer);

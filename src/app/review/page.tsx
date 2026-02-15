@@ -13,6 +13,8 @@ interface Correction {
   difficulty: number;
   interval: number;
   repetitions: number;
+  isRepeated?: boolean;
+  categoryRepeatCount?: number;
 }
 
 const qualityLabels = {
@@ -295,21 +297,54 @@ export default function ReviewPage() {
       <main className="flex-1 flex flex-col max-w-2xl mx-auto w-full p-4">
         <div className="flex-1 flex flex-col justify-center">
           {/* Card */}
-          <div className="bg-white dark:bg-dark-surface rounded-2xl shadow-lg dark:shadow-none dark:border dark:border-neutral-800 p-6 mb-6">
+          <div className={`rounded-2xl shadow-lg dark:shadow-none p-6 mb-6 ${
+            currentCorrection.isRepeated
+              ? 'bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 dark:border-amber-500/50'
+              : 'bg-white dark:bg-dark-surface dark:border dark:border-neutral-800'
+          }`}>
+            {/* Repeated Pattern Warning */}
+            {currentCorrection.isRepeated && (
+              <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-amber-100 dark:bg-amber-500/20 rounded-lg">
+                <svg className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                  {language === 'ko'
+                    ? `반복 실수 - ${currentCorrection.category} 관련 교정이 ${currentCorrection.categoryRepeatCount}개 있습니다`
+                    : `Repeated pattern - ${currentCorrection.categoryRepeatCount} corrections in "${currentCorrection.category}"`}
+                </span>
+              </div>
+            )}
+
             {/* Question - What user said */}
             <div className="mb-6">
               <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {language === 'ko' ? '당신이 말한 것' : 'What you said'}
               </span>
-              <p className="text-xl text-neutral-800 dark:text-white mt-2 font-medium">
+              <p className={`text-xl mt-2 font-medium ${
+                currentCorrection.isRepeated
+                  ? 'text-amber-800 dark:text-amber-200'
+                  : 'text-neutral-800 dark:text-white'
+              }`}>
                 {currentCorrection.original}
               </p>
             </div>
 
             {/* Category Badge */}
-            <span className="inline-block px-3 py-1 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 text-xs rounded-full mb-6">
-              {currentCorrection.category}
-            </span>
+            <div className="flex items-center gap-2 mb-6">
+              <span className={`inline-block px-3 py-1 text-xs rounded-full ${
+                currentCorrection.isRepeated
+                  ? 'bg-amber-200 dark:bg-amber-500/30 text-amber-700 dark:text-amber-300'
+                  : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
+              }`}>
+                {currentCorrection.category}
+              </span>
+              {currentCorrection.isRepeated && (
+                <span className="inline-block px-2 py-0.5 bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-[10px] font-bold rounded-full uppercase tracking-wider">
+                  {language === 'ko' ? '습관 주의' : 'Habit Alert'}
+                </span>
+              )}
+            </div>
 
             {/* Answer Section */}
             {!showAnswer ? (
@@ -434,7 +469,7 @@ export default function ReviewPage() {
 
         {/* Quality Rating */}
         {showAnswer && (
-          <div className="pb-6">
+          <div style={{ paddingBottom: 'max(1.5rem, calc(0.5rem + env(safe-area-inset-bottom)))' }}>
             <p className="text-center text-sm text-neutral-500 dark:text-neutral-400 mb-3">
               {language === 'ko' ? '얼마나 잘 알고 있었나요?' : 'How well did you know this?'}
             </p>

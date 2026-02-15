@@ -55,10 +55,27 @@ export async function GET(request: NextRequest) {
       new Date(a.nextReviewAt).getTime() - new Date(b.nextReviewAt).getTime()
     );
 
+    // Detect repeated patterns across ALL user corrections
+    const allCorrections = dueOnly
+      ? (await getLearningData(email))?.corrections || []
+      : corrections;
+    const categoryCounts: Record<string, number> = {};
+    for (const c of allCorrections) {
+      if (c.status === 'active') {
+        categoryCounts[c.category] = (categoryCounts[c.category] || 0) + 1;
+      }
+    }
+    // Categories with 2+ active corrections are repeated patterns
+    const repeatedCategories = new Set(
+      Object.entries(categoryCounts)
+        .filter(([, count]) => count >= 2)
+        .map(([cat]) => cat)
+    );
+
     // Apply limit
     const limitedCorrections = corrections.slice(0, limit);
 
-    // Transform to legacy format for backward compatibility
+    // Transform with repeat detection
     const formattedCorrections = limitedCorrections.map(c => ({
       correctionId: c.id,
       email,
@@ -74,11 +91,16 @@ export async function GET(request: NextRequest) {
       repetitions: c.repetitions,
       lastReviewedAt: c.lastReviewedAt || '',
       status: c.status,
+      isRepeated: repeatedCategories.has(c.category),
+      categoryRepeatCount: categoryCounts[c.category] || 1,
     }));
 
     return NextResponse.json({
       corrections: formattedCorrections,
       count: corrections.length,
+      repeatedPatterns: Object.entries(categoryCounts)
+        .filter(([, count]) => count >= 2)
+        .map(([category, count]) => ({ category, count })),
       email,
     });
   } catch (error) {
