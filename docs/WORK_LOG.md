@@ -4,6 +4,39 @@ Daily development history for TapTalk (taptalk.xyz).
 
 ---
 
+## 2026-02-15 (Sat)
+
+### Summary
+Recurring mistake tracking & habit correction feature, saveAsImage mobile bug fix, report UI recurring pattern indicators, Stitch MCP setup.
+
+### Commits
+| Hash | Type | Description |
+|------|------|-------------|
+| `b991109` | feat | Recurring mistake detection with visual highlights + Galaxy Fold bottom fix |
+| `5881f4a` | fix | saveAsImage single merged image + report recurring pattern indicators |
+| `7c0c76e` | config | (private) Claude settings with Stitch MCP + API keys backup |
+
+### Files Changed
+- `src/app/talk/page.tsx` - saveAsImage merged canvas fix, repeatedCategories in summary phase, pattern repeat rendering
+- `src/app/review/page.tsx` - Review flashcard amber styling for repeated corrections + Habit Alert badge
+- `src/app/api/corrections/route.ts` - Dynamic repeat detection by category count
+- `scripts/decision-injector.mjs` - Telegram permission response handling
+- `scripts/ask_gemini.mjs` - ROLES system with --role flag (meeting, researcher, ux)
+- `scripts/ask_gpt.mjs` - Added meeting role
+- `~/.claude/settings.json` - Stitch MCP server + STITCH_API_KEY added
+
+### Key Decisions
+- Recurring patterns detected dynamically from existing corrections data (no new DB columns)
+- saveAsImage changed from split multi-download to single merged canvas (mobile browsers block rapid sequential downloads)
+- Pattern-to-category mapping uses keyword heuristic (grammar/vocabulary/pronunciation)
+- Stitch MCP installed via `@_davideast/stitch-mcp proxy` for UI design generation
+
+### Known Issues Resolved
+- saveAsImage only saving last image on mobile (was: rapid link.click() blocked by browser)
+- Galaxy Fold 2 bottom UI overlap (was: missing safe-area-inset-bottom)
+
+---
+
 ## 2026-02-11 (Tue)
 
 ### Summary
