@@ -162,7 +162,7 @@ function HomePageContent() {
   const [isSubscribed, setIsSubscribed] = useState<boolean | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const [expiryDate, setExpiryDate] = useState<string | null>(null);
-  const [, setCheckingSubscription] = useState(false);
+  const [checkingSubscription, setCheckingSubscription] = useState(false);
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [signupMessage, setSignupMessage] = useState<string | null>(null);
   const [sessionCount, setSessionCount] = useState<number>(0);
@@ -480,7 +480,7 @@ function HomePageContent() {
       const res = await fetch('/api/check-subscription');
       const data = await res.json();
       setIsSubscribed(data.subscribed);
-      setSubscriptionStatus(data.status || null);
+      setSubscriptionStatus(data.status || (data.subscribed ? 'active' : 'not_found'));
       setExpiryDate(data.expiryDate || null);
       setSessionCount(data.sessionCount || 0);
       setEvaluatedGrade(data.evaluatedGrade || null);
@@ -995,7 +995,7 @@ function HomePageContent() {
               )}
 
               {/* Beta Signup States */}
-              {session && subscriptionStatus === 'not_found' && (
+              {session && !checkingSubscription && subscriptionStatus === 'not_found' && (
                 <div className="max-w-md mx-auto text-center py-12">
                   <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-white/10 flex items-center justify-center mx-auto mb-6">
                     <svg className="w-10 h-10 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1413,14 +1413,22 @@ function HomePageContent() {
                           }
                         }}
                       >
+                        {/* Tutor Image (always visible as base layer) */}
+                        <img
+                          src={`/tutors/${getTutorFileName(tutor.id)}.jpg`}
+                          alt={tutor.name}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                        {/* Tutor Video (plays on hover/tap, overlays image) */}
                         <video
                           ref={(el) => { videoRefs.current[`demo-${tutor.id}`] = el; }}
                           src={`/tutors/${getTutorFileName(tutor.id)}_greeting.mp4`}
-                          poster={`/tutors/${getTutorFileName(tutor.id)}.jpg`}
                           muted
                           playsInline
                           preload="metadata"
-                          className="absolute inset-0 w-full h-full object-cover"
+                          className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300"
+                          onPlay={(e) => { (e.target as HTMLVideoElement).classList.remove('opacity-0'); }}
+                          onPause={(e) => { (e.target as HTMLVideoElement).classList.add('opacity-0'); }}
                         />
                         {/* Name overlay */}
                         <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4 bg-gradient-to-t from-black/70 to-transparent">

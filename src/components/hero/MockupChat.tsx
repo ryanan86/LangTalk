@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 function FlagSvg({ country }: { country: 'US' | 'UK' }) {
   if (country === 'US') {
@@ -71,6 +71,12 @@ export default function MockupChat() {
   const [timer, setTimer] = useState('0:42');
 
   const tutor = TUTORS[tutorIndex];
+  const tutorIndexRef = useRef(tutorIndex);
+  const timersRef = useRef<NodeJS.Timeout[]>([]);
+
+  useEffect(() => {
+    tutorIndexRef.current = tutorIndex;
+  }, [tutorIndex]);
 
   const playSequence = useCallback(() => {
     // AI speaks
@@ -97,16 +103,17 @@ export default function MockupChat() {
   }, []);
 
   useEffect(() => {
-    const timers = playSequence();
+    timersRef.current = playSequence();
     const loop = setInterval(() => {
-      timers.push(...playSequence());
+      timersRef.current.forEach(clearTimeout);
+      timersRef.current = playSequence();
     }, 12500);
 
     return () => {
-      timers.forEach(clearTimeout);
+      timersRef.current.forEach(clearTimeout);
       clearInterval(loop);
     };
-  }, [tutorIndex, playSequence]);
+  }, [playSequence]);
 
   // Fake timer count
   useEffect(() => {
@@ -141,7 +148,7 @@ export default function MockupChat() {
       <div className="flex-1 flex flex-col items-center justify-center relative px-4">
         {/* Ambient glow */}
         <div
-          className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[250px] h-[250px] rounded-full opacity-25 transition-all duration-500"
+          className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[150px] h-[150px] rounded-full opacity-25 transition-all duration-500"
           style={{
             background: `radial-gradient(circle, ${
               isListening ? 'rgba(239,68,68,0.5)' :
@@ -153,18 +160,19 @@ export default function MockupChat() {
         />
 
         {/* Tutor avatar */}
-        <div className="relative mb-3">
-          {/* Animated ring for active states */}
+        <div className="relative mb-3 flex items-center justify-center">
+          {/* Animated glow for active states */}
           {status !== 'idle' && (
             <div
-              className={`absolute inset-0 rounded-full bg-gradient-to-br ${tutor.gradient} opacity-25 blur-lg`}
-              style={{ transform: 'scale(1.25)' }}
+              className={`absolute w-40 h-40 rounded-full bg-gradient-to-br ${tutor.gradient} opacity-25 blur-xl`}
             />
           )}
           {isSpeaking && (
             <div
-              className={`absolute inset-0 rounded-full bg-gradient-to-br ${tutor.gradient} opacity-20 animate-ping`}
-              style={{ transform: 'scale(1.15)' }}
+              className={`absolute w-36 h-36 rounded-full bg-gradient-to-br ${tutor.gradient} opacity-20`}
+              style={{
+                animation: 'mockup-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite',
+              }}
             />
           )}
 
@@ -180,13 +188,12 @@ export default function MockupChat() {
             <img
               src={tutor.imagePath}
               alt={tutor.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-top"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = 'none';
-                (e.target as HTMLImageElement).parentElement!.classList.add(`bg-gradient-to-br`, ...tutor.gradient.split(' '));
               }}
             />
-            <div className={`absolute inset-0 ${tutor.gradient.replace('from-', 'bg-gradient-to-br from-').split(' ').join(' ')} flex items-center justify-center`} style={{ zIndex: -1 }}>
+            <div className={`absolute inset-0 bg-gradient-to-br ${tutor.gradient} flex items-center justify-center`} style={{ zIndex: -1 }}>
               <span className="text-2xl font-bold text-white">{tutor.name[0]}</span>
             </div>
           </div>
