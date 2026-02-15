@@ -129,6 +129,11 @@ function TalkContent() {
   const audioCacheRef = useRef<Map<string, Promise<Blob>>>(new Map());
   const fillerAudioRef = useRef<HTMLAudioElement | null>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
+
+  // Deepgram streaming STT refs
+  const deepgramSocketRef = useRef<WebSocket | null>(null);
+  const realtimeTranscriptRef = useRef<string>('');
+  const deepgramKeyRef = useRef<string | null>(null);
   const [isSavingImage, setIsSavingImage] = useState(false);
 
   // Speaking Evaluation state (algorithmic grade-level analysis)
@@ -446,10 +451,12 @@ function TalkContent() {
 
   const startRecording = async () => {
     initialRecordingStoppedRef.current = false;
-    // Lip-sync disabled
-    // if (audioRef.current) connectAudio(audioRef.current);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Start mic and Deepgram connection in parallel
+      const [stream] = await Promise.all([
+        navigator.mediaDevices.getUserMedia({ audio: true }),
+        connectDeepgram(),
+      ]);
 
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
         ? 'audio/webm;codecs=opus'
@@ -464,18 +471,30 @@ function TalkContent() {
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
+          sendToDeepgram(event.data);
         }
       };
 
       mediaRecorder.onstop = async () => {
-        if (initialRecordingStoppedRef.current) return; // Prevent double processing
+        if (initialRecordingStoppedRef.current) return;
         initialRecordingStoppedRef.current = true;
         stream.getTracks().forEach(track => track.stop());
-        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-        await processAudio(audioBlob, true);
+
+        // Close Deepgram and grab transcript
+        closeDeepgram();
+        const dgTranscript = realtimeTranscriptRef.current.trim();
+
+        if (dgTranscript) {
+          // Deepgram success - skip Whisper entirely
+          await processAudioWithText(dgTranscript, true);
+        } else {
+          // Fallback to Whisper
+          const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+          await processAudio(audioBlob, true);
+        }
       };
 
-      mediaRecorder.start(1000);
+      mediaRecorder.start(250); // 250ms chunks for real-time streaming
       setPhase('recording');
       setTimeLeft(0);
     } catch (error) {
@@ -511,10 +530,17 @@ function TalkContent() {
         try {
           recorder.stream?.getTracks().forEach(track => track.stop());
         } catch { /* ignore */ }
-        // Build blob from whatever data we have and proceed
-        const mimeType = recorder.mimeType || 'audio/webm';
-        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-        processAudio(audioBlob, true);
+        // Close Deepgram
+        closeDeepgram();
+        const dgTranscript = realtimeTranscriptRef.current.trim();
+
+        if (dgTranscript) {
+          processAudioWithText(dgTranscript, true);
+        } else {
+          const mimeType = recorder.mimeType || 'audio/webm';
+          const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+          processAudio(audioBlob, true);
+        }
       }
     }, 2000);
   }, [phase]);
@@ -536,7 +562,11 @@ function TalkContent() {
     const speakingStartTime = Date.now();
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Start mic and Deepgram connection in parallel
+      const [stream] = await Promise.all([
+        navigator.mediaDevices.getUserMedia({ audio: true }),
+        connectDeepgram(),
+      ]);
 
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
         ? 'audio/webm;codecs=opus'
@@ -552,6 +582,7 @@ function TalkContent() {
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
+          sendToDeepgram(event.data);
         }
       };
 
@@ -561,12 +592,21 @@ function TalkContent() {
         const speakingDuration = (Date.now() - speakingStartTime) / 1000;
         userSpeakingTimeRef.current += speakingDuration;
 
-        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         stream.getTracks().forEach(track => track.stop());
-        await processAudio(audioBlob, false);
+
+        // Close Deepgram and grab transcript
+        closeDeepgram();
+        const dgTranscript = realtimeTranscriptRef.current.trim();
+
+        if (dgTranscript) {
+          await processAudioWithText(dgTranscript, false);
+        } else {
+          const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+          await processAudio(audioBlob, false);
+        }
       };
 
-      mediaRecorder.start(1000);
+      mediaRecorder.start(250); // 250ms chunks for real-time streaming
     } catch (error) {
       console.error('Recording error:', error);
       setIsRecordingReply(false);
@@ -617,6 +657,105 @@ function TalkContent() {
       if (!isEndingSessionRef.current) {
         setIsProcessing(false);
       }
+    }
+  };
+
+  // ========== Deepgram Streaming STT ==========
+
+  const connectDeepgram = async (): Promise<void> => {
+    try {
+      // Fetch API key if not cached
+      if (!deepgramKeyRef.current) {
+        const res = await fetch('/api/deepgram-token');
+        if (!res.ok) return;
+        const { key } = await res.json();
+        if (!key) return;
+        deepgramKeyRef.current = key;
+      }
+
+      realtimeTranscriptRef.current = '';
+      const apiKey = deepgramKeyRef.current!;
+
+      const socket = new WebSocket(
+        'wss://api.deepgram.com/v1/listen?model=nova-2&language=en&smart_format=true&punctuate=true&interim_results=false&endpointing=300',
+        ['token', apiKey]
+      );
+
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'Results' && data.is_final) {
+            const transcript = data.channel?.alternatives?.[0]?.transcript;
+            if (transcript) {
+              realtimeTranscriptRef.current += (realtimeTranscriptRef.current ? ' ' : '') + transcript;
+            }
+          }
+        } catch { /* ignore parse errors */ }
+      };
+
+      socket.onerror = () => {
+        console.warn('Deepgram WebSocket error - will fallback to Whisper');
+      };
+
+      deepgramSocketRef.current = socket;
+
+      // Wait for connection to open (max 3 seconds)
+      await new Promise<void>((resolve) => {
+        const timeout = setTimeout(resolve, 3000);
+        socket.onopen = () => {
+          clearTimeout(timeout);
+          resolve();
+        };
+      });
+    } catch {
+      console.warn('Deepgram connection failed - will use Whisper fallback');
+    }
+  };
+
+  const closeDeepgram = () => {
+    const socket = deepgramSocketRef.current;
+    if (socket) {
+      try {
+        if (socket.readyState === WebSocket.OPEN) {
+          // Send close signal to Deepgram
+          socket.send(JSON.stringify({ type: 'CloseStream' }));
+        }
+        socket.close();
+      } catch { /* ignore */ }
+      deepgramSocketRef.current = null;
+    }
+  };
+
+  const sendToDeepgram = (data: Blob) => {
+    const socket = deepgramSocketRef.current;
+    if (socket?.readyState === WebSocket.OPEN) {
+      socket.send(data);
+    }
+  };
+
+  const processAudioWithText = async (text: string, isInitial: boolean) => {
+    setIsProcessing(true);
+    try {
+      if (text.trim()) {
+        const userMessage: Message = { role: 'user', content: text };
+        const newMessages = [...messages, userMessage];
+        setMessages(newMessages);
+        if (isInitial) setPhase('interview');
+        await getAIResponse(newMessages);
+      } else {
+        if (isInitial) {
+          setPhase('interview');
+          const defaultMessage: Message = { role: 'user', content: "Hi, I'd like to practice English conversation." };
+          const newMessages = [defaultMessage];
+          setMessages(newMessages);
+          await getAIResponse(newMessages);
+        }
+      }
+    } catch (error) {
+      console.error('processAudioWithText error:', error);
+      if (isInitial && !isEndingSessionRef.current) setPhase('interview');
+    } finally {
+      if (!isEndingSessionRef.current) setIsProcessing(false);
     }
   };
 
