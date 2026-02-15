@@ -142,37 +142,61 @@ function TalkContent() {
   const [isLoadingEval, setIsLoadingEval] = useState(false);
   const [repeatedCategories, setRepeatedCategories] = useState<Set<string>>(new Set());
 
-  // Save summary as image (split into multiple pages)
+  // Save summary as single merged image (mobile browsers block rapid sequential downloads)
   const saveAsImage = async () => {
     if (!summaryRef.current) return;
 
     setIsSavingImage(true);
     try {
-      // Wait for fonts to load before capturing
       await document.fonts.ready;
 
       const isDark = document.documentElement.classList.contains('dark');
       const bgColor = isDark ? '#1a1a1a' : '#f5f5f5';
       const sections = summaryRef.current.querySelectorAll<HTMLElement>('[data-report-section]');
       const date = new Date().toISOString().split('T')[0];
-      const total = sections.length;
+      const scale = 3;
+      const gap = 24 * scale; // spacing between sections
 
-      for (let i = 0; i < total; i++) {
+      // Capture all sections first
+      const canvases: HTMLCanvasElement[] = [];
+      for (let i = 0; i < sections.length; i++) {
         const canvas = await html2canvas(sections[i], {
           backgroundColor: bgColor,
-          scale: 3,
+          scale,
           useCORS: true,
           logging: false,
           allowTaint: true,
         });
-        const link = document.createElement('a');
-        link.download = `taptalk-report-${date}-${i + 1}of${total}.jpg`;
-        link.href = canvas.toDataURL('image/jpeg', 0.9);
-        link.click();
-        if (i < total - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
+        canvases.push(canvas);
       }
+
+      // Merge into single tall canvas
+      const totalWidth = Math.max(...canvases.map(c => c.width));
+      const totalHeight = canvases.reduce((sum, c) => sum + c.height, 0) + gap * (canvases.length - 1);
+
+      const merged = document.createElement('canvas');
+      merged.width = totalWidth;
+      merged.height = totalHeight;
+      const ctx = merged.getContext('2d');
+      if (!ctx) throw new Error('Canvas context unavailable');
+
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(0, 0, totalWidth, totalHeight);
+
+      let y = 0;
+      for (const canvas of canvases) {
+        const x = Math.round((totalWidth - canvas.width) / 2);
+        ctx.drawImage(canvas, x, y);
+        y += canvas.height + gap;
+      }
+
+      // Single download - works reliably on mobile
+      const link = document.createElement('a');
+      link.download = `taptalk-report-${date}.jpg`;
+      link.href = merged.toDataURL('image/jpeg', 0.92);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } catch (error) {
       console.error('Failed to save image:', error);
     } finally {
@@ -376,9 +400,9 @@ function TalkContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, analysis, currentReviewIndex, hasPlayedReviewIntro, lastPlayedReviewIndex, isPlaying]);
 
-  // Detect repeated mistake categories when entering review phase
+  // Detect repeated mistake categories when entering review or summary phase
   useEffect(() => {
-    if (phase === 'review' && analysis?.corrections?.length) {
+    if ((phase === 'review' || phase === 'summary') && analysis?.corrections?.length) {
       fetch('/api/corrections?due=false&limit=100')
         .then(res => res.json())
         .then(data => {
@@ -2259,15 +2283,35 @@ function TalkContent() {
                       {t.areasToFocus}
                     </h3>
                     <div className="space-y-3">
-                      {analysis.patterns.map((pattern, idx) => (
-                        <div key={idx} className="p-3 bg-amber-50 dark:bg-amber-500/10 rounded-xl">
+                      {analysis.patterns.map((pattern, idx) => {
+                        const lower = pattern.type.toLowerCase();
+                        const patternCategory = (lower.includes('vocab') || lower.includes('word choice') || lower.includes('collocation'))
+                          ? 'vocabulary'
+                          : (lower.includes('pronunc'))
+                          ? 'pronunciation'
+                          : 'grammar';
+                        const isRepeated = repeatedCategories.has(patternCategory);
+                        return (
+                        <div key={idx} className={`p-3 bg-amber-50 dark:bg-amber-500/10 rounded-xl ${isRepeated ? 'border-2 border-amber-400' : ''}`}>
+                          {isRepeated && (
+                            <div className="flex items-center gap-2 mb-2 px-2 py-1.5 bg-amber-100 dark:bg-amber-500/20 rounded-lg">
+                              <svg className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                              <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider">Recurring Pattern</span>
+                            </div>
+                          )}
                           <div className="flex justify-between items-center mb-1">
-                            <span className="font-medium text-amber-900 dark:text-amber-300 text-sm">{pattern.type}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-amber-900 dark:text-amber-300 text-sm">{pattern.type}</span>
+                              {isRepeated && (
+                                <span className="px-2 py-0.5 bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-[10px] font-bold rounded-full uppercase tracking-wider">Habit Alert</span>
+                              )}
+                            </div>
                             <span className="text-xs bg-amber-200 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-full">{pattern.count}x</span>
                           </div>
                           <p className="text-xs sm:text-sm text-amber-700 dark:text-amber-400">{pattern.tip}</p>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}

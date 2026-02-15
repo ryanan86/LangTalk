@@ -153,6 +153,52 @@ Scheduled call notification system (Firebase + Web Push + GitHub Actions cron), 
 
 ---
 
+## 2026-02-13 (Thu)
+
+### Summary
+Incoming call page overhaul (audio, slide-to-answer, visual effects), tutor card bug fixes (Android + iOS), schedule unsaved warning UX, cron migration to cron-job.org, timezone auto-sync.
+
+### Commits (8 total)
+| Hash | Type | Description |
+|------|------|-------------|
+| `96d9028` | fix | cron-job.org migration + isWithinWindow time matching |
+| `562cf5c` | fix | manifest.json id field + timezone auto-sync on app load |
+| `3c80025` | fix | Replace PWA icons with official TapTalk logo |
+| `c30c254` | chore | Add setup-bundle to gitignore |
+| `2e10cde` | feat | Overhaul incoming call with ringtone, slide-to-answer, and visual effects |
+| `c8e0063` | fix | Tutor card image overflow on Android WebView when selected |
+| `7c8224d` | fix | Tutor card image sizing on iOS PWA |
+| `cafaf44` | feat | Warn when schedule changes are unsaved on profile save |
+
+### Files Changed
+- `src/app/incoming-call/page.tsx` - Full overhaul: audio ringtone, slide-to-answer gesture, shake animation, background pulse rings, auto-dismiss timer (30s), haptic feedback
+- `src/app/globals.css` - Shake keyframe animation added
+- `public/audio/ringtone.mp3` - **New** Marimba ringtone (Ryan's choice, 417KB, 26s loop)
+- `src/components/onboarding/TutorIntroCarousel.tsx` - Android WebView overflow fix (transition-all -> transition-colors transition-shadow, added rounded-t-2xl overflow-hidden)
+- `src/app/page.tsx` - Tutor card image fix for iOS PWA (video poster -> img base layer + video overlay), timezone auto-sync on load
+- `src/components/settings/ScheduleSettings.tsx` - Dirty state tracking via onDirtyChange callback (markDirty/markClean)
+- `src/app/profile/page.tsx` - Unsaved schedule warning banner with "Go Save Schedule" / "Save Profile Only" options
+- `scripts/ask_gpt.mjs` - Multi-model support (gpt-4o-mini, gpt-4o, o3-mini, o1) + role system (strategist, reviewer, ux, architect)
+- `src/app/api/cron/scheduled-calls/route.ts` - isWithinWindow +-15min matching, cron-job.org auth
+- `public/manifest.json` - id field added for iOS PWA
+- `.gitignore` - setup-bundle/ added
+
+### Key Decisions
+- Cron: GitHub Actions -> cron-job.org (free, 30-min interval, more reliable)
+- Incoming call ringtone: Ryan's marimba file (Opening-Marimba-.mp3)
+- iOS PWA: video poster doesn't respect object-cover -> img tag as base layer with video overlay
+- Android WebView: transition-all breaks overflow-hidden -> use transition-colors transition-shadow
+- Schedule UX: Warning banner when profile save clicked with unsaved schedule changes
+- Tutor card images have inconsistent aspect ratios (emma 1645x1318, charlotte 1024x559) -> fixed with object-cover img
+
+### Known Issues Resolved
+- Incoming call page had no audio or visual feedback (now has ringtone, pulse, shake)
+- Tutor card image corners become square on Android WebView when selected
+- Tutor cards have uneven sizes on iOS PWA (inconsistent image aspect ratios)
+- Schedule changes silently lost when only "Save Profile" clicked
+
+---
+
 ## Template
 
 ```

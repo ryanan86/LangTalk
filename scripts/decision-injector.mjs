@@ -89,6 +89,47 @@ async function main() {
     try { data = JSON.parse(input); } catch {}
 
     const COMMAND_FILE = join(DECISIONS_DIR, 'command.json');
+    const PERM_RESPONSE_FILE = join(DECISIONS_DIR, 'permission-response.json');
+
+    // 0. 텔레그램 권한 승인 확인 (permission-response.json)
+    if (existsSync(PERM_RESPONSE_FILE)) {
+      let permResponse;
+      try {
+        permResponse = JSON.parse(readFileSync(PERM_RESPONSE_FILE, 'utf-8'));
+      } catch {
+        try { unlinkSync(PERM_RESPONSE_FILE); } catch {}
+      }
+
+      if (permResponse?.decision) {
+        try { unlinkSync(PERM_RESPONSE_FILE); } catch {}
+
+        try {
+          mkdirSync(DECISIONS_DIR, { recursive: true });
+          appendFileSync(HISTORY_FILE, JSON.stringify({
+            timestamp: new Date().toISOString(),
+            type: 'permission',
+            decision: permResponse.decision,
+            always: permResponse.always || false,
+            from: 'telegram',
+          }) + '\n');
+        } catch {}
+
+        const reason = [
+          `[TELEGRAM PERMISSION RESPONSE]`,
+          `권한 요청에 대한 사용자 결정: ${permResponse.decision === 'allow' ? 'ALLOW (허용)' : 'DENY (거부)'}`,
+          permResponse.always ? '(항상 허용으로 설정됨)' : '',
+          permResponse.reason ? `사유: ${permResponse.reason}` : '',
+          ``,
+          `이 결정을 반영하여 작업을 계속하세요.`,
+        ].filter(Boolean).join('\n');
+
+        console.log(JSON.stringify({
+          decision: 'block',
+          reason,
+        }));
+        return;
+      }
+    }
 
     // 1. 텔레그램 명령 주입 확인 (command.json)
     if (existsSync(COMMAND_FILE)) {
