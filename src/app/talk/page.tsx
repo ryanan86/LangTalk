@@ -1883,18 +1883,18 @@ function TalkContent() {
 
         {/* ========== SUMMARY PHASE ========== */}
         {phase === 'summary' && (
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <div className="flex-1 overflow-y-auto bg-[#020617]">
             {/* Save as Image Button */}
-            <div className="flex justify-end mb-4">
+            <div className="sticky top-0 z-10 flex justify-end p-4 bg-gradient-to-b from-[#020617] via-[#020617]/80 to-transparent">
               <button
                 onClick={saveAsImage}
                 disabled={isSavingImage}
-                className="flex items-center gap-2 px-3 py-2 text-sm bg-white dark:bg-dark-surface border border-neutral-200 dark:border-neutral-700 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2.5 text-sm report-glass rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all disabled:opacity-50"
               >
                 {isSavingImage ? (
-                  <div className="w-4 h-4 border-2 border-neutral-400 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-white/40 border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <svg className="w-4 h-4 text-neutral-600 dark:text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 )}
@@ -1903,20 +1903,20 @@ function TalkContent() {
             </div>
 
             {/* Report Content - for image capture */}
-            <div ref={summaryRef} className="rounded-2xl overflow-hidden">
+            <div ref={summaryRef} className="overflow-hidden px-4 pb-4 space-y-1">
               {/* Section: Header + Tutor */}
-              <div data-report-section className="bg-neutral-50 dark:bg-[#1a1a1a] p-4">
-                <div className="flex items-center justify-between text-xs mb-4 pb-3 border-b border-neutral-200 dark:border-neutral-700">
+              <div data-report-section className="bg-gradient-to-b from-slate-900/80 to-transparent p-4">
+                <div className="flex items-center justify-between text-xs mb-4 pb-3 border-b border-white/10">
                   <div className="flex items-center gap-2">
                     <TapTalkLogo size="sm" theme="light" iconOnly />
-                    <span className="font-semibold text-neutral-800 dark:text-neutral-200">{userName || 'Student'}</span>
+                    <span className="font-semibold text-white">{userName || 'Student'}</span>
                     {birthYear && (
-                      <span className="text-neutral-500 dark:text-neutral-400">
+                      <span className="text-slate-400">
                         ({language === 'ko' ? '만' : 'Age'} {new Date().getFullYear() - birthYear}{language === 'ko' ? '세' : ''})
                       </span>
                     )}
                   </div>
-                  <span className="text-neutral-500 dark:text-neutral-400">{new Date().toLocaleDateString()}</span>
+                  <span className="text-slate-400">{new Date().toLocaleDateString()}</span>
                 </div>
 
                 <div className="text-center">
@@ -1926,7 +1926,8 @@ function TalkContent() {
                       size="lg"
                     />
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">{t.sessionComplete}</h2>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white">{t.sessionComplete}</h2>
+                  <p className="text-slate-400 text-sm mt-1">{new Date().toLocaleDateString()}</p>
                 </div>
               </div>
 
@@ -1938,13 +1939,13 @@ function TalkContent() {
             {analysis && (
               <>
                 {/* Section 2: Assessments */}
-                <div data-report-section className="bg-neutral-50 dark:bg-dark-surface px-4 py-4">
+                <div data-report-section className="px-0 py-2 space-y-3">
                 {/* AI Evaluated Level */}
                 {analysis.evaluatedGrade && analysis.levelDetails && (
-                  <div className="card-premium p-4 sm:p-6 mb-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-500/10 dark:to-purple-500/10">
-                    <h3 className="font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-2 text-sm sm:text-base">
-                      <span className="w-5 h-5 sm:w-6 sm:h-6 bg-indigo-100 rounded-full flex items-center justify-center">
-                        <svg className="w-3 h-3 sm:w-4 sm:h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="report-glass rounded-2xl p-4 sm:p-6 report-fade-up report-fade-up-1">
+                    <h3 className="font-semibold text-white mb-3 flex items-center gap-2 text-sm sm:text-base">
+                      <span className="w-5 h-5 sm:w-6 sm:h-6 bg-indigo-500/20 rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 sm:w-4 sm:h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
                       </span>
@@ -1956,8 +1957,8 @@ function TalkContent() {
                         <span className="text-white font-bold text-lg">{analysis.evaluatedGrade}</span>
                       </div>
                       <div>
-                        <p className="text-xs text-neutral-500">{language === 'ko' ? '평가 등급' : 'Evaluated Grade'}</p>
-                        <p className="text-lg font-bold text-neutral-900 dark:text-white">
+                        <p className="text-xs text-slate-400">{language === 'ko' ? '평가 등급' : 'Evaluated Grade'}</p>
+                        <p className="text-lg font-bold text-white">
                           {analysis.evaluatedGrade === 'K' && (language === 'ko' ? '유치원' : 'Kindergarten')}
                           {analysis.evaluatedGrade === '1-2' && (language === 'ko' ? '초등 1-2학년' : 'Grade 1-2')}
                           {analysis.evaluatedGrade === '3-4' && (language === 'ko' ? '초등 3-4학년' : 'Grade 3-4')}
@@ -1978,30 +1979,30 @@ function TalkContent() {
                         { label: language === 'ko' ? '유창성' : 'Fluency', value: analysis.levelDetails.fluency, color: 'bg-purple-500' },
                         { label: language === 'ko' ? '이해력' : 'Comprehension', value: analysis.levelDetails.comprehension, color: 'bg-amber-500' },
                       ].map((item) => (
-                        <div key={item.label} className="bg-white/60 dark:bg-white/5 rounded-lg p-2">
+                        <div key={item.label} className="bg-white/[0.04] rounded-lg p-2">
                           <div className="flex justify-between items-center mb-1">
-                            <span className="text-xs text-neutral-600 dark:text-neutral-300">{item.label}</span>
-                            <span className="text-xs font-bold text-neutral-900 dark:text-white">{item.value}</span>
+                            <span className="text-xs text-slate-400">{item.label}</span>
+                            <span className="text-xs font-bold text-white">{item.value}</span>
                           </div>
-                          <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
-                            <div className={`h-full ${item.color} rounded-full`} style={{ width: `${item.value}%` }} />
+                          <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div className={`h-full ${item.color} rounded-full progress-segment`} style={{ width: `${item.value}%` }} />
                           </div>
                         </div>
                       ))}
                     </div>
 
                     {analysis.levelDetails.summary && (
-                      <p className="mt-3 text-xs sm:text-sm text-neutral-600 dark:text-neutral-300 italic">{analysis.levelDetails.summary}</p>
+                      <p className="mt-3 text-xs sm:text-sm text-slate-400 italic">{analysis.levelDetails.summary}</p>
                     )}
                   </div>
                 )}
 
                 {/* Speaking Evaluation - Grade Level & Test Scores */}
                 {(isLoadingEval || speakingEval) && (
-                  <div className="card-premium p-4 sm:p-6 mb-4 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-500/10 dark:to-blue-500/10">
-                    <h3 className="font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-2 text-sm sm:text-base">
-                      <span className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                        <svg className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="report-glass rounded-2xl p-4 sm:p-6 report-fade-up report-fade-up-2">
+                    <h3 className="font-semibold text-white mb-3 flex items-center gap-2 text-sm sm:text-base">
+                      <span className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500/20 rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </span>
@@ -2010,21 +2011,21 @@ function TalkContent() {
 
                     {isLoadingEval ? (
                       <div className="flex items-center justify-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                        <span className="ml-3 text-sm text-neutral-600 dark:text-neutral-300">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
+                        <span className="ml-3 text-sm text-slate-400">
                           {language === 'ko' ? 'Speaking 분석 중...' : 'Analyzing speaking metrics...'}
                         </span>
                       </div>
                     ) : speakingEval && (
                       <>
                         {/* Primary Grade Level */}
-                        <div className="flex items-center gap-4 mb-4 p-3 bg-white/80 dark:bg-white/5 rounded-xl">
+                        <div className="flex items-center gap-4 mb-4 p-3 bg-white/[0.04] rounded-xl">
                           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
                             <span className="text-white font-bold text-lg">{speakingEval.gradeLevel?.grade}</span>
                           </div>
                           <div className="flex-1">
-                            <p className="text-lg font-bold text-neutral-900 dark:text-white">{speakingEval.gradeLevel?.usGrade}</p>
-                            <p className="text-xs text-neutral-500">{speakingEval.gradeLevel?.ukYear}</p>
+                            <p className="text-lg font-bold text-white">{speakingEval.gradeLevel?.usGrade}</p>
+                            <p className="text-xs text-slate-400">{speakingEval.gradeLevel?.ukYear}</p>
                             <span className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-medium ${
                               speakingEval.gradeLevel?.confidence === 'high' ? 'bg-green-100 text-green-700' :
                               speakingEval.gradeLevel?.confidence === 'medium' ? 'bg-amber-100 text-amber-700' :
@@ -2035,7 +2036,7 @@ function TalkContent() {
                           </div>
                         </div>
 
-                        <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mb-3 italic">
+                        <p className="text-[10px] text-slate-400 mb-3 italic">
                           {language === 'ko'
                             ? '* 영어 원어민 학년 기준으로 측정됩니다. ESL 학습자에게는 참고 지표로 활용하세요.'
                             : '* Measured against native English speaker grade levels. Use as a reference benchmark.'}
@@ -2045,26 +2046,26 @@ function TalkContent() {
                         {speakingEval.testScores && (
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
                             {/* IELTS */}
-                            <div className="bg-white/80 dark:bg-white/5 rounded-lg p-2 text-center">
-                              <p className="text-[10px] text-neutral-500">IELTS Speaking</p>
+                            <div className="bg-white/[0.04] rounded-lg p-2 text-center">
+                              <p className="text-[10px] text-slate-400">IELTS Speaking</p>
                               <p className="text-lg font-bold text-red-600">{speakingEval.testScores.ielts?.band}</p>
-                              <p className="text-[9px] text-neutral-400">/9.0</p>
+                              <p className="text-[9px] text-slate-500">/9.0</p>
                             </div>
                             {/* TOEFL */}
-                            <div className="bg-white/80 dark:bg-white/5 rounded-lg p-2 text-center">
-                              <p className="text-[10px] text-neutral-500">TOEFL Speaking</p>
+                            <div className="bg-white/[0.04] rounded-lg p-2 text-center">
+                              <p className="text-[10px] text-slate-400">TOEFL Speaking</p>
                               <p className="text-lg font-bold text-blue-600">{speakingEval.testScores.toefl?.score}</p>
-                              <p className="text-[9px] text-neutral-400">/30</p>
+                              <p className="text-[9px] text-slate-500">/30</p>
                             </div>
                             {/* TOEIC */}
-                            <div className="bg-white/80 dark:bg-white/5 rounded-lg p-2 text-center">
-                              <p className="text-[10px] text-neutral-500">TOEIC Speaking</p>
+                            <div className="bg-white/[0.04] rounded-lg p-2 text-center">
+                              <p className="text-[10px] text-slate-400">TOEIC Speaking</p>
                               <p className="text-lg font-bold text-amber-600">{speakingEval.testScores.toeic?.score}</p>
-                              <p className="text-[9px] text-neutral-400">/200 (Lv.{speakingEval.testScores.toeic?.level})</p>
+                              <p className="text-[9px] text-slate-500">/200 (Lv.{speakingEval.testScores.toeic?.level})</p>
                             </div>
                             {/* CEFR */}
-                            <div className="bg-white/80 dark:bg-white/5 rounded-lg p-2 text-center">
-                              <p className="text-[10px] text-neutral-500">CEFR</p>
+                            <div className="bg-white/[0.04] rounded-lg p-2 text-center">
+                              <p className="text-[10px] text-slate-400">CEFR</p>
                               <p className="text-lg font-bold text-purple-600">{speakingEval.testScores.cefr?.level}</p>
                             </div>
                           </div>
@@ -2072,26 +2073,26 @@ function TalkContent() {
 
                         {/* Metrics Breakdown */}
                         {speakingEval.metrics && (
-                          <div className="bg-white/60 dark:bg-white/5 rounded-lg p-3 mb-3">
-                            <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                          <div className="bg-white/[0.04] rounded-lg p-3 mb-3">
+                            <p className="text-xs font-medium text-slate-300 mb-2">
                               {language === 'ko' ? '측정 지표' : 'Measured Metrics'}
                             </p>
                             <div className="grid grid-cols-2 gap-2 text-xs">
                               <div className="flex justify-between">
-                                <span className="text-neutral-500">{language === 'ko' ? '평균 응답 길이' : 'Avg words/turn'}</span>
-                                <span className="font-medium">{speakingEval.metrics.avgWordsPerTurn}</span>
+                                <span className="text-slate-400">{language === 'ko' ? '평균 응답 길이' : 'Avg words/turn'}</span>
+                                <span className="font-medium text-white">{speakingEval.metrics.avgWordsPerTurn}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-neutral-500">{language === 'ko' ? '어휘 다양성' : 'Lexical diversity'}</span>
-                                <span className="font-medium">{Math.round(speakingEval.metrics.vocabulary?.lexicalDiversity * 100)}%</span>
+                                <span className="text-slate-400">{language === 'ko' ? '어휘 다양성' : 'Lexical diversity'}</span>
+                                <span className="font-medium text-white">{Math.round(speakingEval.metrics.vocabulary?.lexicalDiversity * 100)}%</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-neutral-500">{language === 'ko' ? '학술 어휘' : 'Academic vocab'}</span>
-                                <span className="font-medium">{speakingEval.metrics.vocabulary?.tier2Percentage}%</span>
+                                <span className="text-slate-400">{language === 'ko' ? '학술 어휘' : 'Academic vocab'}</span>
+                                <span className="font-medium text-white">{speakingEval.metrics.vocabulary?.tier2Percentage}%</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-neutral-500">{language === 'ko' ? '복문 비율' : 'Complex sentences'}</span>
-                                <span className="font-medium">{speakingEval.metrics.sentenceComplexity?.complexRatio}%</span>
+                                <span className="text-slate-400">{language === 'ko' ? '복문 비율' : 'Complex sentences'}</span>
+                                <span className="font-medium text-white">{speakingEval.metrics.sentenceComplexity?.complexRatio}%</span>
                               </div>
                             </div>
                           </div>
@@ -2099,8 +2100,8 @@ function TalkContent() {
 
                         {/* Age Comparison */}
                         {speakingEval.comparison?.expectedForAge && (
-                          <div className="bg-white/60 dark:bg-white/5 rounded-lg p-3 mb-3">
-                            <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                          <div className="bg-white/[0.04] rounded-lg p-3 mb-3">
+                            <p className="text-xs font-medium text-slate-300 mb-1">
                               {language === 'ko' ? '나이 대비 수준' : 'Performance vs Age'}
                             </p>
                             <div className="flex items-center gap-2">
@@ -2115,7 +2116,7 @@ function TalkContent() {
                                   ? (language === 'ko' ? '기대치 수준' : 'At Expected Level')
                                   : (language === 'ko' ? '기대치 미만' : 'Below Expected')}
                               </span>
-                              <span className="text-xs text-neutral-600 dark:text-neutral-300">
+                              <span className="text-xs text-slate-400">
                                 {language === 'ko'
                                   ? `기대 학년: ${speakingEval.comparison.expectedForAge}`
                                   : `Expected: Grade ${speakingEval.comparison.expectedForAge}`}
@@ -2250,12 +2251,12 @@ function TalkContent() {
                 </div>
 
                 {/* Section 3: Feedback */}
-                <div data-report-section className="bg-neutral-50 dark:bg-dark-surface px-4 pb-4">
+                <div data-report-section className="px-0 pb-2 space-y-3">
                 {/* Strengths */}
-                <div className="card-premium p-4 sm:p-6 mb-4">
-                  <h3 className="font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-2 text-sm sm:text-base">
-                    <span className="w-5 h-5 sm:w-6 sm:h-6 bg-green-100 rounded-full flex items-center justify-center">
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="report-glass rounded-2xl p-4 sm:p-6 report-fade-up report-fade-up-3">
+                  <h3 className="font-semibold text-white mb-3 flex items-center gap-2 text-sm sm:text-base">
+                    <span className="w-5 h-5 sm:w-6 sm:h-6 bg-emerald-500/20 rounded-full flex items-center justify-center">
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                     </span>
@@ -2263,7 +2264,7 @@ function TalkContent() {
                   </h3>
                   <ul className="space-y-2">
                     {analysis.strengths.map((strength, idx) => (
-                      <li key={idx} className="text-neutral-700 dark:text-neutral-300 text-xs sm:text-sm flex items-start gap-2">
+                      <li key={idx} className="text-slate-300 text-xs sm:text-sm flex items-start gap-2">
                         <span className="text-green-500 mt-0.5">•</span>
                         {strength}
                       </li>
@@ -2273,10 +2274,10 @@ function TalkContent() {
 
                 {/* Error Patterns */}
                 {analysis.patterns.length > 0 && (
-                  <div className="card-premium p-4 sm:p-6 mb-4">
-                    <h3 className="font-semibold text-neutral-900 dark:text-white mb-3 flex items-center gap-2 text-sm sm:text-base">
-                      <span className="w-5 h-5 sm:w-6 sm:h-6 bg-amber-100 rounded-full flex items-center justify-center">
-                        <svg className="w-3 h-3 sm:w-4 sm:h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="report-glass rounded-2xl p-4 sm:p-6 report-fade-up report-fade-up-4">
+                    <h3 className="font-semibold text-white mb-3 flex items-center gap-2 text-sm sm:text-base">
+                      <span className="w-5 h-5 sm:w-6 sm:h-6 bg-amber-500/20 rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
                       </span>
@@ -2292,23 +2293,23 @@ function TalkContent() {
                           : 'grammar';
                         const isRepeated = repeatedCategories.has(patternCategory);
                         return (
-                        <div key={idx} className={`p-3 bg-amber-50 dark:bg-amber-500/10 rounded-xl ${isRepeated ? 'border-2 border-amber-400' : ''}`}>
+                        <div key={idx} className={`p-3 bg-amber-500/[0.06] border border-amber-500/[0.12] rounded-xl ${isRepeated ? 'border-2 border-amber-400' : ''}`}>
                           {isRepeated && (
-                            <div className="flex items-center gap-2 mb-2 px-2 py-1.5 bg-amber-100 dark:bg-amber-500/20 rounded-lg">
-                              <svg className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                              <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider">Recurring Pattern</span>
+                            <div className="flex items-center gap-2 mb-2 px-2 py-1.5 bg-amber-500/20 rounded-lg">
+                              <svg className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                              <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">Recurring Pattern</span>
                             </div>
                           )}
                           <div className="flex justify-between items-center mb-1">
                             <div className="flex items-center gap-2">
-                              <span className="font-medium text-amber-900 dark:text-amber-300 text-sm">{pattern.type}</span>
+                              <span className="font-medium text-amber-300 text-sm">{pattern.type}</span>
                               {isRepeated && (
-                                <span className="px-2 py-0.5 bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-[10px] font-bold rounded-full uppercase tracking-wider">Habit Alert</span>
+                                <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-[10px] font-bold rounded-full uppercase tracking-wider">Habit Alert</span>
                               )}
                             </div>
-                            <span className="text-xs bg-amber-200 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-full">{pattern.count}x</span>
+                            <span className="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">{pattern.count}x</span>
                           </div>
-                          <p className="text-xs sm:text-sm text-amber-700 dark:text-amber-400">{pattern.tip}</p>
+                          <p className="text-xs sm:text-sm text-amber-400">{pattern.tip}</p>
                         </div>
                         );
                       })}
@@ -2317,9 +2318,9 @@ function TalkContent() {
                 )}
 
                 {/* Encouragement */}
-                <div className="card-premium p-4 sm:p-6 bg-gradient-to-br from-primary-50 to-white dark:from-primary-500/10 dark:to-dark-surface">
-                  <p className="text-primary-900 dark:text-white italic text-sm sm:text-base">&ldquo;{analysis.encouragement}&rdquo;</p>
-                  <p className="text-xs sm:text-sm text-primary-600 dark:text-primary-400 mt-2">— {persona.name}</p>
+                <div className="report-glass rounded-2xl p-4 sm:p-6 bg-gradient-to-br from-violet-500/[0.08] to-transparent report-fade-up report-fade-up-5">
+                  <p className="text-white italic text-sm sm:text-base">&ldquo;{analysis.encouragement}&rdquo;</p>
+                  <p className="text-xs sm:text-sm text-violet-400 mt-2">— {persona.name}</p>
                 </div>
                 </div>
               </>
@@ -2327,8 +2328,8 @@ function TalkContent() {
             </div>
             {/* End of Report Content */}
 
-            <div className="flex gap-3 sm:gap-4 mt-6">
-              <button onClick={() => router.push('/')} className="flex-1 btn-secondary text-sm sm:text-base py-3 sm:py-4">
+            <div className="flex gap-3 sm:gap-4 mt-6 px-0">
+              <button onClick={() => router.push('/')} className="flex-1 report-glass rounded-2xl text-white/70 hover:text-white hover:bg-white/10 transition-all py-3 sm:py-4 text-sm sm:text-base font-medium">
                 {t.backToHome}
               </button>
               <button onClick={resetSession} className="flex-1 btn-primary text-sm sm:text-base py-3 sm:py-4">

@@ -12,6 +12,8 @@ interface AnalysisReviewProps {
 export default function AnalysisReview({ speechMetrics, language }: AnalysisReviewProps) {
   const [displayScore, setDisplayScore] = useState(0);
   const [animProgress, setAnimProgress] = useState(0);
+  const [ringGlowActive, setRingGlowActive] = useState(false);
+
   const overallScore = calculateOverallScore(speechMetrics);
   const metrics = formatMetricsForDisplay(speechMetrics, language);
 
@@ -28,6 +30,7 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
         setDisplayScore(overallScore);
         setAnimProgress(1);
         clearInterval(timer);
+        setTimeout(() => setRingGlowActive(true), 100);
       }
     }, 16);
     return () => clearInterval(timer);
@@ -49,11 +52,10 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
 
   const encouragement = getEncouragement(overallScore);
 
-  // Arc gauge
-  const arcRadius = 100;
-  const circumference = 2 * Math.PI * arcRadius;
-  const arcLen = (270 / 360) * circumference;
-  const arcProgress = (displayScore / 100) * arcLen;
+  // Full circle ring calculations
+  const ringRadius = 88;
+  const circumference = 2 * Math.PI * ringRadius;
+  const offset = circumference - (displayScore / 100) * circumference;
 
   // Radar chart
   const radarSize = 290;
@@ -85,13 +87,10 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
 
   return (
     <>
-      {/* ====== SECTION: Arc Gauge Hero ====== */}
+      {/* ====== SECTION 1: Score Ring Hero ====== */}
       <div data-report-section className={`${sectionBg} p-4`}>
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-purple-950/50 to-slate-950 p-6 sm:p-8">
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-purple-500/[0.06] rounded-full blur-[120px]" />
-            <div className="absolute bottom-0 left-1/4 w-[300px] h-[300px] bg-cyan-500/[0.04] rounded-full blur-[100px]" />
-          </div>
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-[#0f0a1e] to-slate-950 p-6 sm:p-8">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none report-hero-glow" />
 
           <div className="relative z-10">
             <div className="text-center mb-6">
@@ -105,19 +104,30 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
 
             <div className="flex flex-col items-center">
               <div className="relative w-48 h-48 sm:w-56 sm:h-56">
-                <svg className="w-full h-full transform -rotate-[135deg]" viewBox="0 0 240 240">
-                  <circle cx="120" cy="120" r={arcRadius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="16" strokeDasharray={`${arcLen} ${circumference}`} strokeLinecap="round" />
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 240 240">
+                  <circle cx="120" cy="120" r={ringRadius} className="report-ring-track" />
                   <defs>
-                    <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stopColor="#06b6d4" />
-                      <stop offset="50%" stopColor="#8b5cf6" />
-                      <stop offset="100%" stopColor="#d946ef" />
+                      <stop offset="50%" stopColor="#7c3aed" />
+                      <stop offset="100%" stopColor="#ec4899" />
                     </linearGradient>
                   </defs>
-                  <circle cx="120" cy="120" r={arcRadius} fill="none" stroke="url(#arcGrad)" strokeWidth="16" strokeDasharray={`${arcProgress} ${circumference}`} strokeLinecap="round" style={{ filter: 'drop-shadow(0 0 10px rgba(139,92,246,0.5))' }} />
+                  <circle
+                    cx="120"
+                    cy="120"
+                    r={ringRadius}
+                    className={`report-ring-indicator ${ringGlowActive ? 'ring-glow-active' : ''}`}
+                    stroke="url(#ringGrad)"
+                    strokeDasharray={circumference}
+                    style={{
+                      '--ring-circumference': circumference,
+                      '--ring-offset': offset
+                    } as React.CSSProperties}
+                  />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-5xl sm:text-6xl font-bold bg-gradient-to-br from-cyan-200 via-purple-200 to-pink-200 bg-clip-text text-transparent leading-none">
+                  <span className="text-5xl sm:text-6xl font-bold text-white report-score-glow leading-none">
                     {displayScore}
                   </span>
                   <span className="text-white/30 text-sm font-medium mt-1">/ 100</span>
@@ -137,10 +147,37 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
         </div>
       </div>
 
-      {/* ====== SECTION: Radar + Strengths/Growth ====== */}
+      {/* ====== SECTION 2: Stat Pills + Radar ====== */}
       <div data-report-section className={`${sectionBg} p-4 space-y-4`}>
+        {/* Stat Pills Grid */}
+        <div className="grid grid-cols-2 gap-2.5">
+          {metrics.map((metric, idx) => {
+            const color = metric.level === 'high' ? '#10b981' : metric.level === 'medium' ? '#06b6d4' : '#f59e0b';
+            return (
+              <div key={metric.label} className={`report-glass rounded-2xl p-3 flex items-center gap-3 report-fade-up report-fade-up-${idx + 1}`}>
+                <svg className="flex-shrink-0" width="36" height="36" viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="15.9155" className="mini-ring-track" transform="rotate(-90 18 18)" />
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="15.9155"
+                    className="mini-ring-value"
+                    stroke={color}
+                    strokeDasharray={`${metric.percent * animProgress}, 100`}
+                    transform="rotate(-90 18 18)"
+                  />
+                </svg>
+                <div className="min-w-0 flex-1">
+                  <p className="text-slate-400 text-xs leading-tight truncate">{metric.label}</p>
+                  <p className="text-white font-bold text-sm">{metric.value}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
         {/* Radar Chart */}
-        <div className="rounded-2xl bg-slate-900/80 border border-white/[0.06] p-4 sm:p-5">
+        <div className="rounded-2xl report-glass p-4 sm:p-5">
           <h4 className="text-sm sm:text-base font-semibold text-white mb-3 flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-cyan-600 flex items-center justify-center">
               <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -160,7 +197,7 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
                 const pt = radarPoint(i, 100);
                 return <line key={`axis-${i}`} x1={radarCx} y1={radarCy} x2={pt.x} y2={pt.y} stroke="rgba(255,255,255,0.04)" strokeWidth="1" />;
               })}
-              <polygon points={dataPoly} fill="rgba(139,92,246,0.12)" stroke="rgba(6,182,212,0.7)" strokeWidth="2" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 6px rgba(6,182,212,0.25))' }} />
+              <polygon points={dataPoly} fill="rgba(124,58,237,0.12)" stroke="rgba(6,182,212,0.7)" strokeWidth="2" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 6px rgba(6,182,212,0.25))' }} />
               {dataPoints.map((pt, i) => (
                 <circle key={`dot-${i}`} cx={pt.x} cy={pt.y} r="3.5" fill={metrics[i].level === 'high' ? '#10b981' : metrics[i].level === 'medium' ? '#06b6d4' : '#f59e0b'} stroke="rgba(255,255,255,0.8)" strokeWidth="1.5" />
               ))}
@@ -228,10 +265,10 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
         </div>
       </div>
 
-      {/* ====== SECTION: Detailed Metrics + Stats + Insights ====== */}
+      {/* ====== SECTION 3: Detailed Metrics + Stats + Insights ====== */}
       <div data-report-section className={`${sectionBg} p-4 space-y-4`}>
         {/* Detailed Metrics */}
-        <div className="rounded-2xl bg-slate-900/80 border border-white/[0.06] p-4 sm:p-5">
+        <div className="rounded-2xl report-glass p-4 sm:p-5">
           <h4 className="text-sm sm:text-base font-semibold text-white mb-4 flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
               <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -259,7 +296,7 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
                 </div>
                 <div className="h-2 bg-white/[0.04] rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-1000 ease-out ${
+                    className={`progress-segment rounded-full ${
                       metric.level === 'high' ? 'bg-gradient-to-r from-emerald-500 to-teal-400' :
                       metric.level === 'medium' ? 'bg-gradient-to-r from-cyan-500 to-blue-400' :
                       'bg-gradient-to-r from-amber-500 to-orange-400'
@@ -284,7 +321,7 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
             { value: speechMetrics.totalSentences, label: language === 'ko' ? '문장 수' : 'Sentences', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
             { value: speechMetrics.uniqueWords, label: language === 'ko' ? '고유 단어' : 'Unique', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
           ].map((stat) => (
-            <div key={stat.label} className="rounded-2xl bg-slate-900/80 border border-white/[0.06] p-3.5 text-center">
+            <div key={stat.label} className="rounded-2xl report-glass p-3.5 text-center">
               <div className="w-9 h-9 rounded-xl bg-white/[0.04] flex items-center justify-center mx-auto mb-2">
                 <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={stat.icon} />
@@ -296,8 +333,8 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
           ))}
         </div>
 
-        {/* Learning Insights with Improvement Tips */}
-        <div className="rounded-2xl bg-purple-500/[0.05] border border-purple-500/[0.08] p-4 sm:p-5">
+        {/* Learning Insights */}
+        <div className="rounded-2xl bg-purple-500/[0.05] border border-purple-500/[0.08] report-glass p-4 sm:p-5">
           <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
               <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1012,3 +1012,113 @@ html, body {
 .animate-shake {
   animation: shake 0.8s cubic-bezier(.36,.07,.19,.97) both;
 }
+
+/* ===== REPORT 2.0 - Midnight Glass Design System ===== */
+
+/* Score Ring Animation */
+@keyframes ring-fill {
+  from { stroke-dashoffset: var(--ring-circumference, 553); }
+  to { stroke-dashoffset: var(--ring-offset, 0); }
+}
+
+.report-ring-track {
+  fill: transparent;
+  stroke: rgba(255, 255, 255, 0.06);
+  stroke-width: 12;
+}
+
+.report-ring-indicator {
+  fill: transparent;
+  stroke-width: 12;
+  stroke-linecap: round;
+  animation: ring-fill 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  filter: drop-shadow(0 0 12px rgba(124, 58, 237, 0.5));
+}
+
+/* Mini Ring for Stat Pills */
+.mini-ring-track {
+  fill: transparent;
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 3.5;
+}
+
+.mini-ring-value {
+  fill: transparent;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  transition: stroke-dasharray 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Report Score Count-up */
+@keyframes report-count-glow {
+  0% { text-shadow: 0 0 20px rgba(124, 58, 237, 0); }
+  50% { text-shadow: 0 0 40px rgba(124, 58, 237, 0.6); }
+  100% { text-shadow: 0 0 20px rgba(124, 58, 237, 0.3); }
+}
+
+.report-score-glow {
+  animation: report-count-glow 1.5s ease-out forwards;
+  animation-delay: 0.8s;
+}
+
+/* Stagger fade-in for report sections */
+@keyframes report-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.report-fade-up {
+  opacity: 0;
+  animation: report-fade-up 0.5s ease-out forwards;
+}
+
+.report-fade-up-1 { animation-delay: 0.1s; }
+.report-fade-up-2 { animation-delay: 0.2s; }
+.report-fade-up-3 { animation-delay: 0.3s; }
+.report-fade-up-4 { animation-delay: 0.4s; }
+.report-fade-up-5 { animation-delay: 0.5s; }
+.report-fade-up-6 { animation-delay: 0.6s; }
+
+/* Glass card base for report */
+.report-glass {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Correction card visual diff */
+.correction-original {
+  text-decoration: line-through;
+  text-decoration-color: rgba(239, 68, 68, 0.5);
+  text-decoration-thickness: 2px;
+}
+
+/* Segmented progress bar */
+.progress-segment {
+  height: 6px;
+  border-radius: 2px;
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Glow backgrounds for report hero */
+.report-hero-glow {
+  background: radial-gradient(circle at 50% 40%, rgba(124, 58, 237, 0.15) 0%, transparent 70%);
+}
+
+/* Pulse animation for score ring glow */
+@keyframes ring-glow-pulse {
+  0%, 100% { filter: drop-shadow(0 0 10px rgba(124, 58, 237, 0.4)); }
+  50% { filter: drop-shadow(0 0 25px rgba(124, 58, 237, 0.7)); }
+}
+
+.ring-glow-active {
+  animation: ring-glow-pulse 2s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
