@@ -63,7 +63,7 @@ export default function AchievementBadge({
           <div className="absolute inset-0 rounded-2xl flex items-center justify-center">
             <div className="w-5 h-5 rounded-full bg-neutral-300 dark:bg-white/10 flex items-center justify-center">
               <svg
-                className="w-3 h-3 text-neutral-500 dark:text-white/30"
+                className="w-3 h-3 text-neutral-500 dark:text-white/40"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"

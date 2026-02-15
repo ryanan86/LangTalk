@@ -130,7 +130,7 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
                   <span className="text-5xl sm:text-6xl font-bold text-white report-score-glow leading-none">
                     {displayScore}
                   </span>
-                  <span className="text-white/30 text-sm font-medium mt-1">/ 100</span>
+                  <span className="text-white/40 text-sm font-medium mt-1">/ 100</span>
                 </div>
               </div>
 

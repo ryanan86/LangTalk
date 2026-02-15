@@ -32,16 +32,16 @@ export default function XPBar({ totalXP, className = '' }: XPBarProps) {
       {/* Progress Bar */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-xs font-medium text-neutral-500 dark:text-white/50">
+          <span className="text-xs font-medium text-white/50">
             Lv.{level}
           </span>
-          <span className="text-xs font-medium text-neutral-500 dark:text-white/50">
+          <span className="text-xs font-medium text-white/50">
             {isMaxLevel ? 'MAX' : `${currentLevelXP} / ${xpNeeded} XP`}
           </span>
         </div>
 
         {/* Bar Container */}
-        <div className="relative h-3 rounded-full bg-neutral-200 dark:bg-white/10 overflow-hidden">
+        <div className="relative h-3 rounded-full bg-white/10 overflow-hidden">
           {/* Fill */}
           <div
             className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-700 ease-out"

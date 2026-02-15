@@ -46,7 +46,7 @@ export default function AchievementToast({
         {/* Close Button */}
         <button
           onClick={onDismiss}
-          className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-neutral-400 dark:text-white/30 hover:text-neutral-600 dark:hover:text-white/60 hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors"
+          className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-neutral-400 dark:text-white/40 hover:text-neutral-600 dark:hover:text-white/60 hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors"
           aria-label="Dismiss"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

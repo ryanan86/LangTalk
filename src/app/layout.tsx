@@ -6,6 +6,7 @@ import { LanguageProvider } from "@/lib/i18n";
 import { ThemeProvider } from "@/lib/theme";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 
+
 export const viewport: Viewport = {
   themeColor: '#1a1a2e',
   width: 'device-width',

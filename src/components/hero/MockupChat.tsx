@@ -253,7 +253,7 @@ export default function MockupChat() {
             </div>
           )}
           {status === 'idle' && (
-            <p className="text-[10px] text-white/30">Tap to speak...</p>
+            <p className="text-[10px] text-white/40">Tap to speak...</p>
           )}
         </div>
       </div>
@@ -282,7 +282,7 @@ export default function MockupChat() {
         {/* Timer */}
         <div className="flex items-center justify-center gap-1.5">
           <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-[10px] text-white/30 font-medium">{timer} / 10:00</span>
+          <span className="text-[10px] text-white/40 font-medium">{timer} / 10:00</span>
         </div>
       </div>
     </div>

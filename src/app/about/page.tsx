@@ -254,7 +254,7 @@ export default function AboutPage() {
       {/* Footer */}
       <footer className="relative z-10 py-8 border-t border-white/5">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
-          <p className="text-white/30 text-sm">
+          <p className="text-white/40 text-sm">
             {language === 'ko' ? '© 2024 TapTalk. All rights reserved.' : '© 2024 TapTalk. All rights reserved.'}
           </p>
         </div>

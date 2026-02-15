@@ -68,7 +68,7 @@ export default function StreakCalendar({
               <span className={`text-2xs font-medium ${
                 isToday
                   ? 'text-purple-600 dark:text-purple-400'
-                  : 'text-neutral-400 dark:text-white/30'
+                  : 'text-neutral-400 dark:text-white/40'
               }`}>
                 {dayLabels[index]}
               </span>

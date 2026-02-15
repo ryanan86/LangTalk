@@ -611,13 +611,20 @@ function httpGet(url) {
 }
 
 let pollCount = 0;
+let consecutiveErrors = 0;
+const MAX_CONSECUTIVE_ERRORS = 10; // 10회 연속 실패 시 프로세스 재시작 (~30초)
+
 async function pollUpdates() {
   pollCount++;
   const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/getUpdates?timeout=${POLL_TIMEOUT}&offset=${pollingOffset}`;
   try {
     const data = await httpGet(url);
+    if (consecutiveErrors > 0) {
+      console.log(`[Recovery] ${consecutiveErrors}회 에러 후 연결 복구됨`);
+    }
+    consecutiveErrors = 0; // 성공 시 카운터 리셋
     if (data.ok && data.result?.length > 0) {
-      console.log(`📨 ${data.result.length}개 업데이트 수신`);
+      console.log(`${data.result.length}개 업데이트 수신`);
       for (const update of data.result) {
         pollingOffset = update.update_id + 1;
         try {
@@ -628,7 +635,12 @@ async function pollUpdates() {
       }
     }
   } catch (err) {
-    console.error('Polling error:', err.message);
+    consecutiveErrors++;
+    console.error(`Polling error (${consecutiveErrors}/${MAX_CONSECUTIVE_ERRORS}): ${err.message}`);
+    if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+      console.error('[FATAL] 연속 polling 실패 한계 초과. 프로세스를 재시작합니다.');
+      process.exit(1); // tmux 재시작 루프가 새 프로세스를 띄움 (DNS 갱신)
+    }
     await new Promise(r => setTimeout(r, 3000));
   }
   setImmediate(pollUpdates);
