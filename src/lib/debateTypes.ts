@@ -1,13 +1,13 @@
-// Debate Mode Type Definitions
+// Debate Mode Type Definitions - v2 Redesign
 
+// 5-stage debate flow
 export type DebatePhase =
-  | 'topic'      // Topic reveal
-  | 'team'       // Team assignment
-  | 'opening'    // Opening statements
-  | 'debate'     // Main debate
-  | 'closing'    // Closing arguments
-  | 'analysis'   // Feedback & analysis
-  | 'summary';   // Final summary
+  | 'preparation'  // Topic reveal + team assignment + think time (3min)
+  | 'opening'      // Opening statements (2min each)
+  | 'rebuttal'     // Rebuttals & cross-examination (90s each, 2 rounds)
+  | 'closing'      // Closing arguments (2min each)
+  | 'analysis'     // AI judging + feedback generation
+  | 'result';      // Score display + grammar feedback + key expressions
 
 export type DebateTeam = 'pro' | 'con';
 
@@ -32,6 +32,7 @@ export interface DebateParticipant {
   isUser: boolean;
   voice: string;
   gradient: string;
+  avatar: string; // First letter or emoji-free identifier
 }
 
 export interface DebateTopic {
@@ -39,6 +40,9 @@ export interface DebateTopic {
   category: DebateCategory;
   title: { en: string; ko: string };
   description: { en: string; ko: string };
+  keyVocabulary?: string[]; // Helpful debate expressions shown during preparation
+  proHints?: string[]; // Argument hints for pro team
+  conHints?: string[]; // Argument hints for con team
 }
 
 export interface DebateMessage {
@@ -48,19 +52,40 @@ export interface DebateMessage {
   speakerName: string;
   team: DebateTeam | 'moderator';
   phase: DebatePhase;
+  roundIndex?: number; // Which round within the phase (for rebuttal)
+}
+
+// Scoring system: 5 criteria, each 0-20 points = 100 total per team
+export interface DebateScore {
+  clarity: number;        // Argument clarity & logic (0-20)
+  evidence: number;       // Evidence & support quality (0-20)
+  rebuttal: number;       // Effectiveness of rebuttals (0-20)
+  responsiveness: number; // Responsiveness to opponent points (0-20)
+  language: number;       // English proficiency & persuasion (0-20)
+  total: number;          // Sum of all criteria (0-100)
 }
 
 export interface DebateAnalysis {
+  // Winner determination
+  winner: DebateTeam;
+  proScore: DebateScore;
+  conScore: DebateScore;
+  judgmentReason: string; // Why this team won
+
+  // User-specific feedback
   userPerformance: {
     strengths: string[];
     improvements: string[];
     grammarCorrections: GrammarCorrection[];
   };
+
+  // Debate content summary
   debateSummary: {
     proPoints: string[];
     conPoints: string[];
     keyMoments: string[];
   };
+
   expressionsToLearn: string[];
   overallFeedback: string;
 }
@@ -71,26 +96,40 @@ export interface GrammarCorrection {
   explanation: string;
 }
 
-export interface DebateState {
+// Turn definition for structured debate flow
+export interface DebateTurn {
+  speakerId: string;
   phase: DebatePhase;
-  topic: DebateTopic | null;
-  userTeam: DebateTeam | null;
-  participants: DebateParticipant[];
-  messages: DebateMessage[];
-  currentSpeakerIndex: number;
-  turnCount: number;
-  userTurnCount: number;
-  analysis: DebateAnalysis | null;
+  roundIndex: number;    // 0-based round within phase
+  timeLimitSec: number;  // Time limit for this turn
+  label: string;         // Display label (e.g., "Opening Statement", "Rebuttal Round 1")
 }
+
+// Phase time configuration (in seconds)
+export const PHASE_CONFIG = {
+  preparation: {
+    thinkTime: 180, // 3 minutes to prepare
+  },
+  opening: {
+    timeLimitSec: 120, // 2 minutes per speaker
+  },
+  rebuttal: {
+    timeLimitSec: 90, // 90 seconds per speaker
+    rounds: 2,        // 2 rounds of rebuttals
+  },
+  closing: {
+    timeLimitSec: 120, // 2 minutes per speaker
+  },
+} as const;
+
+// Max turns per participant across the entire debate
+export const MAX_TURNS_PER_PARTICIPANT = 4; // opening + rebuttal R1 + rebuttal R2 + closing
+
+// Constants
+export const MIN_SESSIONS_FOR_DEBATE = 5;
 
 // Turn order type for managing speaking order
 export interface TurnOrder {
   speakerId: string;
   isUser: boolean;
 }
-
-// Constants
-export const MIN_SESSIONS_FOR_DEBATE = 5;
-export const MIN_DEBATE_TURNS = 8;
-export const MAX_DEBATE_TURNS = 12;
-export const MIN_USER_TURNS = 3;

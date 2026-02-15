@@ -6,6 +6,7 @@ export interface DebatePersona {
   role: 'moderator' | 'debater';
   voice: string;
   gradient: string;
+  avatar: string; // First letter for display
   style: string;
   systemPrompt: string;
 }
@@ -17,6 +18,7 @@ export const moderator: DebatePersona = {
   role: 'moderator',
   voice: 'alloy',
   gradient: 'from-slate-500 to-slate-700',
+  avatar: 'S',
   style: 'Professional, fair, encouraging',
   systemPrompt: `You are Dr. Sarah Mitchell, a professional debate moderator and English education specialist. Your role is to:
 
@@ -44,6 +46,7 @@ export const debaters: DebatePersona[] = [
     role: 'debater',
     voice: 'echo',
     gradient: 'from-blue-400 to-cyan-500',
+    avatar: 'A',
     style: 'Logical, data-driven, analytical',
     systemPrompt: `You are Alex Chen, a 29-year-old data analyst who loves logical arguments and statistics.
 
@@ -68,6 +71,7 @@ Keep arguments focused and evidence-based. 2-3 sentences per turn.`,
     role: 'debater',
     voice: 'shimmer',
     gradient: 'from-pink-400 to-rose-500',
+    avatar: 'M',
     style: 'Empathetic, storytelling, emotional appeal',
     systemPrompt: `You are Maya Thompson, a 26-year-old social worker who believes in the power of personal stories.
 
@@ -93,6 +97,7 @@ Make arguments relatable and emotionally resonant. 2-3 sentences per turn.`,
     role: 'debater',
     voice: 'onyx',
     gradient: 'from-amber-400 to-orange-500',
+    avatar: 'J',
     style: 'Strategic, witty, persuasive',
     systemPrompt: `You are James Wright, a 34-year-old lawyer who's known for sharp wit and strategic thinking.
 
@@ -118,6 +123,7 @@ Be persuasive and strategically sharp. 2-3 sentences per turn.`,
     role: 'debater',
     voice: 'fable',
     gradient: 'from-violet-400 to-purple-500',
+    avatar: 'S',
     style: 'Creative, empathetic, bridge-builder',
     systemPrompt: `You are Sofia Garcia, a 31-year-old creative director who sees multiple perspectives.
 

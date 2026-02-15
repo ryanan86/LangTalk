@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getDebatePersona, moderator } from '@/lib/debatePersonas';
-import { DebateMessage, DebatePhase, DebateTopic, DebateTeam, DebateAnalysis } from '@/lib/debateTypes';
+import { DebateMessage, DebatePhase, DebateTopic, DebateTeam } from '@/lib/debateTypes';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -14,20 +14,21 @@ interface DebateChatRequest {
   messages: DebateMessage[];
   topic: DebateTopic;
   currentSpeakerId: string;
+  speakerTeam: DebateTeam | 'moderator'; // Team is now passed from frontend
   phase: DebatePhase;
+  roundIndex?: number;
   userTeam: DebateTeam;
   language?: 'ko' | 'en';
 }
 
+// POST: Generate AI debate response
 export async function POST(request: NextRequest) {
   try {
-    // Auth check
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    // Rate limit
     const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.ai);
     if (rateLimitResult) return rateLimitResult;
 
@@ -35,42 +36,41 @@ export async function POST(request: NextRequest) {
       messages,
       topic,
       currentSpeakerId,
+      speakerTeam,
       phase,
+      roundIndex = 0,
       userTeam,
       language = 'en',
     }: DebateChatRequest = await request.json();
 
     const isKorean = language === 'ko';
 
-    // Get the persona for the current speaker
     const persona = getDebatePersona(currentSpeakerId);
     if (!persona) {
       return NextResponse.json({ error: 'Invalid speaker' }, { status: 400 });
     }
 
-    // Build the system prompt based on phase and role
-    let systemPrompt = persona.systemPrompt;
+    let systemPrompt: string;
 
-    // Add phase-specific instructions
     if (persona.role === 'moderator') {
-      systemPrompt = buildModeratorPrompt(phase, topic, userTeam, isKorean);
+      systemPrompt = buildModeratorPrompt(phase, topic, userTeam, roundIndex, isKorean);
     } else {
-      // Determine which team this debater is on
-      const debaterTeam = getDebaterTeam(currentSpeakerId, userTeam);
-      systemPrompt = buildDebaterPrompt(persona.systemPrompt, phase, topic, debaterTeam, isKorean);
+      // Use the team passed from frontend (fixes the critical bug)
+      const actualTeam = speakerTeam === 'moderator' ? userTeam : speakerTeam as DebateTeam;
+      systemPrompt = buildDebaterPrompt(persona.systemPrompt, phase, topic, actualTeam, roundIndex, isKorean);
     }
 
-    // Format messages for OpenAI
+    // Format conversation history for context
     const openaiMessages = [
       { role: 'system' as const, content: systemPrompt },
-      ...messages.map((msg) => ({
+      ...messages.slice(-10).map((msg) => ({
         role: (msg.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
-        content: `[${msg.speakerName}${msg.team !== 'moderator' ? ` (${msg.team === 'pro' ? 'Pro' : 'Con'})` : ''}]: ${msg.content}`,
+        content: `[${msg.speakerName} (${msg.team === 'pro' ? 'PRO' : msg.team === 'con' ? 'CON' : 'Moderator'})]: ${msg.content}`,
       })),
     ];
 
-    // Determine max tokens based on phase
-    const maxTokens = phase === 'opening' || phase === 'closing' ? 200 : 150;
+    // More tokens for opening/closing (2min turns), less for rebuttals (90s)
+    const maxTokens = (phase === 'opening' || phase === 'closing') ? 350 : 250;
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -93,65 +93,61 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Helper function to determine debater's team
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function getDebaterTeam(_debaterId: string, userTeam: DebateTeam): DebateTeam {
-  // The actual team assignment happens on the frontend and is passed to this API
-  return userTeam;
-}
-
 function buildModeratorPrompt(
   phase: DebatePhase,
   topic: DebateTopic,
   userTeam: DebateTeam,
+  roundIndex: number,
   isKorean: boolean
 ): string {
   const basePrompt = moderator.systemPrompt;
 
-  const phaseInstructions: Record<DebatePhase, string> = {
-    topic: `You are introducing the debate topic. Present the topic clearly and explain both sides briefly.
+  const phaseInstructions: Record<string, string> = {
+    preparation: `You are introducing the debate topic to all participants.
 
 TOPIC: "${topic.title.en}"
 ${topic.description.en}
 
-Introduce this topic professionally. Mention what the Pro side will argue and what the Con side will argue. Keep it to 2-3 sentences.`,
+Introduce this topic professionally. Explain:
+1. What the Pro team will argue (supporting the statement)
+2. What the Con team will argue (opposing the statement)
+3. Encourage all participants to prepare their arguments
 
-    team: `You are announcing the team assignments. The user has been assigned to the ${userTeam === 'pro' ? 'Pro (supporting)' : 'Con (opposing)'} team.
+The user is on the ${userTeam === 'pro' ? 'PRO (Supporting)' : 'CON (Opposing)'} team.
 
-Announce the teams warmly and encourage everyone. Keep it brief - 1-2 sentences.`,
+Keep it to 3-4 sentences. Be warm and encouraging.`,
 
-    opening: `It's time for opening statements. Guide the speakers through their opening arguments.
+    opening: `Opening Statements phase is beginning.
 
-Current phase: Opening Statements
-Call on the current speaker to give their opening argument. Keep your transition brief - just one sentence to introduce the speaker.`,
+Briefly announce that we're starting opening statements. Call on the next speaker to present their position. Keep your transition to 1-2 sentences.`,
 
-    debate: `The main debate is underway. Facilitate the discussion, ask probing questions, and ensure fair speaking time.
+    rebuttal: `Rebuttal Round ${roundIndex + 1} is underway.
 
-Keep your interjections brief - only speak to:
-1. Transition between speakers
-2. Ask a clarifying question
-3. Redirect if the debate goes off-topic
+${roundIndex === 0
+  ? 'Announce that we\'re moving to rebuttals. Each speaker will respond to the opposing team\'s arguments.'
+  : 'Announce Round 2 of rebuttals. Speakers should address new points raised in Round 1.'}
 
-Maximum 1-2 sentences.`,
+Keep your transition to 1-2 sentences. Be energetic and maintain momentum.`,
 
-    closing: `It's time for closing arguments. Guide each speaker to deliver their final points.
+    closing: `It's time for closing arguments.
 
-Call on the current speaker for their closing statement. Keep your transition brief - just one sentence.`,
+Announce that each team will now deliver their final arguments. This is their last chance to persuade. Keep your transition to 1-2 sentences.`,
 
-    analysis: `The debate has concluded. Provide a fair summary and constructive feedback.
+    analysis: `The debate has concluded. You will now summarize the key moments.
 
-Summarize the key points from both sides. Highlight strong arguments from each team. Be encouraging about the user's participation.`,
+Briefly acknowledge that both teams made excellent points. Keep it to 2 sentences - the detailed analysis will follow separately.`,
 
-    summary: `Wrap up the debate session with final thoughts and encouragement.
-
-Thank all participants and highlight the most memorable moments. Encourage continued practice.`,
+    result: '',
   };
+
+  const instruction = phaseInstructions[phase] || '';
 
   return `${basePrompt}
 
-${phaseInstructions[phase]}
+${instruction}
 
-IMPORTANT: Always respond in ENGLISH. ${isKorean ? 'The user understands Korean but practice should be in English.' : ''}`;
+IMPORTANT: Always respond in ENGLISH. ${isKorean ? 'The user understands Korean but practice should be in English.' : ''}
+Keep responses concise and professional.`;
 }
 
 function buildDebaterPrompt(
@@ -159,70 +155,95 @@ function buildDebaterPrompt(
   phase: DebatePhase,
   topic: DebateTopic,
   team: DebateTeam,
+  roundIndex: number,
   isKorean: boolean
 ): string {
-  const teamPosition = team === 'pro' ? 'SUPPORTING' : 'OPPOSING';
+  const teamPosition = team === 'pro' ? 'SUPPORTING (PRO)' : 'OPPOSING (CON)';
   const teamStance = team === 'pro'
-    ? 'You believe this statement is TRUE and beneficial.'
-    : 'You believe this statement is FALSE or harmful.';
+    ? 'You firmly believe this statement is TRUE and beneficial. Argue FOR it.'
+    : 'You firmly believe this statement is FALSE or harmful. Argue AGAINST it.';
 
-  const phaseInstructions: Record<DebatePhase, string> = {
-    topic: '', // Debaters don't speak during topic reveal
-    team: '', // Debaters don't speak during team assignment
+  const phaseInstructions: Record<string, string> = {
+    preparation: '',
 
-    opening: `Give your OPENING STATEMENT.
+    opening: `Give your OPENING STATEMENT (you have about 2 minutes worth of content).
 
-Present your main argument clearly. State your position and give 1-2 strong reasons. Keep it focused and confident.`,
+Present your core argument clearly and persuasively:
+1. State your position firmly
+2. Give 2-3 strong reasons with brief supporting evidence
+3. Preview what you'll argue in the debate
 
-    debate: `You are in the MAIN DEBATE.
+Be confident and clear. Use debate language like "We firmly believe...", "Our position is...", "The evidence clearly shows..."
 
-Respond to previous arguments, defend your position, or make new points. You can:
-- Counter an opponent's argument
-- Support your teammate's point
-- Introduce a new perspective
+Aim for 4-6 sentences.`,
 
-Keep responses sharp and concise - this is a fast-paced debate.`,
+    rebuttal: roundIndex === 0
+      ? `Give your REBUTTAL (Round 1 - you have about 90 seconds worth of content).
 
-    closing: `Give your CLOSING ARGUMENT.
+Directly address the opposing team's arguments:
+1. Identify their weakest point and dismantle it
+2. Reinforce your team's strongest argument
+3. Introduce a new angle they haven't considered
 
-Summarize your strongest points. Make a final appeal. End with a memorable statement that reinforces your position.`,
+Use rebuttal language like "The opposing team claims... however...", "That argument falls apart because...", "What they failed to mention is..."
 
-    analysis: '', // Debaters don't speak during analysis
-    summary: '', // Debaters don't speak during summary
+Aim for 3-4 sentences. Be sharp and direct.`
+      : `Give your REBUTTAL (Round 2 - you have about 90 seconds worth of content).
+
+This is the second round of rebuttals. Build on the debate so far:
+1. Address any new points raised in Round 1 rebuttals
+2. Strengthen your team's position with additional evidence
+3. Point out contradictions in the opponent's arguments
+
+Use language like "Despite their attempts to counter...", "The fundamental flaw in their reasoning is...", "As we've demonstrated..."
+
+Aim for 3-4 sentences. Be decisive.`,
+
+    closing: `Give your CLOSING ARGUMENT (you have about 2 minutes worth of content).
+
+This is your final statement. Make it count:
+1. Summarize your team's strongest arguments
+2. Explain why your position is more convincing overall
+3. Address the key points of contention
+4. End with a powerful, memorable conclusion
+
+Use closing language like "Throughout this debate, we have shown...", "The evidence overwhelmingly supports...", "In conclusion..."
+
+Aim for 4-6 sentences. Be compelling and conclusive.`,
+
+    analysis: '',
+    result: '',
   };
 
-  if (!phaseInstructions[phase]) {
-    return basePrompt;
-  }
+  const instruction = phaseInstructions[phase] || '';
+  if (!instruction) return basePrompt;
 
   return `${basePrompt}
 
 DEBATE CONTEXT:
 - TOPIC: "${topic.title.en}"
-- YOUR POSITION: ${teamPosition} this statement
+- YOUR TEAM: ${teamPosition}
 - ${teamStance}
 
-${phaseInstructions[phase]}
+${instruction}
 
-RULES:
-1. ALWAYS argue from your team's perspective (${team === 'pro' ? 'Pro/Supporting' : 'Con/Opposing'})
-2. Keep responses to 2-3 sentences maximum
-3. Be persuasive but respectful
-4. Respond in ENGLISH only
+CRITICAL RULES:
+1. You MUST argue from your team's perspective (${team === 'pro' ? 'PRO - Supporting' : 'CON - Opposing'}). NEVER switch sides.
+2. Be persuasive but respectful
+3. Respond in ENGLISH only
+4. Stay on topic - every argument must relate to "${topic.title.en}"
 
 ${isKorean ? 'Note: The user understands Korean but this debate is conducted in English for practice.' : ''}`;
 }
 
-// Separate endpoint for generating debate analysis
+// PUT: Generate debate analysis with scoring
 export async function PUT(request: NextRequest) {
   try {
-    // Auth check
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    // Rate limit
     const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.ai);
     if (rateLimitResult) return rateLimitResult;
 
@@ -235,43 +256,51 @@ export async function PUT(request: NextRequest) {
 
     const isKorean = language === 'ko';
 
-    const analysisPrompt = `You are an English debate coach analyzing a practice debate session.
+    const analysisPrompt = `You are an expert English debate judge and coach analyzing a practice debate.
 
 DEBATE TOPIC: "${topic.title.en}"
 USER'S TEAM: ${userTeam === 'pro' ? 'Pro (Supporting)' : 'Con (Opposing)'}
 
-Analyze the debate conversation below and provide feedback in JSON format.
-${isKorean ? 'Write strengths, improvements, and feedback in KOREAN. Grammar corrections should show English sentences but explain in Korean.' : ''}
+FULL DEBATE TRANSCRIPT:
+${messages.map((m: DebateMessage) => `[${m.speakerName} - ${m.team.toUpperCase()} - ${m.phase}]: ${m.content}`).join('\n')}
 
-CONVERSATION:
-${messages.map((m: DebateMessage) => `[${m.speakerName} - ${m.team}]: ${m.content}`).join('\n')}
+Score EACH TEAM on 5 criteria (0-20 points each, total 100):
+1. clarity: How clear and logical were the arguments?
+2. evidence: Quality of evidence and supporting reasoning
+3. rebuttal: How effectively did they counter opposing arguments?
+4. responsiveness: How well did they address opponent's specific points?
+5. language: English proficiency, vocabulary, and persuasiveness
 
-Return ONLY valid JSON in this exact format:
+${isKorean ? 'Write ALL feedback text (strengths, improvements, explanations, judgmentReason, overallFeedback) in KOREAN. Grammar corrections: show English sentences but explain in Korean.' : 'Write all feedback in English.'}
+
+Return ONLY valid JSON in this EXACT format:
 {
+  "winner": "pro" or "con",
+  "proScore": { "clarity": 0-20, "evidence": 0-20, "rebuttal": 0-20, "responsiveness": 0-20, "language": 0-20, "total": 0-100 },
+  "conScore": { "clarity": 0-20, "evidence": 0-20, "rebuttal": 0-20, "responsiveness": 0-20, "language": 0-20, "total": 0-100 },
+  "judgmentReason": "2-3 sentence explanation of why the winning team won",
   "userPerformance": {
-    "strengths": ["${isKorean ? '잘한 점 1' : 'strength 1'}", "${isKorean ? '잘한 점 2' : 'strength 2'}"],
-    "improvements": ["${isKorean ? '개선할 점 1' : 'improvement 1'}", "${isKorean ? '개선할 점 2' : 'improvement 2'}"],
+    "strengths": ["strength 1", "strength 2", "strength 3"],
+    "improvements": ["improvement 1", "improvement 2"],
     "grammarCorrections": [
-      {
-        "original": "what they said wrong",
-        "corrected": "correct version",
-        "explanation": "${isKorean ? '한국어로 설명' : 'explanation in English'}"
-      }
+      { "original": "incorrect sentence from user", "corrected": "corrected version", "explanation": "why this is wrong" }
     ]
   },
   "debateSummary": {
     "proPoints": ["main pro argument 1", "main pro argument 2"],
     "conPoints": ["main con argument 1", "main con argument 2"],
-    "keyMoments": ["${isKorean ? '주요 순간 1' : 'key moment 1'}"]
+    "keyMoments": ["key moment 1", "key moment 2"]
   },
-  "expressionsToLearn": ["useful phrase 1", "useful phrase 2", "useful phrase 3"],
-  "overallFeedback": "${isKorean ? '전반적인 피드백 (한국어)' : 'overall feedback in English'}"
-}`;
+  "expressionsToLearn": ["useful debate phrase 1", "useful phrase 2", "useful phrase 3", "useful phrase 4", "useful phrase 5"],
+  "overallFeedback": "3-4 sentence personalized feedback for the user about their debate performance and English usage"
+}
+
+Be fair and objective in scoring. The total for each team must equal the sum of their 5 criteria scores.`;
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
-      max_tokens: 1500,
-      temperature: 0.5,
+      max_tokens: 2000,
+      temperature: 0.3,
       messages: [
         { role: 'system', content: analysisPrompt },
       ],
@@ -281,7 +310,16 @@ Return ONLY valid JSON in this exact format:
     const analysisText = response.choices[0]?.message?.content || '';
 
     try {
-      const analysis: DebateAnalysis = JSON.parse(analysisText);
+      const analysis = JSON.parse(analysisText);
+      // Ensure totals are calculated correctly
+      if (analysis.proScore) {
+        analysis.proScore.total = analysis.proScore.clarity + analysis.proScore.evidence +
+          analysis.proScore.rebuttal + analysis.proScore.responsiveness + analysis.proScore.language;
+      }
+      if (analysis.conScore) {
+        analysis.conScore.total = analysis.conScore.clarity + analysis.conScore.evidence +
+          analysis.conScore.rebuttal + analysis.conScore.responsiveness + analysis.conScore.language;
+      }
       return NextResponse.json({ analysis });
     } catch {
       console.error('Failed to parse analysis JSON:', analysisText);

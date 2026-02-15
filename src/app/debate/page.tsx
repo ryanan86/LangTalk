@@ -12,100 +12,154 @@ import {
   DebateMessage,
   DebateAnalysis,
   DebateCategory,
-  MIN_DEBATE_TURNS,
-  MAX_DEBATE_TURNS,
+  DebateTurn,
+  PHASE_CONFIG,
 } from '@/lib/debateTypes';
+
+// Build the full structured turn order for the debate
+function buildTurnOrder(
+  participants: DebateParticipant[],
+  userTeam: DebateTeam
+): DebateTurn[] {
+  const turns: DebateTurn[] = [];
+  const proMembers = participants.filter(p => p.team === 'pro');
+  const conMembers = participants.filter(p => p.team === 'con');
+  const mod = participants.find(p => p.team === 'moderator');
+
+  // Opening: Moderator intro → Pro1 → Con1 → Pro2 → Con2
+  if (mod) turns.push({ speakerId: mod.id, phase: 'opening', roundIndex: 0, timeLimitSec: 15, label: 'Introduction' });
+  turns.push({ speakerId: proMembers[0]?.id || '', phase: 'opening', roundIndex: 0, timeLimitSec: PHASE_CONFIG.opening.timeLimitSec, label: 'Opening Statement' });
+  turns.push({ speakerId: conMembers[0]?.id || '', phase: 'opening', roundIndex: 0, timeLimitSec: PHASE_CONFIG.opening.timeLimitSec, label: 'Opening Statement' });
+  turns.push({ speakerId: proMembers[1]?.id || '', phase: 'opening', roundIndex: 0, timeLimitSec: PHASE_CONFIG.opening.timeLimitSec, label: 'Opening Statement' });
+  turns.push({ speakerId: conMembers[1]?.id || '', phase: 'opening', roundIndex: 0, timeLimitSec: PHASE_CONFIG.opening.timeLimitSec, label: 'Opening Statement' });
+
+  // Rebuttal Round 1: Moderator → Con1 → Pro1 → Con2 → Pro2
+  if (mod) turns.push({ speakerId: mod.id, phase: 'rebuttal', roundIndex: 0, timeLimitSec: 10, label: 'Round 1 Transition' });
+  turns.push({ speakerId: conMembers[0]?.id || '', phase: 'rebuttal', roundIndex: 0, timeLimitSec: PHASE_CONFIG.rebuttal.timeLimitSec, label: 'Rebuttal Round 1' });
+  turns.push({ speakerId: proMembers[0]?.id || '', phase: 'rebuttal', roundIndex: 0, timeLimitSec: PHASE_CONFIG.rebuttal.timeLimitSec, label: 'Rebuttal Round 1' });
+  turns.push({ speakerId: conMembers[1]?.id || '', phase: 'rebuttal', roundIndex: 0, timeLimitSec: PHASE_CONFIG.rebuttal.timeLimitSec, label: 'Rebuttal Round 1' });
+  turns.push({ speakerId: proMembers[1]?.id || '', phase: 'rebuttal', roundIndex: 0, timeLimitSec: PHASE_CONFIG.rebuttal.timeLimitSec, label: 'Rebuttal Round 1' });
+
+  // Rebuttal Round 2: Moderator → Pro1 → Con1 → Pro2 → Con2
+  if (mod) turns.push({ speakerId: mod.id, phase: 'rebuttal', roundIndex: 1, timeLimitSec: 10, label: 'Round 2 Transition' });
+  turns.push({ speakerId: proMembers[0]?.id || '', phase: 'rebuttal', roundIndex: 1, timeLimitSec: PHASE_CONFIG.rebuttal.timeLimitSec, label: 'Rebuttal Round 2' });
+  turns.push({ speakerId: conMembers[0]?.id || '', phase: 'rebuttal', roundIndex: 1, timeLimitSec: PHASE_CONFIG.rebuttal.timeLimitSec, label: 'Rebuttal Round 2' });
+  turns.push({ speakerId: proMembers[1]?.id || '', phase: 'rebuttal', roundIndex: 1, timeLimitSec: PHASE_CONFIG.rebuttal.timeLimitSec, label: 'Rebuttal Round 2' });
+  turns.push({ speakerId: conMembers[1]?.id || '', phase: 'rebuttal', roundIndex: 1, timeLimitSec: PHASE_CONFIG.rebuttal.timeLimitSec, label: 'Rebuttal Round 2' });
+
+  // Closing: Moderator → Con1 → Con2 → Pro1 → Pro2 (opposing team first, user's team last)
+  if (mod) turns.push({ speakerId: mod.id, phase: 'closing', roundIndex: 0, timeLimitSec: 10, label: 'Closing Transition' });
+  const firstClosing = userTeam === 'pro' ? conMembers : proMembers;
+  const lastClosing = userTeam === 'pro' ? proMembers : conMembers;
+  turns.push({ speakerId: firstClosing[0]?.id || '', phase: 'closing', roundIndex: 0, timeLimitSec: PHASE_CONFIG.closing.timeLimitSec, label: 'Closing Argument' });
+  turns.push({ speakerId: firstClosing[1]?.id || '', phase: 'closing', roundIndex: 0, timeLimitSec: PHASE_CONFIG.closing.timeLimitSec, label: 'Closing Argument' });
+  turns.push({ speakerId: lastClosing[0]?.id || '', phase: 'closing', roundIndex: 0, timeLimitSec: PHASE_CONFIG.closing.timeLimitSec, label: 'Closing Argument' });
+  turns.push({ speakerId: lastClosing[1]?.id || '', phase: 'closing', roundIndex: 0, timeLimitSec: PHASE_CONFIG.closing.timeLimitSec, label: 'Closing Argument' });
+
+  return turns.filter(t => t.speakerId);
+}
 
 function DebateContent() {
   const router = useRouter();
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
 
-  // Phase management
-  const [phase, setPhase] = useState<DebatePhase>('topic');
+  // Core state
+  const [phase, setPhase] = useState<DebatePhase>('preparation');
   const [topic, setTopic] = useState<DebateTopic | null>(null);
   const [userTeam, setUserTeam] = useState<DebateTeam | null>(null);
-
-  // Participants
   const [participants, setParticipants] = useState<DebateParticipant[]>([]);
-  const [currentSpeakerIndex, setCurrentSpeakerIndex] = useState(0);
-
-  // Messages and turns
   const [messages, setMessages] = useState<DebateMessage[]>([]);
-  const [turnCount, setTurnCount] = useState(0);
-  const [, setUserTurnCount] = useState(0);
-  const [currentMessage, setCurrentMessage] = useState<string>('');
-
-  // Analysis
   const [analysis, setAnalysis] = useState<DebateAnalysis | null>(null);
 
-  // Processing states
+  // Turn management (ref-based to avoid stale closures)
+  const [turnList, setTurnList] = useState<DebateTurn[]>([]);
+  const turnIndexRef = useRef(0);
+  const [turnIndex, setTurnIndex] = useState(0);
+
+  // Timer
+  const [prepTimeLeft, setPrepTimeLeft] = useState<number>(PHASE_CONFIG.preparation.thinkTime);
+  const prepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // UI state
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isUserTurn, setIsUserTurn] = useState(false);
+  const [activeSpeaker, setActiveSpeaker] = useState<DebateParticipant | null>(null);
 
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const debateStartedRef = useRef(false);
+  const processingRef = useRef(false);
 
-  // Speaking order for the current phase
-  const [speakingOrder, setSpeakingOrder] = useState<DebateParticipant[]>([]);
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-  // Fetch age-appropriate topics from API
-  const fetchTopics = async () => {
+  // Initialize debate on mount
+  useEffect(() => {
+    initializeDebate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Preparation timer countdown
+  useEffect(() => {
+    if (phase === 'preparation' && topic && prepTimeLeft > 0) {
+      prepTimerRef.current = setInterval(() => {
+        setPrepTimeLeft(prev => {
+          if (prev <= 1) {
+            if (prepTimerRef.current) clearInterval(prepTimerRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => {
+        if (prepTimerRef.current) clearInterval(prepTimerRef.current);
+      };
+    }
+  }, [phase, topic, prepTimeLeft]);
+
+  const initializeDebate = async () => {
+    // Fetch topic
+    let selectedTopic: DebateTopic;
     try {
       const response = await fetch('/api/debate-topics');
       const data = await response.json();
-      if (data.topics && data.topics.length > 0) {
-        // Convert API format to DebateTopic format
+      if (data.topics?.length > 0) {
         const randomIndex = Math.floor(Math.random() * data.topics.length);
         const apiTopic = data.topics[randomIndex];
-        const selectedTopic: DebateTopic = {
+        selectedTopic = {
           id: apiTopic.id,
           category: apiTopic.category as DebateCategory,
           title: apiTopic.title,
           description: apiTopic.description,
+          keyVocabulary: apiTopic.keyVocabulary,
+          proHints: apiTopic.proArguments?.slice(0, 3),
+          conHints: apiTopic.conArguments?.slice(0, 3),
         };
-        setTopic(selectedTopic);
+      } else {
+        selectedTopic = getDefaultTopic();
       }
-    } catch (error) {
-      console.error('Failed to fetch topics:', error);
-      // Fallback to a default topic
-      setTopic({
-        id: 'default-1',
-        category: 'daily',
-        title: { en: 'Technology makes life better', ko: '기술이 삶을 더 좋게 만든다' },
-        description: { en: 'Discuss whether technology has improved our daily lives.', ko: '기술이 우리의 일상생활을 향상시켰는지 토론합니다.' },
-      });
+    } catch {
+      selectedTopic = getDefaultTopic();
     }
-  };
+    setTopic(selectedTopic);
 
-  // Initialize debate
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    initializeDebate();
-  }, []);
-
-  const initializeDebate = () => {
-    // Fetch topic from API (age-appropriate)
-    fetchTopics();
-
-    // Assign user to random team
+    // Random team assignment
     const team: DebateTeam = Math.random() < 0.5 ? 'pro' : 'con';
     setUserTeam(team);
 
-    // Shuffle debaters and assign to teams
-    const shuffledDebaters = [...debaters].sort(() => Math.random() - 0.5);
+    // Assign debaters to teams
+    const shuffled = [...debaters].sort(() => Math.random() - 0.5);
+    const partner = shuffled[0];
+    const opponents = [shuffled[1], shuffled[2]];
 
-    // User's team partner (1 AI)
-    const partner = shuffledDebaters[0];
-    // Opponents (2 AIs)
-    const opponents = [shuffledDebaters[1], shuffledDebaters[2]];
-
-    // Create participant list
     const participantList: DebateParticipant[] = [
-      // Moderator
       {
         id: 'moderator',
         name: moderator.name,
@@ -113,17 +167,17 @@ function DebateContent() {
         isUser: false,
         voice: moderator.voice,
         gradient: moderator.gradient,
+        avatar: moderator.avatar,
       },
-      // User
       {
         id: 'user',
-        name: t.you,
+        name: language === 'ko' ? '나' : 'You',
         team: team,
         isUser: true,
         voice: '',
         gradient: 'from-indigo-400 to-purple-500',
+        avatar: 'U',
       },
-      // Partner (same team as user)
       {
         id: partner.id,
         name: partner.name,
@@ -131,8 +185,8 @@ function DebateContent() {
         isUser: false,
         voice: partner.voice,
         gradient: partner.gradient,
+        avatar: partner.avatar,
       },
-      // Opponents (opposite team)
       {
         id: opponents[0].id,
         name: opponents[0].name,
@@ -140,6 +194,7 @@ function DebateContent() {
         isUser: false,
         voice: opponents[0].voice,
         gradient: opponents[0].gradient,
+        avatar: opponents[0].avatar,
       },
       {
         id: opponents[1].id,
@@ -148,157 +203,70 @@ function DebateContent() {
         isUser: false,
         voice: opponents[1].voice,
         gradient: opponents[1].gradient,
+        avatar: opponents[1].avatar,
       },
     ];
 
     setParticipants(participantList);
   };
 
-  // Progress through phases automatically
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (phase === 'topic' && topic) {
-      // Show topic for 3 seconds, then move to team assignment
-      const timer = setTimeout(() => {
-        setPhase('team');
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
+  const getDefaultTopic = (): DebateTopic => ({
+    id: 'default-1',
+    category: 'daily',
+    title: { en: 'Technology makes life better', ko: '기술이 삶을 더 좋게 만든다' },
+    description: { en: 'Discuss whether technology has improved our daily lives.', ko: '기술이 우리의 일상생활을 향상시켰는지 토론합니다.' },
+  });
 
-    if (phase === 'team' && participants.length > 0) {
-      // Show teams for 3 seconds, then start opening statements
-      const timer = setTimeout(() => {
-        startOpeningPhase();
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [phase, topic, participants]);
+  // Start the actual debate (after preparation)
+  const startDebate = () => {
+    if (debateStartedRef.current || !participants.length || !userTeam) return;
+    debateStartedRef.current = true;
 
-  const startOpeningPhase = () => {
+    if (prepTimerRef.current) clearInterval(prepTimerRef.current);
+
+    const turns = buildTurnOrder(participants, userTeam);
+    setTurnList(turns);
+    turnIndexRef.current = 0;
+    setTurnIndex(0);
     setPhase('opening');
-    // Speaking order for opening: Moderator intro, then Pro1, Con1, Pro2, Con2
-    const proTeam = participants.filter(p => p.team === 'pro');
-    const conTeam = participants.filter(p => p.team === 'con');
 
-    const order = [
-      participants.find(p => p.team === 'moderator')!,
-      proTeam[0],
-      conTeam[0],
-      proTeam[1],
-      conTeam[1],
-    ].filter(Boolean);
-
-    setSpeakingOrder(order);
-    setCurrentSpeakerIndex(0);
-
-    // Start with moderator
-    getAIResponse('opening', order[0]);
+    // Start first turn
+    setTimeout(() => executeTurn(turns, 0, participants), 500);
   };
 
-  const startDebatePhase = () => {
-    setPhase('debate');
-    setTurnCount(0);
-
-    // Alternating turns between teams
-    const proTeam = participants.filter(p => p.team === 'pro');
-    const conTeam = participants.filter(p => p.team === 'con');
-
-    // Create alternating order with user having at least 3 turns
-    const order: DebateParticipant[] = [];
-    const totalTurns = MIN_DEBATE_TURNS + Math.floor(Math.random() * (MAX_DEBATE_TURNS - MIN_DEBATE_TURNS + 1));
-
-    let proIdx = 0;
-    let conIdx = 0;
-    let userTurns = 0;
-
-    for (let i = 0; i < totalTurns; i++) {
-      const isProTurn = i % 2 === (userTeam === 'pro' ? 0 : 1);
-      const team = isProTurn ? proTeam : conTeam;
-
-      // Ensure user gets at least 3 turns
-      const user = participants.find(p => p.isUser);
-      if (user && userTurns < 3 && i >= 2 && (i === 2 || i === 5 || i === 8)) {
-        if ((isProTurn && userTeam === 'pro') || (!isProTurn && userTeam === 'con')) {
-          order.push(user);
-          userTurns++;
-          continue;
-        }
+  // Execute a specific turn
+  const executeTurn = async (turns: DebateTurn[], idx: number, parts: DebateParticipant[]) => {
+    if (idx >= turns.length || processingRef.current) {
+      // All turns done → analysis
+      if (idx >= turns.length) {
+        startAnalysis();
       }
-
-      // Alternate between team members
-      const idx = isProTurn ? proIdx++ % team.length : conIdx++ % team.length;
-      order.push(team[idx]);
-    }
-
-    setSpeakingOrder(order);
-    setCurrentSpeakerIndex(0);
-
-    // Add moderator transition
-    const mod = participants.find(p => p.team === 'moderator');
-    if (mod) {
-      getAIResponse('debate', mod);
-    }
-  };
-
-  const startClosingPhase = () => {
-    setPhase('closing');
-    const proTeam = participants.filter(p => p.team === 'pro');
-    const conTeam = participants.filter(p => p.team === 'con');
-
-    const order = [
-      participants.find(p => p.team === 'moderator')!,
-      proTeam[0],
-      conTeam[0],
-      proTeam[1],
-      conTeam[1],
-    ].filter(Boolean);
-
-    setSpeakingOrder(order);
-    setCurrentSpeakerIndex(0);
-
-    getAIResponse('closing', order[0]);
-  };
-
-  const startAnalysisPhase = async () => {
-    setPhase('analysis');
-    setIsProcessing(true);
-
-    try {
-      const response = await fetch('/api/debate-chat', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages,
-          topic,
-          userTeam,
-          language,
-        }),
-      });
-      const data = await response.json();
-
-      if (data.analysis) {
-        setAnalysis(data.analysis);
-        setPhase('summary');
-      } else {
-        console.error('Analysis parsing failed');
-        setPhase('summary');
-      }
-    } catch (error) {
-      console.error('Analysis error:', error);
-      setPhase('summary');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const getAIResponse = async (currentPhase: DebatePhase, speaker: DebateParticipant) => {
-    if (speaker.isUser) {
-      setIsUserTurn(true);
       return;
     }
 
+    const turn = turns[idx];
+    const speaker = parts.find(p => p.id === turn.speakerId);
+    if (!speaker) {
+      // Skip invalid speaker, move to next
+      advanceTurn(turns, idx, parts);
+      return;
+    }
+
+    // Update phase if changed
+    setPhase(turn.phase);
+    setActiveSpeaker(speaker);
+    turnIndexRef.current = idx;
+    setTurnIndex(idx);
+
+    if (speaker.isUser) {
+      // User's turn
+      setIsUserTurn(true);
+      return; // Wait for user input
+    }
+
+    // AI speaker's turn
+    processingRef.current = true;
     setIsProcessing(true);
-    setCurrentMessage('');
 
     try {
       const response = await fetch('/api/debate-chat', {
@@ -308,7 +276,9 @@ function DebateContent() {
           messages,
           topic,
           currentSpeakerId: speaker.id,
-          phase: currentPhase,
+          speakerTeam: speaker.team,
+          phase: turn.phase,
+          roundIndex: turn.roundIndex,
           userTeam,
           language,
         }),
@@ -316,128 +286,109 @@ function DebateContent() {
       const data = await response.json();
 
       if (data.message) {
-        const newMessage: DebateMessage = {
+        const newMsg: DebateMessage = {
           role: 'assistant',
           content: data.message,
           speakerId: speaker.id,
           speakerName: speaker.name,
           team: speaker.team,
-          phase: currentPhase,
+          phase: turn.phase,
+          roundIndex: turn.roundIndex,
         };
 
-        setMessages(prev => [...prev, newMessage]);
-        setCurrentMessage(data.message);
+        setMessages(prev => [...prev, newMsg]);
 
-        // Play TTS
-        await playTTS(data.message, speaker.voice);
-
-        // Move to next speaker
-        proceedToNextSpeaker(currentPhase);
+        // Play TTS and wait for completion
+        await playTTSAndWait(data.message, speaker.voice);
       }
     } catch (error) {
       console.error('AI response error:', error);
-      proceedToNextSpeaker(currentPhase);
     } finally {
       setIsProcessing(false);
+      processingRef.current = false;
     }
+
+    // Advance to next turn
+    advanceTurn(turns, idx, parts);
   };
 
-  const proceedToNextSpeaker = (currentPhase: DebatePhase) => {
-    const nextIndex = currentSpeakerIndex + 1;
-
-    if (currentPhase === 'opening') {
-      if (nextIndex < speakingOrder.length) {
-        setCurrentSpeakerIndex(nextIndex);
-        const nextSpeaker = speakingOrder[nextIndex];
-        if (nextSpeaker) {
-          setTimeout(() => getAIResponse('opening', nextSpeaker), 500);
-        }
-      } else {
-        // Opening done, start debate
-        setTimeout(() => startDebatePhase(), 1000);
-      }
-    } else if (currentPhase === 'debate') {
-      setTurnCount(prev => prev + 1);
-
-      if (turnCount + 1 >= speakingOrder.length) {
-        // Debate done, start closing
-        setTimeout(() => startClosingPhase(), 1000);
-      } else {
-        setCurrentSpeakerIndex(nextIndex);
-        const nextSpeaker = speakingOrder[nextIndex];
-        if (nextSpeaker) {
-          setTimeout(() => getAIResponse('debate', nextSpeaker), 500);
-        }
-      }
-    } else if (currentPhase === 'closing') {
-      if (nextIndex < speakingOrder.length) {
-        setCurrentSpeakerIndex(nextIndex);
-        const nextSpeaker = speakingOrder[nextIndex];
-        if (nextSpeaker) {
-          setTimeout(() => getAIResponse('closing', nextSpeaker), 500);
-        }
-      } else {
-        // Closing done, start analysis
-        setTimeout(() => startAnalysisPhase(), 1000);
-      }
+  const advanceTurn = (turns: DebateTurn[], currentIdx: number, parts: DebateParticipant[]) => {
+    const nextIdx = currentIdx + 1;
+    if (nextIdx >= turns.length) {
+      startAnalysis();
+      return;
     }
+    setTimeout(() => executeTurn(turns, nextIdx, parts), 800);
   };
 
-  const playTTS = async (text: string, voice: string) => {
-    if (!voice) return;
+  // TTS that returns a promise resolving when audio finishes playing
+  const playTTSAndWait = (text: string, voice: string): Promise<void> => {
+    if (!voice) return Promise.resolve();
 
-    setIsPlaying(true);
-    try {
-      const response = await fetch('/api/text-to-speech', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voice }),
-      });
+    return new Promise<void>(async (resolve) => {
+      setIsPlaying(true);
+      try {
+        const response = await fetch('/api/text-to-speech', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, voice }),
+        });
 
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
 
-      if (audioRef.current) {
-        audioRef.current.src = audioUrl;
-        await audioRef.current.play();
+        if (audioRef.current) {
+          audioRef.current.onended = () => {
+            setIsPlaying(false);
+            URL.revokeObjectURL(audioUrl);
+            resolve();
+          };
+          audioRef.current.onerror = () => {
+            setIsPlaying(false);
+            URL.revokeObjectURL(audioUrl);
+            resolve();
+          };
+          audioRef.current.src = audioUrl;
+          await audioRef.current.play();
+        } else {
+          setIsPlaying(false);
+          resolve();
+        }
+      } catch (error) {
+        console.error('TTS error:', error);
+        setIsPlaying(false);
+        resolve();
       }
-    } catch (error) {
-      console.error('TTS error:', error);
-    } finally {
-      setIsPlaying(false);
-    }
+    });
   };
 
-  // Recording functions
+  // Recording
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
         ? 'audio/webm;codecs=opus'
         : MediaRecorder.isTypeSupported('audio/webm')
           ? 'audio/webm'
           : 'audio/mp4';
 
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
-      mediaRecorderRef.current = mediaRecorder;
+      const recorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = recorder;
       audioChunksRef.current = [];
       setIsRecording(true);
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
 
-      mediaRecorder.onstop = async () => {
+      recorder.onstop = async () => {
         setIsRecording(false);
-        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        const blob = new Blob(audioChunksRef.current, { type: mimeType });
         stream.getTracks().forEach(track => track.stop());
-        await processUserAudio(audioBlob);
+        await processUserAudio(blob);
       };
 
-      mediaRecorder.start(1000);
+      recorder.start(1000);
     } catch (error) {
       console.error('Recording error:', error);
       setIsRecording(false);
@@ -445,7 +396,7 @@ function DebateContent() {
   };
 
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+    if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.stop();
     }
   }, []);
@@ -465,39 +416,109 @@ function DebateContent() {
       });
       const sttData = await sttResponse.json();
 
-      if (sttData.text && sttData.text.trim()) {
+      if (sttData.text?.trim()) {
         const user = participants.find(p => p.isUser);
         if (user) {
-          const newMessage: DebateMessage = {
+          const currentTurn = turnList[turnIndexRef.current];
+          const newMsg: DebateMessage = {
             role: 'user',
             content: sttData.text,
             speakerId: 'user',
             speakerName: user.name,
             team: user.team,
-            phase,
+            phase: currentTurn?.phase || phase,
+            roundIndex: currentTurn?.roundIndex,
           };
-          setMessages(prev => [...prev, newMessage]);
-          setCurrentMessage(sttData.text);
-          setUserTurnCount(prev => prev + 1);
+          setMessages(prev => [...prev, newMsg]);
         }
 
-        // Proceed to next speaker
-        proceedToNextSpeaker(phase);
+        setIsProcessing(false);
+        // Advance to next turn
+        advanceTurn(turnList, turnIndexRef.current, participants);
       } else {
-        // No speech detected, let user try again
-        setIsUserTurn(true);
+        setIsProcessing(false);
+        setIsUserTurn(true); // Let user try again
       }
     } catch (error) {
       console.error('Audio processing error:', error);
+      setIsProcessing(false);
       setIsUserTurn(true);
+    }
+  };
+
+  // Skip user turn (type text instead or pass)
+  const skipUserTurn = () => {
+    setIsUserTurn(false);
+    const user = participants.find(p => p.isUser);
+    if (user) {
+      const currentTurn = turnList[turnIndexRef.current];
+      const newMsg: DebateMessage = {
+        role: 'user',
+        content: '(Passed this turn)',
+        speakerId: 'user',
+        speakerName: user.name,
+        team: user.team,
+        phase: currentTurn?.phase || phase,
+        roundIndex: currentTurn?.roundIndex,
+      };
+      setMessages(prev => [...prev, newMsg]);
+    }
+    advanceTurn(turnList, turnIndexRef.current, participants);
+  };
+
+  // Analysis phase
+  const startAnalysis = async () => {
+    setPhase('analysis');
+    setIsProcessing(true);
+    setActiveSpeaker(null);
+
+    try {
+      const response = await fetch('/api/debate-chat', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages, topic, userTeam, language }),
+      });
+      const data = await response.json();
+
+      if (data.analysis) {
+        setAnalysis(data.analysis);
+        setPhase('result');
+      } else {
+        setPhase('result');
+      }
+    } catch (error) {
+      console.error('Analysis error:', error);
+      setPhase('result');
     } finally {
       setIsProcessing(false);
     }
   };
 
+  // Helper: format time
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // Helper: get participant by ID
+  const getParticipant = (id: string) => participants.find(p => p.id === id);
+
+  // Helper: get phase display text
+  const getPhaseText = () => {
+    switch (phase) {
+      case 'preparation': return language === 'ko' ? 'Preparation' : 'Preparation';
+      case 'opening': return language === 'ko' ? 'Opening Statements' : 'Opening Statements';
+      case 'rebuttal': return language === 'ko' ? 'Rebuttals' : 'Rebuttals';
+      case 'closing': return language === 'ko' ? 'Closing Arguments' : 'Closing Arguments';
+      case 'analysis': return language === 'ko' ? 'Judging...' : 'Judging...';
+      case 'result': return language === 'ko' ? 'Results' : 'Results';
+      default: return '';
+    }
+  };
+
   const getCategoryText = (category: DebateCategory) => {
-    const categoryMap: Record<string, string> = {
-      // New categories
+    const map: Record<string, string> = {
       daily: language === 'ko' ? '일상' : 'Daily Life',
       school: language === 'ko' ? '학교' : 'School',
       technology: language === 'ko' ? '기술' : 'Technology',
@@ -506,241 +527,409 @@ function DebateContent() {
       culture: language === 'ko' ? '문화' : 'Culture',
       sports: language === 'ko' ? '스포츠' : 'Sports',
       ethics: language === 'ko' ? '윤리' : 'Ethics',
-      // Legacy categories
-      social: t.categorySocial || (language === 'ko' ? '사회' : 'Social'),
-      politics: t.categoryPolitics || (language === 'ko' ? '정치' : 'Politics'),
-      international: t.categoryInternational || (language === 'ko' ? '국제' : 'International'),
+      social: language === 'ko' ? '사회' : 'Social',
+      politics: language === 'ko' ? '정치' : 'Politics',
+      international: language === 'ko' ? '국제' : 'International',
     };
-    return categoryMap[category] || category;
+    return map[category] || category;
   };
 
-  const getPhaseText = () => {
-    switch (phase) {
-      case 'topic': return t.topicReveal;
-      case 'team': return t.teamAssignment;
-      case 'opening': return t.openingStatements;
-      case 'debate': return `${t.mainDebate} - ${t.turnCount.replace('{current}', String(turnCount + 1)).replace('{total}', String(speakingOrder.length))}`;
-      case 'closing': return t.closingArguments;
-      case 'analysis': return t.debateAnalysis;
-      case 'summary': return t.debateSummary;
-      default: return '';
-    }
-  };
+  // Calculate debate progress
+  const totalTurns = turnList.length;
+  const progressPercent = totalTurns > 0 ? Math.round((turnIndex / totalTurns) * 100) : 0;
 
-  const getCurrentSpeaker = (): DebateParticipant | null => {
-    if (speakingOrder.length === 0) return null;
-    return speakingOrder[currentSpeakerIndex] || null;
-  };
+  // Score bar component
+  const ScoreBar = ({ label, score, max = 20 }: { label: string; score: number; max?: number }) => (
+    <div className="flex items-center gap-3">
+      <span className="text-xs text-neutral-500 dark:text-neutral-400 w-28 text-right">{label}</span>
+      <div className="flex-1 h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-primary-400 to-primary-600 rounded-full transition-all duration-500"
+          style={{ width: `${(score / max) * 100}%` }}
+        />
+      </div>
+      <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300 w-8">{score}/{max}</span>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-dark-bg flex flex-col">
-      <audio ref={audioRef} onEnded={() => setIsPlaying(false)} />
+      <audio ref={audioRef} />
 
-      {/* Header */}
-      <header className="bg-white/80 dark:bg-dark-surface/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800 px-4 sm:px-6 py-3 sm:py-4 sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <button onClick={() => router.push('/')} className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 p-1">
-            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-
-          <div className="text-center">
-            <h2 className="font-semibold text-neutral-900 dark:text-white text-sm sm:text-base">{t.debateMode}</h2>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">{getPhaseText()}</p>
+      {/* ===== HEADER ===== */}
+      <header className="bg-white/90 dark:bg-dark-surface/90 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800 px-4 py-3 sticky top-0 z-50">
+        <div className="max-w-4xl mx-auto">
+          {/* Top row: back + phase + progress */}
+          <div className="flex items-center justify-between mb-2">
+            <button onClick={() => router.push('/')} className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 p-1">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="text-center">
+              <span className="text-sm font-semibold text-neutral-900 dark:text-white">{getPhaseText()}</span>
+            </div>
+            <div className="w-8 text-right">
+              {phase !== 'preparation' && phase !== 'analysis' && phase !== 'result' && (
+                <span className="text-xs text-neutral-400">{progressPercent}%</span>
+              )}
+            </div>
           </div>
 
-          <div className="w-8" />
+          {/* Progress bar */}
+          {phase !== 'preparation' && phase !== 'result' && (
+            <div className="h-1 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-green-400 to-blue-500 rounded-full transition-all duration-300"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          )}
+
+          {/* Topic + Team position (always visible during debate) */}
+          {topic && phase !== 'preparation' && phase !== 'result' && (
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate flex-1">
+                {language === 'ko' ? topic.title.ko : topic.title.en}
+              </p>
+              {userTeam && (
+                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${
+                  userTeam === 'pro'
+                    ? 'bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-300'
+                    : 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300'
+                }`}>
+                  {userTeam === 'pro' ? 'PRO' : 'CON'}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* ===== MAIN CONTENT ===== */}
       <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
 
-        {/* ========== TOPIC REVEAL PHASE ========== */}
-        {phase === 'topic' && topic && (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-8 text-center">
-            <div className="animate-bounce-soft mb-6">
-              <span className="px-4 py-2 bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full text-sm font-medium">
-                {getCategoryText(topic.category)}
-              </span>
+        {/* ========== PREPARATION PHASE ========== */}
+        {phase === 'preparation' && topic && (
+          <div className="flex-1 flex flex-col p-4 sm:p-6 overflow-y-auto">
+            {/* Timer */}
+            <div className="text-center mb-6">
+              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${
+                prepTimeLeft <= 30
+                  ? 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400'
+                  : 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'
+              }`}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="font-mono font-bold text-lg">{formatTime(prepTimeLeft)}</span>
+              </div>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                {language === 'ko' ? '논리를 구상하세요' : 'Prepare your arguments'}
+              </p>
             </div>
 
-            <div className="bg-white dark:bg-dark-surface rounded-3xl p-6 sm:p-8 shadow-lg dark:shadow-none dark:border dark:border-neutral-800 max-w-lg mx-auto border border-neutral-100">
-              <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white mb-4 leading-tight">
+            {/* Topic Card */}
+            <div className="bg-white dark:bg-dark-surface rounded-2xl p-5 sm:p-6 shadow-sm dark:shadow-none dark:border dark:border-neutral-800 mb-4">
+              <span className="px-3 py-1 bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full text-xs font-medium">
+                {getCategoryText(topic.category)}
+              </span>
+              <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white mt-3 mb-2">
                 {language === 'ko' ? topic.title.ko : topic.title.en}
               </h2>
-              <p className="text-neutral-600 dark:text-neutral-400 text-sm sm:text-base">
+              <p className="text-neutral-600 dark:text-neutral-400 text-sm">
                 {language === 'ko' ? topic.description.ko : topic.description.en}
               </p>
             </div>
 
-            <p className="text-neutral-400 dark:text-neutral-500 text-sm mt-6">{t.revealingTopic}</p>
+            {/* Team Assignment */}
+            {userTeam && (
+              <div className={`rounded-2xl p-4 mb-4 ${
+                userTeam === 'pro'
+                  ? 'bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30'
+                  : 'bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30'
+              }`}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white ${
+                    userTeam === 'pro' ? 'bg-green-500' : 'bg-red-500'
+                  }`}>
+                    {userTeam === 'pro' ? 'P' : 'C'}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-neutral-900 dark:text-white">
+                      {language === 'ko'
+                        ? `당신은 ${userTeam === 'pro' ? '찬성' : '반대'}팀입니다`
+                        : `You are on the ${userTeam === 'pro' ? 'PRO' : 'CON'} team`
+                      }
+                    </p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                      {userTeam === 'pro'
+                        ? (language === 'ko' ? '이 주장을 지지하세요' : 'Support this statement')
+                        : (language === 'ko' ? '이 주장에 반대하세요' : 'Oppose this statement')
+                      }
+                    </p>
+                  </div>
+                </div>
+
+                {/* Team members */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Your team */}
+                  <div>
+                    <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
+                      {language === 'ko' ? '우리 팀' : 'Your Team'}
+                    </p>
+                    <div className="space-y-2">
+                      {participants.filter(p => p.team === userTeam).map(p => (
+                        <div key={p.id} className="flex items-center gap-2">
+                          <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${p.gradient} flex items-center justify-center`}>
+                            <span className="text-white text-xs font-bold">{p.avatar}</span>
+                          </div>
+                          <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                            {p.name} {p.isUser && (language === 'ko' ? '(나)' : '(You)')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Opposing team */}
+                  <div>
+                    <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
+                      {language === 'ko' ? '상대 팀' : 'Opponents'}
+                    </p>
+                    <div className="space-y-2">
+                      {participants.filter(p => p.team !== userTeam && p.team !== 'moderator').map(p => (
+                        <div key={p.id} className="flex items-center gap-2">
+                          <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${p.gradient} flex items-center justify-center`}>
+                            <span className="text-white text-xs font-bold">{p.avatar}</span>
+                          </div>
+                          <span className="text-sm text-neutral-700 dark:text-neutral-300">{p.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Key vocabulary hints */}
+            {(topic.keyVocabulary?.length || topic.proHints?.length || topic.conHints?.length) && (
+              <div className="bg-white dark:bg-dark-surface rounded-2xl p-4 shadow-sm dark:shadow-none dark:border dark:border-neutral-800 mb-4">
+                <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-3">
+                  {language === 'ko' ? '유용한 표현' : 'Useful Expressions'}
+                </h3>
+                {topic.keyVocabulary && topic.keyVocabulary.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {topic.keyVocabulary.map((v, i) => (
+                      <span key={i} className="px-2 py-1 bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300 rounded-lg text-xs">
+                        {v}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {userTeam === 'pro' && topic.proHints && topic.proHints.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">
+                      {language === 'ko' ? '찬성 논거 힌트:' : 'PRO argument hints:'}
+                    </p>
+                    <ul className="space-y-1">
+                      {topic.proHints.map((h, i) => (
+                        <li key={i} className="text-xs text-neutral-600 dark:text-neutral-400">- {h}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {userTeam === 'con' && topic.conHints && topic.conHints.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-xs text-red-600 dark:text-red-400 font-medium mb-1">
+                      {language === 'ko' ? '반대 논거 힌트:' : 'CON argument hints:'}
+                    </p>
+                    <ul className="space-y-1">
+                      {topic.conHints.map((h, i) => (
+                        <li key={i} className="text-xs text-neutral-600 dark:text-neutral-400">- {h}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Moderator info */}
+            <div className="flex items-center gap-2 mb-4 px-2">
+              <div className={`w-6 h-6 rounded-md bg-gradient-to-br ${moderator.gradient} flex items-center justify-center`}>
+                <span className="text-white text-xs font-bold">{moderator.avatar}</span>
+              </div>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                Moderator: {moderator.name}
+              </span>
+            </div>
+
+            {/* Start button */}
+            <button
+              onClick={startDebate}
+              className="btn-primary py-4 text-base font-semibold rounded-2xl"
+            >
+              {prepTimeLeft > 0
+                ? (language === 'ko' ? 'Start Debate' : 'Start Debate')
+                : (language === 'ko' ? 'Start Debate' : 'Start Debate')
+              }
+            </button>
           </div>
         )}
 
-        {/* ========== TEAM ASSIGNMENT PHASE ========== */}
-        {phase === 'team' && participants.length > 0 && (
-          <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
-            <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white mb-8 text-center">{t.teamAssignment}</h2>
-
-            <div className="flex items-center justify-center gap-4 sm:gap-8 w-full max-w-3xl">
-              {/* Pro Team */}
-              <div className={`flex-1 p-4 sm:p-6 rounded-2xl ${userTeam === 'pro' ? 'bg-green-50 dark:bg-green-500/10 border-2 border-green-400 dark:border-green-500/40' : 'bg-neutral-50 dark:bg-dark-surface border border-neutral-200 dark:border-neutral-700'}`}>
-                <h3 className="text-center font-semibold text-green-600 mb-4">{t.proTeam}</h3>
-                <div className="space-y-3">
-                  {participants.filter(p => p.team === 'pro').map((p) => (
-                    <div key={p.id} className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${p.gradient} flex items-center justify-center`}>
-                        <span className="text-white font-bold">{p.name[0]}</span>
-                      </div>
-                      <div>
-                        <p className="font-medium text-neutral-900 dark:text-white">{p.name}</p>
-                        {p.isUser && <span className="text-xs text-green-600">{t.yourTeam}</span>}
-                        {!p.isUser && p.team === userTeam && <span className="text-xs text-neutral-500">{t.teamPartner}</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* VS */}
-              <div className="flex-shrink-0">
-                <span className="text-2xl font-bold text-neutral-300">{t.vsText}</span>
-              </div>
-
-              {/* Con Team */}
-              <div className={`flex-1 p-4 sm:p-6 rounded-2xl ${userTeam === 'con' ? 'bg-red-50 dark:bg-red-500/10 border-2 border-red-400 dark:border-red-500/40' : 'bg-neutral-50 dark:bg-dark-surface border border-neutral-200 dark:border-neutral-700'}`}>
-                <h3 className="text-center font-semibold text-red-600 mb-4">{t.conTeam}</h3>
-                <div className="space-y-3">
-                  {participants.filter(p => p.team === 'con').map((p) => (
-                    <div key={p.id} className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${p.gradient} flex items-center justify-center`}>
-                        <span className="text-white font-bold">{p.name[0]}</span>
-                      </div>
-                      <div>
-                        <p className="font-medium text-neutral-900 dark:text-white">{p.name}</p>
-                        {p.isUser && <span className="text-xs text-red-600">{t.yourTeam}</span>}
-                        {!p.isUser && p.team === userTeam && <span className="text-xs text-neutral-500">{t.teamPartner}</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Moderator */}
-            <div className="mt-8 text-center">
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">Moderator</p>
-              <div className="flex items-center justify-center gap-2">
-                <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${moderator.gradient} flex items-center justify-center`}>
-                  <span className="text-white font-bold text-sm">{moderator.name[0]}</span>
-                </div>
-                <span className="text-neutral-700 dark:text-neutral-300 font-medium">{moderator.name}</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ========== DEBATE PHASES (opening, debate, closing) ========== */}
-        {(phase === 'opening' || phase === 'debate' || phase === 'closing') && (
+        {/* ========== DEBATE PHASES (opening, rebuttal, closing) ========== */}
+        {(phase === 'opening' || phase === 'rebuttal' || phase === 'closing') && (
           <>
-            {/* Team Display */}
-            <div className="px-4 py-3 bg-white dark:bg-dark-surface border-b border-neutral-100 dark:border-neutral-800">
-              <div className="max-w-3xl mx-auto flex items-center justify-between">
-                {/* Pro Team Avatars */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-green-600 font-medium mr-2">{t.proTeam}</span>
-                  {participants.filter(p => p.team === 'pro').map((p) => (
+            {/* Team bar */}
+            <div className="px-4 py-2 bg-white dark:bg-dark-surface border-b border-neutral-100 dark:border-neutral-800">
+              <div className="flex items-center justify-between">
+                {/* Pro Team */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-green-600 font-medium">PRO</span>
+                  {participants.filter(p => p.team === 'pro').map(p => (
                     <div
                       key={p.id}
-                      className={`w-8 h-8 rounded-lg bg-gradient-to-br ${p.gradient} flex items-center justify-center ${
-                        getCurrentSpeaker()?.id === p.id ? 'ring-2 ring-green-500 ring-offset-2' : ''
+                      className={`w-7 h-7 rounded-lg bg-gradient-to-br ${p.gradient} flex items-center justify-center transition-all ${
+                        activeSpeaker?.id === p.id ? 'ring-2 ring-green-500 ring-offset-1 scale-110' : 'opacity-60'
                       }`}
                     >
-                      <span className="text-white text-xs font-bold">{p.name[0]}</span>
+                      <span className="text-white text-xs font-bold">{p.avatar}</span>
                     </div>
                   ))}
                 </div>
 
-                <span className="text-neutral-300 font-bold">{t.vsText}</span>
+                <span className="text-neutral-300 dark:text-neutral-600 font-bold text-xs">VS</span>
 
-                {/* Con Team Avatars */}
-                <div className="flex items-center gap-2">
-                  {participants.filter(p => p.team === 'con').map((p) => (
+                {/* Con Team */}
+                <div className="flex items-center gap-1.5">
+                  {participants.filter(p => p.team === 'con').map(p => (
                     <div
                       key={p.id}
-                      className={`w-8 h-8 rounded-lg bg-gradient-to-br ${p.gradient} flex items-center justify-center ${
-                        getCurrentSpeaker()?.id === p.id ? 'ring-2 ring-red-500 ring-offset-2' : ''
+                      className={`w-7 h-7 rounded-lg bg-gradient-to-br ${p.gradient} flex items-center justify-center transition-all ${
+                        activeSpeaker?.id === p.id ? 'ring-2 ring-red-500 ring-offset-1 scale-110' : 'opacity-60'
                       }`}
                     >
-                      <span className="text-white text-xs font-bold">{p.name[0]}</span>
+                      <span className="text-white text-xs font-bold">{p.avatar}</span>
                     </div>
                   ))}
-                  <span className="text-xs text-red-600 font-medium ml-2">{t.conTeam}</span>
+                  <span className="text-xs text-red-600 font-medium">CON</span>
                 </div>
               </div>
             </div>
 
-            {/* Main Speaker Area */}
-            <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
-              {getCurrentSpeaker() && (
-                <>
-                  <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br ${getCurrentSpeaker()!.gradient} flex items-center justify-center mb-4 ${isPlaying ? 'animate-pulse' : ''}`}>
-                    <span className="text-white text-3xl sm:text-4xl font-bold">{getCurrentSpeaker()!.name[0]}</span>
+            {/* Chat-style message list */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {messages.map((msg, i) => {
+                const speaker = getParticipant(msg.speakerId);
+                const isUser = msg.role === 'user';
+                const isModerator = msg.team === 'moderator';
+                const isPro = msg.team === 'pro';
+
+                return (
+                  <div key={i} className={`flex gap-2 ${isUser ? 'flex-row-reverse' : ''}`}>
+                    {/* Avatar */}
+                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${speaker?.gradient || 'from-gray-400 to-gray-500'} flex items-center justify-center flex-shrink-0`}>
+                      <span className="text-white text-xs font-bold">{speaker?.avatar || '?'}</span>
+                    </div>
+
+                    {/* Message bubble */}
+                    <div className={`max-w-[75%] ${isUser ? 'items-end' : ''}`}>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                          {msg.speakerName}
+                        </span>
+                        {!isModerator && (
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                            isPro
+                              ? 'bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400'
+                              : 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400'
+                          }`}>
+                            {isPro ? 'PRO' : 'CON'}
+                          </span>
+                        )}
+                        <span className="text-[10px] text-neutral-400">{msg.phase}</span>
+                      </div>
+                      <div className={`rounded-2xl px-3 py-2 text-sm leading-relaxed ${
+                        isUser
+                          ? 'bg-primary-500 text-white rounded-tr-md'
+                          : isModerator
+                            ? 'bg-neutral-200 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200 rounded-tl-md'
+                            : isPro
+                              ? 'bg-green-50 dark:bg-green-500/10 text-neutral-800 dark:text-neutral-200 border border-green-200 dark:border-green-500/20 rounded-tl-md'
+                              : 'bg-red-50 dark:bg-red-500/10 text-neutral-800 dark:text-neutral-200 border border-red-200 dark:border-red-500/20 rounded-tl-md'
+                      }`}>
+                        {msg.content}
+                      </div>
+                    </div>
                   </div>
+                );
+              })}
 
-                  <div className="text-center mb-6">
-                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">{getCurrentSpeaker()!.name}</h3>
-                    <span className={`text-sm ${getCurrentSpeaker()!.team === 'pro' ? 'text-green-600' : getCurrentSpeaker()!.team === 'con' ? 'text-red-600' : 'text-neutral-500'}`}>
-                      {getCurrentSpeaker()!.team === 'moderator' ? 'Moderator' : getCurrentSpeaker()!.team === 'pro' ? t.proTeam : t.conTeam}
-                    </span>
+              {/* Processing indicator */}
+              {isProcessing && activeSpeaker && !isUserTurn && (
+                <div className="flex gap-2">
+                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${activeSpeaker.gradient} flex items-center justify-center flex-shrink-0`}>
+                    <span className="text-white text-xs font-bold">{activeSpeaker.avatar}</span>
                   </div>
-
-                  {/* Current Message Display */}
-                  {currentMessage && !isUserTurn && (
-                    <div className="bg-white dark:bg-dark-surface rounded-2xl p-4 sm:p-6 shadow-sm dark:shadow-none dark:border dark:border-neutral-800 max-w-lg mx-auto mb-6">
-                      <p className="text-neutral-800 dark:text-neutral-200 text-sm sm:text-base leading-relaxed">{currentMessage}</p>
+                  <div>
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400">{activeSpeaker.name}</span>
+                    <div className="flex gap-1.5 mt-1">
+                      <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                     </div>
-                  )}
-
-                  {/* Status indicators */}
-                  {isPlaying && (
-                    <div className="flex items-center gap-1 h-8 mb-4">
-                      {[...Array(5)].map((_, i) => (<div key={i} className="voice-bar" />))}
-                    </div>
-                  )}
-
-                  {isProcessing && !isPlaying && (
-                    <div className="flex gap-2 mb-4">
-                      <div className="loading-dot" />
-                      <div className="loading-dot" />
-                      <div className="loading-dot" />
-                    </div>
-                  )}
-                </>
+                  </div>
+                </div>
               )}
+
+              {/* Playing indicator */}
+              {isPlaying && activeSpeaker && (
+                <div className="flex items-center gap-1 ml-10">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="w-1 bg-primary-400 rounded-full animate-pulse" style={{ height: `${8 + Math.random() * 12}px`, animationDelay: `${i * 100}ms` }} />
+                  ))}
+                </div>
+              )}
+
+              <div ref={chatEndRef} />
             </div>
 
-            {/* User Input Area */}
+            {/* User input area */}
             {isUserTurn && (
-              <div className="p-4 sm:p-6 bg-white dark:bg-dark-surface border-t border-neutral-200 dark:border-neutral-800">
-                <div className="max-w-lg mx-auto text-center">
-                  <p className="text-amber-600 font-semibold mb-4">{t.yourTurn}</p>
-                  <button
-                    onClick={isRecording ? stopRecording : startRecording}
-                    disabled={isProcessing}
-                    className={`w-full py-4 rounded-2xl font-medium flex items-center justify-center gap-2 transition-all ${
-                      isRecording
-                        ? 'bg-red-500 text-white recording-active'
-                        : 'btn-primary'
-                    }`}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                    </svg>
-                    {isRecording ? t.stop : t.speakNowDebate}
-                  </button>
+              <div className="p-4 bg-white dark:bg-dark-surface border-t border-neutral-200 dark:border-neutral-800">
+                <div className="max-w-lg mx-auto">
+                  <div className="text-center mb-3">
+                    <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                      {language === 'ko' ? 'Your Turn!' : 'Your Turn!'}
+                    </p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                      {turnList[turnIndexRef.current]?.label || ''}
+                    </p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={isRecording ? stopRecording : startRecording}
+                      disabled={isProcessing}
+                      className={`flex-1 py-3 rounded-2xl font-medium flex items-center justify-center gap-2 transition-all ${
+                        isRecording
+                          ? 'bg-red-500 text-white animate-pulse'
+                          : 'btn-primary'
+                      }`}
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      </svg>
+                      {isRecording
+                        ? (language === 'ko' ? 'Stop' : 'Stop')
+                        : (language === 'ko' ? 'Speak' : 'Speak')
+                      }
+                    </button>
+                    <button
+                      onClick={skipUserTurn}
+                      className="px-4 py-3 rounded-2xl text-sm text-neutral-500 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                    >
+                      {language === 'ko' ? 'Pass' : 'Pass'}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -749,76 +938,123 @@ function DebateContent() {
 
         {/* ========== ANALYSIS PHASE ========== */}
         {phase === 'analysis' && (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-8">
+          <div className="flex-1 flex flex-col items-center justify-center p-6">
             <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${moderator.gradient} flex items-center justify-center mb-4`}>
-              <span className="text-white text-2xl font-bold">{moderator.name[0]}</span>
+              <span className="text-white text-2xl font-bold">{moderator.avatar}</span>
             </div>
-            <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white mb-2">{t.debateAnalysis}</h2>
-            <p className="text-neutral-500 dark:text-neutral-400 mb-6">{t.preparingDebate}</p>
+            <h2 className="text-lg font-bold text-neutral-900 dark:text-white mb-2">
+              {language === 'ko' ? '심사 중...' : 'Judging...'}
+            </h2>
+            <p className="text-neutral-500 dark:text-neutral-400 text-sm mb-6">
+              {language === 'ko' ? '토론 내용을 분석하고 있습니다' : 'Analyzing the debate performance'}
+            </p>
             <div className="flex gap-2">
-              <div className="loading-dot" />
-              <div className="loading-dot" />
-              <div className="loading-dot" />
+              <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
             </div>
           </div>
         )}
 
-        {/* ========== SUMMARY PHASE ========== */}
-        {phase === 'summary' && (
+        {/* ========== RESULT PHASE ========== */}
+        {phase === 'result' && (
           <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-            <div className="text-center mb-6 sm:mb-8">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 sm:w-10 sm:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                </svg>
-              </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">{t.debateComplete}</h2>
-            </div>
 
+            {/* Winner announcement */}
             {analysis && (
               <>
-                {/* User Performance */}
-                <div className="bg-white dark:bg-dark-surface rounded-2xl p-4 sm:p-6 shadow-sm dark:shadow-none dark:border dark:border-neutral-800 mb-4">
-                  <h3 className="font-semibold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
-                    <span className="w-6 h-6 bg-green-100 dark:bg-green-500/20 rounded-full flex items-center justify-center">
-                      <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </span>
-                    {t.yourPerformance}
-                  </h3>
+                <div className="text-center mb-6">
+                  <div className={`inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-lg font-bold ${
+                    analysis.winner === userTeam
+                      ? 'bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-300'
+                      : 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300'
+                  }`}>
+                    {analysis.winner === userTeam
+                      ? (language === 'ko' ? 'Victory!' : 'Victory!')
+                      : (language === 'ko' ? 'Defeat' : 'Defeat')
+                    }
+                  </div>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-2 max-w-md mx-auto">
+                    {analysis.judgmentReason}
+                  </p>
+                </div>
 
-                  {/* Strengths */}
-                  <div className="mb-4">
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-2">{t.whatYouDidWell}</p>
-                    <ul className="space-y-1">
-                      {analysis.userPerformance.strengths.map((s, i) => (
-                        <li key={i} className="text-neutral-700 dark:text-neutral-300 text-sm flex items-start gap-2">
-                          <span className="text-green-500">•</span>{s}
-                        </li>
-                      ))}
-                    </ul>
+                {/* Score comparison */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  {/* Pro Score */}
+                  <div className={`bg-white dark:bg-dark-surface rounded-2xl p-4 shadow-sm dark:shadow-none dark:border dark:border-neutral-800 ${analysis.winner === 'pro' ? 'ring-2 ring-green-400' : ''}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-semibold text-green-600">PRO</span>
+                      <span className="text-2xl font-bold text-neutral-900 dark:text-white">{analysis.proScore?.total || 0}</span>
+                    </div>
+                    <div className="space-y-2">
+                      <ScoreBar label={language === 'ko' ? '명확성' : 'Clarity'} score={analysis.proScore?.clarity || 0} />
+                      <ScoreBar label={language === 'ko' ? '논거' : 'Evidence'} score={analysis.proScore?.evidence || 0} />
+                      <ScoreBar label={language === 'ko' ? '반박력' : 'Rebuttal'} score={analysis.proScore?.rebuttal || 0} />
+                      <ScoreBar label={language === 'ko' ? '응답성' : 'Response'} score={analysis.proScore?.responsiveness || 0} />
+                      <ScoreBar label={language === 'ko' ? '언어력' : 'Language'} score={analysis.proScore?.language || 0} />
+                    </div>
                   </div>
 
-                  {/* Improvements */}
-                  <div>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-2">{t.areasToFocus}</p>
-                    <ul className="space-y-1">
-                      {analysis.userPerformance.improvements.map((s, i) => (
-                        <li key={i} className="text-neutral-700 dark:text-neutral-300 text-sm flex items-start gap-2">
-                          <span className="text-amber-500">•</span>{s}
-                        </li>
-                      ))}
-                    </ul>
+                  {/* Con Score */}
+                  <div className={`bg-white dark:bg-dark-surface rounded-2xl p-4 shadow-sm dark:shadow-none dark:border dark:border-neutral-800 ${analysis.winner === 'con' ? 'ring-2 ring-red-400' : ''}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-semibold text-red-600">CON</span>
+                      <span className="text-2xl font-bold text-neutral-900 dark:text-white">{analysis.conScore?.total || 0}</span>
+                    </div>
+                    <div className="space-y-2">
+                      <ScoreBar label={language === 'ko' ? '명확성' : 'Clarity'} score={analysis.conScore?.clarity || 0} />
+                      <ScoreBar label={language === 'ko' ? '논거' : 'Evidence'} score={analysis.conScore?.evidence || 0} />
+                      <ScoreBar label={language === 'ko' ? '반박력' : 'Rebuttal'} score={analysis.conScore?.rebuttal || 0} />
+                      <ScoreBar label={language === 'ko' ? '응답성' : 'Response'} score={analysis.conScore?.responsiveness || 0} />
+                      <ScoreBar label={language === 'ko' ? '언어력' : 'Language'} score={analysis.conScore?.language || 0} />
+                    </div>
                   </div>
                 </div>
 
-                {/* Grammar Feedback */}
-                {analysis.userPerformance.grammarCorrections.length > 0 && (
-                  <div className="bg-white dark:bg-dark-surface rounded-2xl p-4 sm:p-6 shadow-sm dark:shadow-none dark:border dark:border-neutral-800 mb-4">
-                    <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">{t.grammarFeedback}</h3>
-                    <div className="space-y-4">
-                      {analysis.userPerformance.grammarCorrections.map((c, i) => (
+                {/* User Performance */}
+                <div className="bg-white dark:bg-dark-surface rounded-2xl p-4 sm:p-5 shadow-sm dark:shadow-none dark:border dark:border-neutral-800 mb-4">
+                  <h3 className="font-semibold text-neutral-900 dark:text-white mb-3">
+                    {language === 'ko' ? '개인 피드백' : 'Your Performance'}
+                  </h3>
+                  {analysis.userPerformance?.strengths?.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">
+                        {language === 'ko' ? '잘한 점' : 'Strengths'}
+                      </p>
+                      <ul className="space-y-1">
+                        {analysis.userPerformance.strengths.map((s: string, i: number) => (
+                          <li key={i} className="text-sm text-neutral-700 dark:text-neutral-300 flex items-start gap-2">
+                            <span className="text-green-500 mt-0.5">*</span>{s}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {analysis.userPerformance?.improvements?.length > 0 && (
+                    <div>
+                      <p className="text-xs text-amber-600 dark:text-amber-400 font-medium mb-1">
+                        {language === 'ko' ? '개선할 점' : 'Areas to Improve'}
+                      </p>
+                      <ul className="space-y-1">
+                        {analysis.userPerformance.improvements.map((s: string, i: number) => (
+                          <li key={i} className="text-sm text-neutral-700 dark:text-neutral-300 flex items-start gap-2">
+                            <span className="text-amber-500 mt-0.5">*</span>{s}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                {/* Grammar Corrections */}
+                {analysis.userPerformance?.grammarCorrections?.length > 0 && (
+                  <div className="bg-white dark:bg-dark-surface rounded-2xl p-4 sm:p-5 shadow-sm dark:shadow-none dark:border dark:border-neutral-800 mb-4">
+                    <h3 className="font-semibold text-neutral-900 dark:text-white mb-3">
+                      {language === 'ko' ? '문법 교정' : 'Grammar Corrections'}
+                    </h3>
+                    <div className="space-y-3">
+                      {analysis.userPerformance.grammarCorrections.map((c: { original: string; corrected: string; explanation: string }, i: number) => (
                         <div key={i} className="p-3 bg-neutral-50 dark:bg-neutral-800 rounded-xl">
                           <p className="text-red-600 dark:text-red-400 text-sm pl-2 border-l-2 border-red-300 dark:border-red-500">{c.original}</p>
                           <p className="text-green-600 dark:text-green-400 text-sm font-medium mt-1">{c.corrected}</p>
@@ -830,43 +1066,63 @@ function DebateContent() {
                 )}
 
                 {/* Key Expressions */}
-                <div className="bg-white dark:bg-dark-surface rounded-2xl p-4 sm:p-6 shadow-sm dark:shadow-none dark:border dark:border-neutral-800 mb-4">
-                  <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">{t.keyExpressions}</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {analysis.expressionsToLearn.map((exp, i) => (
-                      <span key={i} className="px-3 py-1 bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300 rounded-full text-sm">
-                        {exp}
-                      </span>
-                    ))}
+                {analysis.expressionsToLearn?.length > 0 && (
+                  <div className="bg-white dark:bg-dark-surface rounded-2xl p-4 sm:p-5 shadow-sm dark:shadow-none dark:border dark:border-neutral-800 mb-4">
+                    <h3 className="font-semibold text-neutral-900 dark:text-white mb-3">
+                      {language === 'ko' ? '핵심 표현' : 'Key Expressions'}
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {analysis.expressionsToLearn.map((exp: string, i: number) => (
+                        <span key={i} className="px-3 py-1.5 bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300 rounded-lg text-sm">
+                          {exp}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Overall Feedback */}
-                <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/10 rounded-2xl p-4 sm:p-6 mb-6">
-                  <p className="text-neutral-800 dark:text-neutral-200 italic">&ldquo;{analysis.overallFeedback}&rdquo;</p>
-                  <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">— {moderator.name}</p>
-                </div>
+                {analysis.overallFeedback && (
+                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/10 rounded-2xl p-4 sm:p-5 mb-6">
+                    <p className="text-neutral-800 dark:text-neutral-200 text-sm italic leading-relaxed">&ldquo;{analysis.overallFeedback}&rdquo;</p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">-- {moderator.name}</p>
+                  </div>
+                )}
               </>
             )}
 
+            {!analysis && (
+              <div className="text-center py-8">
+                <p className="text-neutral-500 dark:text-neutral-400">
+                  {language === 'ko' ? '분석 결과를 불러올 수 없습니다' : 'Could not load analysis results'}
+                </p>
+              </div>
+            )}
+
             {/* Action Buttons */}
-            <div className="flex gap-3 sm:gap-4">
-              <button onClick={() => router.push('/')} className="flex-1 btn-secondary py-3 sm:py-4">
-                {t.backToHome}
+            <div className="flex gap-3">
+              <button onClick={() => router.push('/')} className="flex-1 btn-secondary py-3 rounded-2xl">
+                {language === 'ko' ? 'Home' : 'Home'}
               </button>
               <button
                 onClick={() => {
-                  setPhase('topic');
+                  setPhase('preparation');
                   setMessages([]);
-                  setTurnCount(0);
-                  setUserTurnCount(0);
                   setAnalysis(null);
                   setTopic(null);
+                  setTurnList([]);
+                  turnIndexRef.current = 0;
+                  setTurnIndex(0);
+                  setPrepTimeLeft(PHASE_CONFIG.preparation.thinkTime);
+                  debateStartedRef.current = false;
+                  processingRef.current = false;
+                  setIsUserTurn(false);
+                  setActiveSpeaker(null);
                   initializeDebate();
                 }}
-                className="flex-1 btn-primary py-3 sm:py-4"
+                className="flex-1 btn-primary py-3 rounded-2xl"
               >
-                {t.tryAnotherDebate}
+                {language === 'ko' ? 'New Debate' : 'New Debate'}
               </button>
             </div>
           </div>
@@ -881,9 +1137,9 @@ export default function DebatePage() {
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-dark-bg">
         <div className="flex gap-2">
-          <div className="loading-dot" />
-          <div className="loading-dot" />
-          <div className="loading-dot" />
+          <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+          <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+          <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
         </div>
       </div>
     }>
