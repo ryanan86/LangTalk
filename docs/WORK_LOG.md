@@ -4,6 +4,116 @@ Daily development history for TapTalk (taptalk.xyz).
 
 ---
 
+## 2026-02-18 (Tue)
+
+### Summary
+CEFR 평가체계 전환(미국 학년제 폐기), 실시간 세션 안정성 개선(timeout/fallback/응답길이), nukai 코드리뷰 적용(vocabBook/learningRank/토론품질게이트).
+
+### Changes
+| Category | Description |
+|----------|-------------|
+| Evaluation | speakingMetrics.ts: US Grade -> CEFR 전환 (Pre-A1~C2), IELTS/TOEFL/TOEIC 변환 테이블 |
+| Evaluation | speaking-evaluate/route.ts: cefrLevel 응답, getCefrIndex, methodology 변경 |
+| Evaluation | speechMetrics.ts: scoreToCefr() 추가, scoreToGrade deprecated |
+| Reliability | chat/route.ts: withTimeout 래퍼(Gemini 8s/OpenAI 10s), CONVERSATION_FALLBACK |
+| Reliability | chat/route.ts: max_tokens 상향(interview 150->350, conversation 500->600) |
+| Reliability | chat/route.ts: 프롬프트 수정 - "under 20 words" 제거, "2-4 sentences" 자연스러운 길이 |
+| nukai Review | vocabBook.ts: proficiency 방향 수정(빈도높은=숙련도높게), 난이도 스코어링 개선 |
+| nukai Review | learningRank.ts: 가짜 percentile 제거, compositeScore + 서술적 밴드로 교체 |
+| nukai Review | debate-topics/route.ts: isDebateReadyTopic + topicQualityScore 품질게이트 |
+| nukai Review | debate-chat/route.ts: resolveDebateMotion 자동 랩핑 |
+| nukai Review | sheetHelper.ts: A:F->A:G, vocabBook 읽기/쓰기 |
+| UI | talk/page.tsx: cefrLevel 표시(gradeLevel fallback), layout.tsx 테마감지 수정 |
+| UI | page.tsx: 라이트모드 지원, test-report/page.tsx: CEFR 목업 데이터 |
+
+### Commits
+| Hash | Type | Description |
+|------|------|-------------|
+| (pending) | feat | CEFR evaluation + session reliability + nukai code review integration |
+
+### Files Changed
+- `src/lib/speakingMetrics.ts` - CEFR_BENCHMARKS, calculateCefrLevel, CEFR_TO_IELTS/TOEFL/TOEIC
+- `src/lib/speechMetrics.ts` - scoreToCefr(), scoreToGrade deprecated alias
+- `src/lib/vocabBook.ts` - NEW: proficiency 수정, BASIC_WORDS, ADVANCED_PATTERNS
+- `src/lib/learningRank.ts` - NEW: compositeScore, 서술적 밴드(Advanced~Beginner)
+- `src/lib/sheetHelper.ts` - A:G 확장, vocabBook column
+- `src/lib/sheetTypes.ts` - VocabBookItem interface, vocabBook field
+- `src/app/api/chat/route.ts` - withTimeout, fallback, max_tokens, prompt fixes
+- `src/app/api/speaking-evaluate/route.ts` - cefrLevel response, getCefrIndex
+- `src/app/api/debate-topics/route.ts` - quality gate functions
+- `src/app/api/debate-chat/route.ts` - resolveDebateMotion
+- `src/app/api/vocab-book/route.ts` - NEW: vocab book API endpoint
+- `src/app/talk/page.tsx` - cefrLevel display with fallback
+- `src/app/layout.tsx` - theme detection bug fix
+- `src/app/page.tsx` - light mode support
+
+### Key Decisions
+- US Grade 평가 완전 폐기, CEFR이 ESL 학습자에게 적합
+- 글로벌 사용자 전제 -> 동일 모국어 집단 기반 퍼센타일은 나중에
+- nukai의 가짜 percentile 제거, 정직한 compositeScore 사용
+- 세션 무응답 방지: 이중 fallback(Gemini->OpenAI->static)
+
+### Known Issues Resolved
+- 평가 결과가 항상 Kindergarten으로 고정되던 문제 -> CEFR로 해결
+- 세션 중 튜터 무응답/멈춤 -> withTimeout + fallback으로 개선
+- 응답이 너무 짧고 피상적 -> max_tokens 상향 + 프롬프트 제한 제거
+
+---
+
+## 2026-02-17 (Mon)
+
+### Summary
+전체 팀 회의(3팀 보고서) 완료, 텔레그램 봇 안정성 개선, 글로벌 스킬 17개 구축. Skills 리서치(공식문서 + 커뮤니티 3곳 + 블로그 2곳) 기반 4주 로드맵을 1일에 완료.
+
+### Changes
+| Category | Description |
+|----------|-------------|
+| Team Meeting | 젬팀장+클이사+오팀장 3팀 보고서 (OMC vs AI플랫폼, 구독 최적화, Skills) |
+| Telegram Bot | httpGet timeout(60s) + health check(5min) 추가, auto-restart 안정화 |
+| Global Skills | 17개 글로벌 스킬 구축 (~/.claude/skills/) |
+| Codex Fix | codex login --with-api-key 인증 해결 |
+| Context Mgmt | strategic-compact 스킬에 5계층 방어체계 + remember 태그 반영 |
+
+### Files Changed
+- `~/.claude/skills/` - 17개 SKILL.md 파일 신규 생성
+- `scripts/telegram-bot-v2.mjs` - httpGet timeout + health check 추가
+- `.omc/team-report-{gemini,claude,codex}.md` - 3팀 보고서
+- `~/.claude/settings.json` - MCP PATH env 수정
+
+### Key Decisions
+- 스킬은 글로벌 우선, 프로젝트 전용은 나중에
+- CLI+웹 이중구조는 Ryan 추가 검토 후 결정
+- 브라우저 자동화(Playwright)는 전원 비추천
+
+### Global Skills Built (17)
+1주차: skill-creator, strategic-compact, verification-loop, session-wrap, quick-fix
+2주차: tdd, subagent-dev, webapp-testing, changelog-gen
+3주차: continuous-learning, design-review, code-review-checklist, dependency-check
+4주차: deep-research, article-extractor, youtube-transcript, project-init
+
+---
+
+## 2026-02-16 (Sun)
+
+### Summary
+목업폰 튜터 아바타 애니메이션 사각형 아티팩트 수정, 비로그인 튜터 이미지 눈감김 문제 해결.
+
+### Commits
+| Hash | Type | Description |
+|------|------|-------------|
+| `3e32943` | fix | Mockup phone animation artifact + non-login tutor image display |
+
+### Files Changed
+- `src/components/hero/MockupChat.tsx` - animate-ping + inline transform 충돌 제거, 커스텀 mockup-ping 애니메이션, 타이머 메모리 누수 수정
+- `src/app/globals.css` - @keyframes mockup-ping 추가 (원형 pulse 애니메이션)
+- `src/app/page.tsx` - 비로그인 데모 섹션에 img 기본 레이어 추가, 구독 상태 체크 개선
+
+### Key Decisions
+- Tailwind animate-ping 대신 커스텀 CSS 애니메이션 사용 (인라인 transform과의 충돌 방지)
+- 비로그인 데모 섹션을 로그인 섹션과 동일한 img+video 레이어 구조로 통일
+
+---
+
 ## 2026-02-15 (Sat)
 
 ### Summary

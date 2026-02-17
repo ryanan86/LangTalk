@@ -9,32 +9,33 @@ import {
   SpeakingMetricsResult,
   StandardizedScores,
   ImprovementGuideItem,
-  GRADE_BENCHMARKS,
+  CEFR_BENCHMARKS,
+  CefrLevel,
 } from '@/lib/speakingMetrics';
 
 /**
  * Speaking Evaluation API
  *
- * Evaluates spoken English against US/UK native speaker grade-level standards
+ * Evaluates spoken English using CEFR (Common European Framework) benchmarks
  * and converts to international test scores (IELTS, TOEFL, TOEIC)
  *
  * Key Features:
  * 1. Algorithmic analysis (not AI guessing)
- * 2. US Common Core / UK National Curriculum standards
+ * 2. CEFR-based ESL benchmarks (Pre-A1 to C2)
  * 3. Measurable metrics with clear criteria
- * 4. IELTS/TOEFL/TOEIC/CEFR score conversion
+ * 4. IELTS/TOEFL/TOEIC score conversion
  */
 
 export interface SpeakingEvaluationResponse {
   success: boolean;
   evaluation: {
-    // Primary grade-level assessment
-    gradeLevel: {
-      grade: string;           // K, 1-2, 3-4, etc.
-      usGrade: string;         // Full US grade name
-      ukYear: string;          // UK equivalent
+    // Primary CEFR-level assessment
+    cefrLevel: {
+      level: CefrLevel;         // Pre-A1, A1, A2, B1, B2, C1, C2
+      label: string;            // e.g., "Intermediate"
+      description: string;      // Can-do statement
       confidence: 'high' | 'medium' | 'low';
-      matchScore: number;      // 0-100
+      matchScore: number;       // 0-100
     };
 
     // Standardized test equivalents
@@ -106,23 +107,9 @@ export interface SpeakingEvaluationResponse {
   };
 }
 
-function getExpectedGradeForAge(birthYear: number | null): string | null {
-  if (!birthYear) return null;
-  const age = new Date().getFullYear() - birthYear;
-
-  if (age <= 5) return 'K';
-  if (age <= 7) return '1-2';
-  if (age <= 9) return '3-4';
-  if (age <= 11) return '5-6';
-  if (age <= 13) return '7-8';
-  if (age <= 15) return '9-10';
-  if (age <= 17) return '11-12';
-  return 'College';
-}
-
-function getGradeIndex(grade: string): number {
-  const grades = ['K', '1-2', '3-4', '5-6', '7-8', '9-10', '11-12', 'College'];
-  return grades.indexOf(grade);
+function getCefrIndex(level: CefrLevel): number {
+  const levels: CefrLevel[] = ['Pre-A1', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+  return levels.indexOf(level);
 }
 
 function generateFeedback(
@@ -134,9 +121,9 @@ function generateFeedback(
   const improvements: string[] = [];
   const nextSteps: string[] = [];
 
-  // Copy from grade match analysis
-  metrics.gradeMatch.strengths.forEach(s => strengths.push(s));
-  metrics.gradeMatch.weaknesses.forEach(w => improvements.push(w));
+  // Copy from CEFR match analysis
+  metrics.cefrMatch.strengths.forEach(s => strengths.push(s));
+  metrics.cefrMatch.weaknesses.forEach(w => improvements.push(w));
 
   // Add specific metrics-based feedback
   if (metrics.avgWordsPerTurn >= 30) {
@@ -168,8 +155,8 @@ function generateFeedback(
   }
 
   // Generate next steps
-  const grade = metrics.gradeMatch.bestMatch;
-  const benchmark = GRADE_BENCHMARKS.find(b => b.grade === grade);
+  const cefrLevel = metrics.cefrMatch.level;
+  const benchmark = CEFR_BENCHMARKS.find(b => b.level === cefrLevel);
 
   if (benchmark) {
     if (metrics.vocabulary.tier2Percentage < benchmark.vocabularyProfile.tier2Min) {
@@ -249,41 +236,22 @@ export async function POST(request: NextRequest) {
     // ===== STEP 2: Convert to Standardized Scores =====
     const standardizedScores = convertToStandardizedScores(metrics);
 
-    // ===== STEP 3: Age Comparison =====
-    const expectedGrade = getExpectedGradeForAge(birthYear);
-    let performanceVsExpected: 'above' | 'at' | 'below' | null = null;
-    let gradeGap: number | null = null;
-
-    if (expectedGrade) {
-      const expectedIndex = getGradeIndex(expectedGrade);
-      const actualIndex = getGradeIndex(metrics.gradeMatch.bestMatch);
-      gradeGap = actualIndex - expectedIndex;
-
-      if (gradeGap > 0) {
-        performanceVsExpected = 'above';
-      } else if (gradeGap < 0) {
-        performanceVsExpected = 'below';
-      } else {
-        performanceVsExpected = 'at';
-      }
-    }
-
-    // ===== STEP 4: Generate Feedback =====
+    // ===== STEP 3: Generate Feedback =====
     const feedback = generateFeedback(metrics, language);
 
-    // ===== STEP 4.5: Generate Improvement Guide =====
+    // ===== STEP 3.5: Generate Improvement Guide =====
     const improvementGuide = generateImprovementGuide(metrics, language);
 
-    // ===== STEP 5: Build Response =====
+    // ===== STEP 4: Build Response =====
     const response: SpeakingEvaluationResponse = {
       success: true,
       evaluation: {
-        gradeLevel: {
-          grade: metrics.gradeMatch.bestMatch,
-          usGrade: metrics.gradeMatch.usGrade,
-          ukYear: metrics.gradeMatch.ukYear,
-          confidence: metrics.gradeMatch.confidence,
-          matchScore: metrics.gradeMatch.matchScores[0]?.score || 0,
+        cefrLevel: {
+          level: metrics.cefrMatch.level,
+          label: metrics.cefrMatch.label,
+          description: metrics.cefrMatch.description,
+          confidence: metrics.cefrMatch.confidence,
+          matchScore: metrics.cefrMatch.matchScores[0]?.score || 0,
         },
         testScores: standardizedScores,
         metrics: {
@@ -328,16 +296,16 @@ export async function POST(request: NextRequest) {
         feedback,
         improvementGuide,
         comparison: {
-          expectedForAge: expectedGrade,
-          performanceVsExpected,
-          gradeGap,
+          expectedForAge: null,
+          performanceVsExpected: null,
+          gradeGap: null,
         },
       },
       metadata: {
         totalWords: metrics.totalWords,
         totalTurns: metrics.totalTurns,
         evaluatedAt: new Date().toISOString(),
-        methodology: 'algorithmic-grade-level-analysis',
+        methodology: 'algorithmic-cefr-analysis',
       },
     };
 

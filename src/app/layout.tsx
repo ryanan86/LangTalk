@@ -62,7 +62,7 @@ const themeScript = `
     try {
       var theme = localStorage.getItem('taptalk-theme');
       if (!theme) {
-        theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'dark';
+        theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
       }
       if (theme === 'dark') {
         document.documentElement.classList.add('dark');
@@ -84,7 +84,7 @@ export default function RootLayout({
   const lang = cookieStore.get('lang')?.value || 'en';
 
   return (
-    <html lang={lang} translate="no" className="dark" suppressHydrationWarning>
+    <html lang={lang} translate="no" suppressHydrationWarning>
       <head>
         <meta name="google" content="notranslate" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

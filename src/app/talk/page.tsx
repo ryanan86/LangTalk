@@ -150,8 +150,8 @@ function TalkContent() {
     try {
       await document.fonts.ready;
 
-      const isDark = document.documentElement.classList.contains('dark');
-      const bgColor = isDark ? '#1a1a1a' : '#f5f5f5';
+      // Report uses Midnight Glass (dark) design - always capture with dark background
+      const bgColor = '#0f172a';
       const sections = summaryRef.current.querySelectorAll<HTMLElement>('[data-report-section]');
       const date = new Date().toISOString().split('T')[0];
       const scale = 3;
@@ -2060,28 +2060,28 @@ function TalkContent() {
                       </div>
                     ) : speakingEval && (
                       <>
-                        {/* Primary Grade Level */}
+                        {/* Primary CEFR Level */}
                         <div className="flex items-center gap-4 mb-4 p-3 bg-white/[0.04] rounded-xl">
                           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                            <span className="text-white font-bold text-lg">{speakingEval.gradeLevel?.grade}</span>
+                            <span className="text-white font-bold text-lg">{speakingEval.cefrLevel?.level ?? speakingEval.gradeLevel?.grade}</span>
                           </div>
                           <div className="flex-1">
-                            <p className="text-lg font-bold text-white">{speakingEval.gradeLevel?.usGrade}</p>
-                            <p className="text-xs text-slate-400">{speakingEval.gradeLevel?.ukYear}</p>
+                            <p className="text-lg font-bold text-white">{speakingEval.cefrLevel?.label ?? speakingEval.gradeLevel?.usGrade}</p>
+                            <p className="text-xs text-slate-400">{speakingEval.cefrLevel?.description ?? speakingEval.gradeLevel?.ukYear}</p>
                             <span className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-medium ${
-                              speakingEval.gradeLevel?.confidence === 'high' ? 'bg-green-100 text-green-700' :
-                              speakingEval.gradeLevel?.confidence === 'medium' ? 'bg-amber-100 text-amber-700' :
+                              (speakingEval.cefrLevel?.confidence ?? speakingEval.gradeLevel?.confidence) === 'high' ? 'bg-green-100 text-green-700' :
+                              (speakingEval.cefrLevel?.confidence ?? speakingEval.gradeLevel?.confidence) === 'medium' ? 'bg-amber-100 text-amber-700' :
                               'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
                             }`}>
-                              {language === 'ko' ? '신뢰도' : 'Confidence'}: {speakingEval.gradeLevel?.confidence}
+                              {language === 'ko' ? '신뢰도' : 'Confidence'}: {speakingEval.cefrLevel?.confidence ?? speakingEval.gradeLevel?.confidence}
                             </span>
                           </div>
                         </div>
 
                         <p className="text-[10px] text-slate-400 mb-3 italic">
                           {language === 'ko'
-                            ? '* 영어 원어민 학년 기준으로 측정됩니다. ESL 학습자에게는 참고 지표로 활용하세요.'
-                            : '* Measured against native English speaker grade levels. Use as a reference benchmark.'}
+                            ? '* CEFR (유럽공통참조기준) 기반으로 측정됩니다.'
+                            : '* Measured using CEFR (Common European Framework) benchmarks for language learners.'}
                         </p>
 
                         {/* Test Score Equivalents */}

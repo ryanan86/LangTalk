@@ -389,17 +389,21 @@ export function calculateOverallScore(metrics: SpeechMetrics): number {
 }
 
 /**
- * Map overall score to grade level
+ * Map overall score to CEFR level
  */
+export function scoreToCefr(score: number): string {
+  if (score >= 93) return 'C2';
+  if (score >= 80) return 'C1';
+  if (score >= 65) return 'B2';
+  if (score >= 50) return 'B1';
+  if (score >= 35) return 'A2';
+  if (score >= 20) return 'A1';
+  return 'Pre-A1';
+}
+
+/** @deprecated Use scoreToCefr instead */
 export function scoreToGrade(score: number): string {
-  if (score >= 95) return 'College';
-  if (score >= 85) return '11-12';
-  if (score >= 75) return '9-10';
-  if (score >= 65) return '7-8';
-  if (score >= 55) return '5-6';
-  if (score >= 45) return '3-4';
-  if (score >= 30) return '1-2';
-  return 'K';
+  return scoreToCefr(score);
 }
 
 /**

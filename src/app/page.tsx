@@ -575,7 +575,7 @@ function HomePageContent() {
   const currentLevel = evaluatedGrade && gradeMapping[evaluatedGrade] ? gradeMapping[evaluatedGrade] : null;
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white overflow-hidden">
+    <div className="min-h-screen bg-theme dark:text-white text-zinc-900 overflow-hidden">
       {/* Animated Background - Dark only (GPU-promoted layer) */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{ willChange: 'transform', contain: 'strict' }}>
         {/* Morphing Gradient Blobs - Dark, desktop only (mobile: static, reduced blur) */}
@@ -612,8 +612,8 @@ function HomePageContent() {
       {/* Header - safe area for notch/status bar */}
       <header style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }} className={`z-50 ${
         session
-          ? 'relative border-b border-white/5 bg-[#020617]/80 backdrop-blur-md'
-          : 'absolute top-0 left-0 right-0 bg-transparent border-b border-white/10 md:relative md:bg-[#020617]/80 md:backdrop-blur-md md:border-white/5'
+          ? 'relative border-b border-theme bg-theme/80 backdrop-blur-md'
+          : 'absolute top-0 left-0 right-0 bg-transparent border-b dark:border-white/10 border-zinc-200/50 md:relative md:bg-theme/80 md:backdrop-blur-md md:border-theme'
       }`}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16 sm:h-20">
@@ -625,7 +625,7 @@ function HomePageContent() {
               {/* Desktop: About link */}
               <Link
                 href="/about"
-                className="hidden sm:block text-white/70 hover:text-white text-sm font-medium transition-colors"
+                className="hidden sm:block text-theme-secondary hover:text-theme-primary text-sm font-medium transition-colors"
               >
                 {language === 'ko' ? '소개' : 'About'}
               </Link>
@@ -640,9 +640,9 @@ function HomePageContent() {
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 animate-pulse" />
               ) : session ? (
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+                  <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface border border-theme">
                     <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                    <span className="text-sm text-white/70">{session.user?.name?.split(' ')[0]}</span>
+                    <span className="text-sm text-theme-secondary">{session.user?.name?.split(' ')[0]}</span>
                   </div>
                   {session.user?.image && (
                     <a
@@ -662,10 +662,10 @@ function HomePageContent() {
                   )}
                   <button
                     onClick={() => signOut()}
-                    className="p-1.5 sm:p-2 rounded-lg hover:bg-white/5 transition-colors"
+                    className="p-1.5 sm:p-2 rounded-lg hover:bg-surface-hover transition-colors"
                     title={t.signOut}
                   >
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-theme-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
                   </button>
@@ -683,7 +683,7 @@ function HomePageContent() {
                   <div className="hidden sm:flex items-center gap-3">
                     <button
                       onClick={handleGoogleSignIn}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white font-medium hover:bg-white/20 transition-all hover:scale-105 shadow-lg"
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-surface backdrop-blur-sm border border-theme text-theme-primary font-medium hover:bg-surface-hover transition-all hover:scale-105 shadow-lg"
                     >
                       <svg className="w-5 h-5" viewBox="0 0 24 24">
                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -833,9 +833,9 @@ function HomePageContent() {
               {/* Subscription Expiry Info - For active subscribers */}
               {session && isSubscribed && expiryDate && (
                 <div className="max-w-2xl mx-auto mb-6">
-                  <div className="text-center text-sm text-white/40">
+                  <div className="text-center text-sm text-theme-muted">
                     {language === 'ko' ? '이용 기간: ' : 'Subscription valid until: '}
-                    <span className="text-white/60 font-medium">{expiryDate}</span>
+                    <span className="text-theme-secondary font-medium">{expiryDate}</span>
                     {(() => {
                       const daysLeft = Math.ceil((new Date(expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
                       if (daysLeft <= 7 && daysLeft > 0) {
@@ -864,11 +864,11 @@ function HomePageContent() {
               {/* Progress Bar for debate unlock - only show when user has started */}
               {session && isSubscribed && !canAccessDebate && sessionCount > 0 && (
                 <div className="max-w-md mx-auto mb-6">
-                  <div className="flex items-center justify-between text-xs text-white/40 mb-2">
+                  <div className="flex items-center justify-between text-xs text-theme-muted mb-2">
                     <span>{language === 'ko' ? '디베이트 모드 잠금 해제' : 'Unlock Debate Mode'}</span>
                     <span>{sessionCount}/5</span>
                   </div>
-                  <div className="relative h-2 rounded-full bg-white/10 overflow-hidden">
+                  <div className="relative h-2 rounded-full dark:bg-white/10 bg-zinc-200 overflow-hidden">
                     <div
                       className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-amber-500 transition-all duration-1000"
                       style={{ width: `${(sessionCount / 5) * 100}%` }}
@@ -890,7 +890,7 @@ function HomePageContent() {
               {session && isSubscribed && sessionCount > 0 && (
                 <div className="max-w-2xl mx-auto mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* XP Progress */}
-                  <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/10">
+                  <div className="p-4 rounded-2xl bg-surface border border-theme">
                     <XPBar totalXP={userXP} />
                   </div>
                   {/* Daily Challenge */}
@@ -911,13 +911,13 @@ function HomePageContent() {
           <section className={`pb-6 transition-[opacity,transform] duration-700 delay-100 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
             <div className="max-w-6xl mx-auto px-4 sm:px-6">
               <div className="flex justify-center">
-                <div className="inline-flex p-1.5 rounded-2xl bg-white/5 border border-white/10">
+                <div className="inline-flex p-1.5 rounded-2xl bg-surface border border-theme">
                   <button
                     onClick={() => setActiveTab('talk')}
                     className={`px-6 sm:px-8 py-3 rounded-xl font-medium transition-all ${
                       activeTab === 'talk'
                         ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25'
-                        : 'text-white/50 hover:text-white'
+                        : 'text-theme-muted hover:text-theme-primary'
                     }`}
                   >
                     <span className="flex items-center gap-2">
@@ -932,7 +932,7 @@ function HomePageContent() {
                     className={`px-6 sm:px-8 py-3 rounded-xl font-medium transition-all relative ${
                       activeTab === 'debate'
                         ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25'
-                        : 'text-white/50 hover:text-white'
+                        : 'text-theme-muted hover:text-theme-primary'
                     }`}
                   >
                     <span className="flex items-center gap-2">
@@ -961,13 +961,13 @@ function HomePageContent() {
               {/* Not Logged In State */}
               {!session && (
                 <div className="max-w-md mx-auto text-center py-12">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-white/10 flex items-center justify-center mx-auto mb-6">
-                    <svg className="w-10 h-10 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-theme flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-10 h-10 text-theme-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">{t.loginRequired}</h3>
-                  <p className="text-white/50 mb-6">{language === 'ko' ? '간편하게 시작하세요' : 'Get started easily'}</p>
+                  <h3 className="text-xl font-semibold text-theme-primary mb-3">{t.loginRequired}</h3>
+                  <p className="text-theme-secondary mb-6">{language === 'ko' ? '간편하게 시작하세요' : 'Get started easily'}</p>
                   <div className="flex flex-col gap-3">
                     <button
                       onClick={handleGoogleSignIn}
@@ -997,13 +997,13 @@ function HomePageContent() {
               {/* Beta Signup States */}
               {session && !checkingSubscription && subscriptionStatus === 'not_found' && (
                 <div className="max-w-md mx-auto text-center py-12">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-white/10 flex items-center justify-center mx-auto mb-6">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-theme flex items-center justify-center mx-auto mb-6">
                     <svg className="w-10 h-10 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">{language === 'ko' ? '베타 서비스 신청' : 'Join Beta'}</h3>
-                  <p className="text-white/50 mb-6">{t.betaSignupPrompt}</p>
+                  <h3 className="text-xl font-semibold text-theme-primary mb-3">{language === 'ko' ? '베타 서비스 신청' : 'Join Beta'}</h3>
+                  <p className="text-theme-secondary mb-6">{t.betaSignupPrompt}</p>
                   {signupMessage && (
                     <div className="mb-4 p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 text-sm">
                       {signupMessage}
@@ -1026,8 +1026,8 @@ function HomePageContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">{language === 'ko' ? '검토 중' : 'Under Review'}</h3>
-                  <p className="text-white/50">{t.betaPending}</p>
+                  <h3 className="text-xl font-semibold text-theme-primary mb-3">{language === 'ko' ? '검토 중' : 'Under Review'}</h3>
+                  <p className="text-theme-secondary">{t.betaPending}</p>
                 </div>
               )}
 
@@ -1038,8 +1038,8 @@ function HomePageContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">{subscriptionStatus === 'expired' ? (language === 'ko' ? '만료됨' : 'Expired') : (language === 'ko' ? '비활성화됨' : 'Inactive')}</h3>
-                  <p className="text-white/50">{subscriptionStatus === 'expired' ? t.betaExpired : t.betaInactive}</p>
+                  <h3 className="text-xl font-semibold text-theme-primary mb-3">{subscriptionStatus === 'expired' ? (language === 'ko' ? '만료됨' : 'Expired') : (language === 'ko' ? '비활성화됨' : 'Inactive')}</h3>
+                  <p className="text-theme-secondary">{subscriptionStatus === 'expired' ? t.betaExpired : t.betaInactive}</p>
                 </div>
               )}
 
@@ -1048,7 +1048,7 @@ function HomePageContent() {
                 <>
                   {/* Microphone Test */}
                   <div className="max-w-md mx-auto mb-10">
-                    <div className="p-5 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-sm">
+                    <div className="p-5 rounded-2xl bg-surface border border-theme backdrop-blur-sm">
                       <div className="flex items-center gap-3 mb-4">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-400/20 to-emerald-400/20 flex items-center justify-center">
                           <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1056,15 +1056,15 @@ function HomePageContent() {
                           </svg>
                         </div>
                         <div>
-                          <h3 className="font-medium text-white">{t.testMicrophone}</h3>
-                          <p className="text-sm text-white/40">{t.micTestHint}</p>
+                          <h3 className="font-medium text-theme-primary">{t.testMicrophone}</h3>
+                          <p className="text-sm text-theme-muted">{t.micTestHint}</p>
                         </div>
                       </div>
 
                       {!isTesting ? (
                         <button
                           onClick={startMicTest}
-                          className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-all flex items-center justify-center gap-2"
+                          className="w-full py-3 rounded-xl bg-surface-hover hover:bg-surface border border-theme text-theme-secondary hover:text-theme-primary transition-all flex items-center justify-center gap-2"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
@@ -1077,15 +1077,15 @@ function HomePageContent() {
                             <div className="flex items-center justify-between py-3 px-4 rounded-xl bg-red-500/10 border border-red-500/20">
                               <div className="flex items-center gap-3">
                                 <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-                                <span className="text-white/70">{t.recording}</span>
+                                <span className="text-theme-secondary">{t.recording}</span>
                               </div>
-                              <button onClick={stopMicTest} className="text-sm text-white/50 hover:text-white">{t.stop}</button>
+                              <button onClick={stopMicTest} className="text-sm text-theme-muted hover:text-theme-primary">{t.stop}</button>
                             </div>
                           )}
                           {testStatus === 'processing' && (
                             <div className="flex items-center justify-center gap-3 py-4">
                               <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-                              <span className="text-white/70">{t.processing}</span>
+                              <span className="text-theme-secondary">{t.processing}</span>
                             </div>
                           )}
                           {(testStatus === 'success' || testStatus === 'error') && (
@@ -1093,10 +1093,10 @@ function HomePageContent() {
                               <p className={`text-sm ${testStatus === 'success' ? 'text-green-400' : 'text-red-400'}`}>
                                 {testStatus === 'success' ? t.weHeard : t.error}
                               </p>
-                              <p className="text-white mt-1">&ldquo;{testResult}&rdquo;</p>
+                              <p className="text-theme-primary mt-1">&ldquo;{testResult}&rdquo;</p>
                               <button
                                 onClick={() => { setIsTesting(false); setTestResult(null); setTestStatus('idle'); }}
-                                className="mt-3 text-sm text-white/50 hover:text-white"
+                                className="mt-3 text-sm text-theme-muted hover:text-theme-primary"
                               >
                                 {t.testAgain}
                               </button>
@@ -1110,10 +1110,10 @@ function HomePageContent() {
                   {/* Tutor Selection - Team Style */}
                   <div id="tutor-selection" className="mb-12">
                     <div className="text-center mb-10">
-                      <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+                      <h2 className="text-2xl sm:text-3xl font-bold text-theme-primary mb-3">
                         {language === 'ko' ? 'AI 튜터를 선택하세요' : 'Meet Your AI Tutors'}
                       </h2>
-                      <p className="text-white/50">
+                      <p className="text-theme-secondary">
                         {language === 'ko' ? '원어민 발음의 AI 튜터와 자유롭게 대화하세요' : 'Practice with native-speaking AI tutors'}
                       </p>
                       <div className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20">
@@ -1189,7 +1189,7 @@ function HomePageContent() {
                                 : 'bg-white/[0.04] hover:bg-white/[0.06]'
                             }`}>
                               {/* Video / Image Area */}
-                              <div className="relative h-44 sm:h-56 lg:h-72 overflow-hidden bg-slate-950">
+                              <div className="relative h-44 sm:h-56 lg:h-72 overflow-hidden dark:bg-slate-950 bg-zinc-100">
                                 {/* Tutor Image (always visible as base layer) */}
                                 <img
                                   src={`/tutors/${getTutorFileName(persona.id)}.jpg`}
@@ -1219,7 +1219,7 @@ function HomePageContent() {
                                 )}
 
                                 {/* Flag Badge */}
-                                <div className="absolute top-3 left-3 z-10 bg-slate-900/80 backdrop-blur-sm rounded-md p-1 shadow-sm">
+                                <div className="absolute top-3 left-3 z-10 dark:bg-slate-900/80 bg-white/80 backdrop-blur-sm rounded-md p-1 shadow-sm">
                                   <Flag country={persona.flag as 'US' | 'UK'} size={24} />
                                 </div>
 
@@ -1235,9 +1235,9 @@ function HomePageContent() {
 
                               {/* Info Section */}
                               <div className="relative p-4 sm:p-5 min-h-[100px] sm:min-h-[120px]">
-                                <h3 className="text-xl sm:text-2xl font-bold text-white mb-1">{persona.name}</h3>
-                                <p className="text-white/60 text-sm mb-1 line-clamp-1">{desc}</p>
-                                <p className="text-white/40 text-xs line-clamp-2">{style}</p>
+                                <h3 className="text-xl sm:text-2xl font-bold text-theme-primary mb-1">{persona.name}</h3>
+                                <p className="text-theme-secondary text-sm mb-1 line-clamp-1">{desc}</p>
+                                <p className="text-theme-muted text-xs line-clamp-2">{style}</p>
                               </div>
                             </div>
                           </button>
@@ -1254,7 +1254,7 @@ function HomePageContent() {
                       className={`inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-300 ${
                         selectedPersona
                           ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-105'
-                          : 'bg-white/10 text-white/40 cursor-not-allowed'
+                          : 'bg-surface text-theme-muted cursor-not-allowed'
                       }`}
                     >
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1263,7 +1263,7 @@ function HomePageContent() {
                       {t.startConversation}
                     </button>
                     {!selectedPersona && (
-                      <p className="text-white/40 text-sm mt-4">{t.selectTutorPrompt}</p>
+                      <p className="text-theme-muted text-sm mt-4">{t.selectTutorPrompt}</p>
                     )}
                   </div>
                 </>
@@ -1285,22 +1285,22 @@ function HomePageContent() {
                     </svg>
                   </div>
 
-                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">{t.debateMode}</h2>
-                  <p className="text-white/50 mb-8 max-w-md mx-auto">{t.debateDescription}</p>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-theme-primary mb-4">{t.debateMode}</h2>
+                  <p className="text-theme-secondary mb-8 max-w-md mx-auto">{t.debateDescription}</p>
 
                   {/* Features */}
                   <div className="grid grid-cols-3 gap-4 mb-8">
-                    <div className="p-4 rounded-xl bg-white/[0.04] border border-white/10">
+                    <div className="p-4 rounded-xl bg-surface border border-theme">
                       <div className="text-2xl mb-2">5</div>
-                      <div className="text-xs text-white/40">{language === 'ko' ? '참가자' : 'Participants'}</div>
+                      <div className="text-xs text-theme-muted">{language === 'ko' ? '참가자' : 'Participants'}</div>
                     </div>
-                    <div className="p-4 rounded-xl bg-white/[0.04] border border-white/10">
+                    <div className="p-4 rounded-xl bg-surface border border-theme">
                       <div className="text-2xl mb-2">6</div>
-                      <div className="text-xs text-white/40">{language === 'ko' ? '카테고리' : 'Categories'}</div>
+                      <div className="text-xs text-theme-muted">{language === 'ko' ? '카테고리' : 'Categories'}</div>
                     </div>
-                    <div className="p-4 rounded-xl bg-white/[0.04] border border-white/10">
+                    <div className="p-4 rounded-xl bg-surface border border-theme">
                       <div className="text-2xl mb-2">AI</div>
-                      <div className="text-xs text-white/40">{language === 'ko' ? '피드백' : 'Feedback'}</div>
+                      <div className="text-xs text-theme-muted">{language === 'ko' ? '피드백' : 'Feedback'}</div>
                     </div>
                   </div>
 
@@ -1318,24 +1318,24 @@ function HomePageContent() {
               ) : (
                 /* Locked Debate */
                 <div className="text-center">
-                  <div className="w-24 h-24 rounded-3xl bg-white/[0.04] border border-white/10 flex items-center justify-center mx-auto mb-6">
-                    <svg className="w-12 h-12 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-24 h-24 rounded-3xl bg-surface border border-theme flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-12 h-12 text-theme-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                   </div>
 
-                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">{t.debateLocked}</h2>
-                  <p className="text-white/50 mb-8">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-theme-primary mb-4">{t.debateLocked}</h2>
+                  <p className="text-theme-secondary mb-8">
                     {t.sessionsToUnlock.replace('{n}', String(5 - sessionCount))}
                   </p>
 
                   {/* Progress */}
                   <div className="max-w-xs mx-auto mb-8">
-                    <div className="flex justify-between text-sm text-white/40 mb-2">
+                    <div className="flex justify-between text-sm text-theme-muted mb-2">
                       <span>{t.sessionsCompleted.replace('{n}', String(sessionCount))}</span>
                       <span>5</span>
                     </div>
-                    <div className="h-3 rounded-full bg-white/10 overflow-hidden">
+                    <div className="h-3 rounded-full dark:bg-white/10 bg-zinc-200 overflow-hidden">
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500"
                         style={{ width: `${(sessionCount / 5) * 100}%` }}
@@ -1345,7 +1345,7 @@ function HomePageContent() {
 
                   <button
                     onClick={() => setActiveTab('talk')}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all"
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-surface hover:bg-surface-hover text-theme-primary transition-all"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
@@ -1461,7 +1461,7 @@ function HomePageContent() {
                     <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent mb-2">
                       {language === 'ko' ? '실시간' : 'Real-time'}
                     </div>
-                    <p className="text-white/40 text-sm leading-relaxed">
+                    <p className="text-theme-muted text-sm leading-relaxed">
                       {language === 'ko'
                         ? '대화 중 문법, 표현, 발음을 즉시 교정합니다. 틀린 부분만 짚어주니 흐름이 끊기지 않습니다.'
                         : 'Instant corrections on grammar, expressions, and pronunciation during your conversation.'}
@@ -1471,7 +1471,7 @@ function HomePageContent() {
                     <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent mb-2">
                       6 {language === 'ko' ? '명의 튜터' : 'Tutors'}
                     </div>
-                    <p className="text-white/40 text-sm leading-relaxed">
+                    <p className="text-theme-muted text-sm leading-relaxed">
                       {language === 'ko'
                         ? '미국/영국 발음, 다양한 성격의 AI 튜터. 편한 상대를 골라 부담 없이 대화하세요.'
                         : 'American & British accents, diverse personalities. Pick someone you vibe with.'}
@@ -1481,7 +1481,7 @@ function HomePageContent() {
                     <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent mb-2">
                       {language === 'ko' ? '음성 기반' : 'Voice-first'}
                     </div>
-                    <p className="text-white/40 text-sm leading-relaxed">
+                    <p className="text-theme-muted text-sm leading-relaxed">
                       {language === 'ko'
                         ? '타이핑 없이 말하기만 하세요. AI가 듣고, 이해하고, 자연스럽게 응답합니다.'
                         : 'No typing needed. Just speak. AI listens, understands, and responds naturally.'}
@@ -1508,7 +1508,7 @@ function HomePageContent() {
             {/* How It Works - Clean, no boxes */}
             <section className={`py-16 sm:py-24 transition-[opacity,transform] duration-700 delay-300 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
               <div className="max-w-4xl mx-auto px-4 sm:px-6">
-                <h2 className="text-2xl sm:text-3xl font-bold text-white text-center mb-16">
+                <h2 className="text-2xl sm:text-3xl font-bold text-theme-primary text-center mb-16">
                   {t.howItWorks}
                 </h2>
 
@@ -1518,19 +1518,19 @@ function HomePageContent() {
 
                   {[
                     { num: '1', title: t.step1Title, desc: t.step1Desc, color: 'text-purple-400', dotColor: 'bg-purple-500' },
-                    { num: '2', title: t.step2Title, desc: t.step2Desc, color: 'text-white', dotColor: 'bg-white/40' },
+                    { num: '2', title: t.step2Title, desc: t.step2Desc, color: 'dark:text-white text-zinc-900', dotColor: 'dark:bg-white/40 bg-zinc-400' },
                     { num: '3', title: t.step3Title, desc: t.step3Desc, color: 'text-amber-400', dotColor: 'bg-amber-500' },
                   ].map((step) => (
                     <div key={step.num} className="relative text-center sm:text-left">
                       {/* Step dot */}
-                      <div className="hidden sm:flex w-10 h-10 rounded-full bg-neutral-900 items-center justify-center mx-auto sm:mx-0 mb-6 relative z-10 ring-4 ring-neutral-900">
+                      <div className="hidden sm:flex w-10 h-10 rounded-full dark:bg-neutral-900 bg-zinc-100 items-center justify-center mx-auto sm:mx-0 mb-6 relative z-10 ring-4 dark:ring-neutral-900 ring-zinc-100">
                         <div className={`w-3 h-3 rounded-full ${step.dotColor}`} />
                       </div>
                       <div className={`text-5xl sm:text-6xl font-black ${step.color} opacity-20 leading-none mb-3 sm:hidden`}>
                         {step.num}
                       </div>
-                      <h3 className="text-lg font-semibold text-white mb-2">{step.title}</h3>
-                      <p className="text-white/40 text-sm leading-relaxed">{step.desc}</p>
+                      <h3 className="text-lg font-semibold text-theme-primary mb-2">{step.title}</h3>
+                      <p className="text-theme-muted text-sm leading-relaxed">{step.desc}</p>
                     </div>
                   ))}
                 </div>
@@ -1560,7 +1560,7 @@ function HomePageContent() {
                       <svg className="relative w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                     </a>
                   )}
-                  <p className="text-white/25 text-xs mt-4 tracking-wide">
+                  <p className="text-theme-muted opacity-60 text-xs mt-4 tracking-wide">
                     {session
                       ? (language === 'ko' ? '아래에서 원하는 튜터를 선택하세요' : 'Select your preferred tutor below')
                       : (language === 'ko' ? '가입만 하면 바로 시작 — 결제 정보 불필요' : 'Sign up and start immediately — no payment info needed')
@@ -1574,7 +1574,7 @@ function HomePageContent() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 py-8 border-t border-white/5">
+      <footer className="relative z-10 py-8 border-t border-theme">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center space-y-4">
           {/* Contact Button - WhatsApp */}
           <a
@@ -1588,7 +1588,7 @@ function HomePageContent() {
             </svg>
             {t.contactUs}
           </a>
-          <p className="text-white/40 text-sm">{t.footer}</p>
+          <p className="text-theme-muted text-sm">{t.footer}</p>
         </div>
       </footer>
 
@@ -1620,7 +1620,7 @@ function HomePageContent() {
             <div className="flex gap-3 mt-4">
               <button
                 onClick={handleWebSignIn}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                className="flex-1 px-4 py-2 text-sm font-medium text-white dark:bg-white/10 dark:hover:bg-white/20 bg-white/80 hover:bg-white rounded-lg transition-colors"
               >
                 {language === 'ko' ? '웹 로그인 사용' : 'Use Web Sign-In'}
               </button>
@@ -1640,7 +1640,7 @@ function HomePageContent() {
 
 export default function HomePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#020617]" />}>
+    <Suspense fallback={<div className="min-h-screen bg-theme" />}>
       <HomePageContent />
     </Suspense>
   );

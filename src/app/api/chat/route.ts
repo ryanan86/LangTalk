@@ -8,6 +8,19 @@ import { getPersona } from '@/lib/personas';
 import { getAgeGroup, calculateAdaptiveDifficulty } from '@/lib/speechMetrics';
 import { getUserData } from '@/lib/sheetHelper';
 
+// Timeout wrapper to prevent session freezing on API hangs
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timeout after ${ms}ms`)), ms)
+    ),
+  ]);
+}
+
+const CONVERSATION_FALLBACK = "Hmm, let me think about that for a moment. Could you tell me a bit more?";
+const ANALYSIS_FALLBACK_MSG = 'Analysis temporarily unavailable';
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -213,7 +226,7 @@ WHAT CHANGES:
 WHAT STAYS THE SAME:
 - Still a casual friend, NOT a teacher or interviewer
 - Still follow ALL conversation flow rules above (topic changes, short responses, no interrogation)
-- Still keep responses under 20 words
+- Keep responses natural length (2-4 sentences). Don't artificially shorten.
 - Fun and natural conversation > educational moments
 - ${learnerAge <= 8 ? 'This child is very young - keep it extra simple, playful, and encouraging. Use easy words.' : 'This child can handle slightly deeper questions - connect ideas, explore reasons.'}`;
       }
@@ -446,7 +459,7 @@ End with genuine encouragement in your character's style.
 Be specific, helpful, and maintain your teaching persona.`;
     } else {
       // Default conversation mode
-      systemPrompt += `\n\nIMPORTANT: ALWAYS respond in ENGLISH ONLY. Never use Korean or any other language.\n\nYou are having a natural conversation. Keep responses concise (2-3 sentences). Ask follow-up questions to keep the conversation going.\n\nNATURAL RECAST: If the user makes an obvious grammar error, naturally use the correct form in your response (e.g., user says "I goed there" -> you say "Oh you went there? Cool!"). Never explicitly correct them - just naturally echo the right form. If no error, just respond normally.`;
+      systemPrompt += `\n\nIMPORTANT: ALWAYS respond in ENGLISH ONLY. Never use Korean or any other language.\n\nYou are having a natural conversation. Respond naturally (2-4 sentences). Include at least one follow-up question or thought-provoking comment to keep the conversation going. When correcting, provide a brief reason why.\n\nNATURAL RECAST: If the user makes an obvious grammar error, naturally use the correct form in your response (e.g., user says "I goed there" -> you say "Oh you went there? Cool!"). Never explicitly correct them - just naturally echo the right form. If no error, just respond normally.`;
 
       // IB PYP teaching style for elementary-age learners (13 and under)
       if (learnerAge && learnerAge <= 13) {
@@ -470,7 +483,10 @@ Be specific, helpful, and maintain your teaching persona.`;
     }));
 
     // Optimize max_tokens based on mode
-    const maxTokens = mode === 'interview' ? 150 : mode === 'analysis' ? 2048 : 500;
+    // interview: 350 (was 150 - too short, caused shallow responses)
+    // conversation: 600 (was 500 - allow richer tutoring responses)
+    // analysis: 2048 (structured JSON output)
+    const maxTokens = mode === 'interview' ? 350 : mode === 'analysis' ? 2048 : 600;
     const isAnalysis = mode === 'analysis';
 
     // Use streaming for interview mode when requested
@@ -571,7 +587,11 @@ Be specific, helpful, and maintain your teaching persona.`;
               responseMimeType: 'application/json',
             },
           });
-          const result = await model.generateContent({ contents: geminiContents });
+          const result = await withTimeout(
+            model.generateContent({ contents: geminiContents }),
+            15000,
+            'Gemini analysis'
+          );
           assistantMessage = result.response.text();
         } catch (geminiError) {
           console.error('Gemini analysis failed, falling back to GPT-4o:', geminiError);
@@ -582,13 +602,17 @@ Be specific, helpful, and maintain your teaching persona.`;
       // GPT-4o fallback for analysis
       if (!assistantMessage) {
         try {
-          const response = await openai.chat.completions.create({
-            model: 'gpt-4o',
-            max_tokens: maxTokens,
-            temperature: 0.5,
-            messages: openaiMessages,
-            response_format: { type: 'json_object' as const },
-          });
+          const response = await withTimeout(
+            openai.chat.completions.create({
+              model: 'gpt-4o',
+              max_tokens: maxTokens,
+              temperature: 0.5,
+              messages: openaiMessages,
+              response_format: { type: 'json_object' as const },
+            }),
+            20000,
+            'GPT-4o analysis'
+          );
           assistantMessage = response.choices[0]?.message?.content || '';
         } catch (gpt4oError) {
           console.error('GPT-4o analysis fallback also failed:', gpt4oError);
@@ -596,6 +620,7 @@ Be specific, helpful, and maintain your teaching persona.`;
       }
     } else {
       // Conversation/interview mode: Gemini primary (faster response)
+      // Hard timeout 8s for Gemini, 10s for OpenAI fallback
       if (gemini) {
         try {
           const model = gemini.getGenerativeModel({
@@ -606,7 +631,11 @@ Be specific, helpful, and maintain your teaching persona.`;
               maxOutputTokens: maxTokens,
             },
           });
-          const result = await model.generateContent({ contents: geminiContents });
+          const result = await withTimeout(
+            model.generateContent({ contents: geminiContents }),
+            8000,
+            'Gemini conversation'
+          );
           assistantMessage = result.response.text();
         } catch (geminiError) {
           console.error('Gemini conversation failed, falling back to OpenAI:', geminiError);
@@ -616,15 +645,29 @@ Be specific, helpful, and maintain your teaching persona.`;
 
       // OpenAI fallback for conversation
       if (!assistantMessage) {
-        const response = await openai.chat.completions.create({
-          model: 'gpt-4o-mini',
-          max_tokens: maxTokens,
-          temperature: 0.8,
-          presence_penalty: 0.6,
-          frequency_penalty: 0.3,
-          messages: openaiMessages,
-        });
-        assistantMessage = response.choices[0]?.message?.content || '';
+        try {
+          const response = await withTimeout(
+            openai.chat.completions.create({
+              model: 'gpt-4o-mini',
+              max_tokens: maxTokens,
+              temperature: 0.8,
+              presence_penalty: 0.6,
+              frequency_penalty: 0.3,
+              messages: openaiMessages,
+            }),
+            10000,
+            'OpenAI conversation'
+          );
+          assistantMessage = response.choices[0]?.message?.content || '';
+        } catch (openaiError) {
+          console.error('OpenAI conversation fallback also failed:', openaiError);
+        }
+      }
+
+      // Final fallback: prevent empty response / session freeze
+      if (!assistantMessage) {
+        console.warn('All conversation providers failed, using fallback response');
+        assistantMessage = CONVERSATION_FALLBACK;
       }
     }
 

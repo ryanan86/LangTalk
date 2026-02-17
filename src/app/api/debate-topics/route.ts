@@ -106,11 +106,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Merge all topics, prioritizing sheets > personalized > static
-    const allTopics = [
+    // Then filter for debate-ready topics and rank by quality
+    const mergedTopics = [
       ...sheetsTopics.slice(0, Math.floor(limit / 2)),
       ...personalizedTopics.slice(0, 3),
       ...topics,
-    ].slice(0, limit);
+    ];
+
+    const allTopics = mergedTopics
+      .filter(isDebateReadyTopic)
+      .sort((a, b) => topicQualityScore(b) - topicQualityScore(a))
+      .slice(0, limit);
 
     // Get available categories
     const availableCategories = getAvailableCategories(ageGroup);
@@ -143,6 +149,24 @@ function transformTopicRow(topic: DebateTopicRow) {
     ageGroups: topic.ageGroups,
     trendScore: topic.trendScore,
   };
+}
+
+function isDebateReadyTopic(topic: ReturnType<typeof transformTopicRow>): boolean {
+  const title = String(topic.title?.en || '');
+  const hasPro = Array.isArray(topic.proArguments) && topic.proArguments.length >= 2;
+  const hasCon = Array.isArray(topic.conArguments) && topic.conArguments.length >= 2;
+  const isMotionLike = /should|is|are|can|must|this house believes/i.test(title);
+  return hasPro && hasCon && isMotionLike;
+}
+
+function topicQualityScore(topic: ReturnType<typeof transformTopicRow>): number {
+  const title = String(topic.title?.en || '');
+  const isMotion = /should|is|are|can|must|this house believes/i.test(title) ? 20 : 0;
+  const proScore = Array.isArray(topic.proArguments) ? Math.min(topic.proArguments.length, 4) * 5 : 0;
+  const conScore = Array.isArray(topic.conArguments) ? Math.min(topic.conArguments.length, 4) * 5 : 0;
+  const vocabScore = Array.isArray(topic.keyVocabulary) ? Math.min(topic.keyVocabulary.length, 5) * 2 : 0;
+  const trend = Number(topic.trendScore || 0) * 0.1;
+  return isMotion + proScore + conScore + vocabScore + trend;
 }
 
 // Shuffle array helper

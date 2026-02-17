@@ -21,6 +21,12 @@ interface DebateChatRequest {
   language?: 'ko' | 'en';
 }
 
+function resolveDebateMotion(topic: DebateTopic): string {
+  const title = topic.title?.en || '';
+  if (/should|is|are|can|must|this house believes/i.test(title)) return title;
+  return `This house believes that ${title.toLowerCase().replace(/\.$/, '')}`;
+}
+
 // POST: Generate AI debate response
 export async function POST(request: NextRequest) {
   try {

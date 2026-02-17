@@ -209,7 +209,7 @@ export async function getLearningData(email: string): Promise<LearningDataRow | 
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'LearningData!A:F',
+      range: 'LearningData!A:G',
     });
 
     const rows = response.data.values || [];
@@ -222,6 +222,7 @@ export async function getLearningData(email: string): Promise<LearningDataRow | 
           corrections: row[2] ? JSON.parse(row[2]) : [],
           topicsHistory: row[3] ? JSON.parse(row[3]) : [],
           debateHistory: row[4] ? JSON.parse(row[4]) : [],
+          vocabBook: row[6] ? JSON.parse(row[6]) : [],
           updatedAt: row[5] || '',
         };
       }
@@ -244,7 +245,7 @@ export async function saveLearningData(data: LearningDataRow): Promise<boolean> 
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'LearningData!A:F',
+      range: 'LearningData!A:G',
     });
 
     const rows = response.data.values || [];
@@ -266,6 +267,7 @@ export async function saveLearningData(data: LearningDataRow): Promise<boolean> 
         .slice(0, MAX_ACTIVE_CORRECTIONS),
       topicsHistory: data.topicsHistory.slice(0, MAX_TOPICS_HISTORY),
       debateHistory: data.debateHistory.slice(0, MAX_DEBATE_HISTORY),
+      vocabBook: (data.vocabBook || []).slice(0, 1000),
       updatedAt: getKoreaTime(),
     };
 
@@ -276,19 +278,20 @@ export async function saveLearningData(data: LearningDataRow): Promise<boolean> 
       JSON.stringify(trimmedData.topicsHistory),
       JSON.stringify(trimmedData.debateHistory),
       trimmedData.updatedAt,
+      JSON.stringify(trimmedData.vocabBook),
     ];
 
     if (existingRowIndex !== -1) {
       await sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: `LearningData!A${existingRowIndex}:F${existingRowIndex}`,
+        range: `LearningData!A${existingRowIndex}:G${existingRowIndex}`,
         valueInputOption: 'RAW',
         requestBody: { values: [rowData] },
       });
     } else {
       await sheets.spreadsheets.values.append({
         spreadsheetId,
-        range: 'LearningData!A:F',
+        range: 'LearningData!A:G',
         valueInputOption: 'RAW',
         requestBody: { values: [rowData] },
       });
@@ -313,6 +316,7 @@ export async function addSession(email: string, session: SessionSummary): Promis
       corrections: [],
       topicsHistory: [],
       debateHistory: [],
+      vocabBook: [],
       updatedAt: getKoreaTime(),
     };
   }
@@ -353,6 +357,7 @@ export async function addCorrections(email: string, corrections: CorrectionItem[
       corrections: [],
       topicsHistory: [],
       debateHistory: [],
+      vocabBook: [],
       updatedAt: getKoreaTime(),
     };
   }

@@ -143,6 +143,19 @@ export interface DebateHistoryItem {
   feedback?: string;
 }
 
+export interface VocabBookItem {
+  id: string;
+  term: string;
+  sourceSentence?: string;
+  sourceSessionId?: string;
+  sourceDate: string; // YYYY-MM-DD
+  difficulty: 1 | 2 | 3 | 4 | 5;
+  proficiency: number; // 0-100
+  nextReviewAt: string; // YYYY-MM-DD
+  reviewCount: number;
+  status: 'active' | 'mastered' | 'archived';
+}
+
 export interface LearningDataRow {
   email: string;
   // Keep last 20 sessions (older ones summarized in stats)
@@ -153,6 +166,8 @@ export interface LearningDataRow {
   topicsHistory: TopicHistory[];
   // Debate history
   debateHistory: DebateHistoryItem[];
+  // Vocabulary notebook generated from sessions
+  vocabBook: VocabBookItem[];
   updatedAt: string;
 }
 

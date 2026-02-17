@@ -1,11 +1,9 @@
 /**
  * Speaking Metrics Analysis Library
  *
- * Measures spoken English against US/UK native speaker grade-level standards
- * Based on:
- * - US Common Core Speaking & Listening Standards (K-12)
- * - UK National Curriculum Spoken Language Requirements
- * - WIDA Speaking Rubric (ELD Standards)
+ * Evaluates spoken English using CEFR (Common European Framework of Reference)
+ * benchmarks designed for non-native speakers.
+ * Also converts to IELTS, TOEFL, and TOEIC equivalents.
  */
 
 // ========== VOCABULARY TIERS ==========
@@ -173,162 +171,115 @@ const COORDINATING_CONJUNCTIONS = new Set(['and', 'but', 'or', 'nor', 'for', 'ye
 
 const RELATIVE_PRONOUNS = new Set(['who', 'whom', 'whose', 'which', 'that', 'where', 'when', 'why']);
 
-// ========== US GRADE LEVEL BENCHMARKS ==========
-export interface GradeBenchmark {
-  grade: string;
-  usGrade: string;
-  ukYear: string;
-  ageRange: string;
-  avgWordsPerTurn: [number, number];  // [min, max]
+// ========== CEFR BENCHMARKS ==========
+export type CefrLevel = 'Pre-A1' | 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
+
+export interface CefrBenchmark {
+  level: CefrLevel;
+  label: string;           // e.g., "Basic User", "Independent User"
+  description: string;     // Can-do statement
+  avgWordsPerTurn: [number, number];
   sentenceComplexity: {
-    simpleRatio: [number, number];     // % of simple sentences
-    compoundRatio: [number, number];   // % of compound sentences
-    complexRatio: [number, number];    // % of complex sentences
+    simpleRatio: [number, number];
+    compoundRatio: [number, number];
+    complexRatio: [number, number];
   };
   vocabularyProfile: {
-    tier1Max: number;      // Maximum % of Tier 1 words expected
-    tier2Min: number;      // Minimum % of Tier 2 words expected
-    tier3Expected: boolean; // Whether Tier 3 words are expected
+    tier1Max: number;
+    tier2Min: number;
+    tier3Expected: boolean;
   };
   discourseMarkers: {
-    basicMin: number;      // Minimum basic markers per 100 words
+    basicMin: number;
     intermediateMin: number;
     advancedMin: number;
   };
-  grammarErrorRate: number;  // Acceptable errors per 100 words
-  lexicalDiversity: [number, number];  // TTR range
+  grammarErrorRate: number;
+  lexicalDiversity: [number, number];
 }
 
-export const GRADE_BENCHMARKS: GradeBenchmark[] = [
+export const CEFR_BENCHMARKS: CefrBenchmark[] = [
   {
-    grade: 'K',
-    usGrade: 'Kindergarten',
-    ukYear: 'Reception',
-    ageRange: '5-6',
-    avgWordsPerTurn: [3, 10],
-    sentenceComplexity: {
-      simpleRatio: [85, 100],
-      compoundRatio: [0, 15],
-      complexRatio: [0, 5],
-    },
-    vocabularyProfile: { tier1Max: 98, tier2Min: 0, tier3Expected: false },
+    level: 'Pre-A1',
+    label: 'Foundation',
+    description: 'Can use isolated words and memorized phrases',
+    avgWordsPerTurn: [2, 6],
+    sentenceComplexity: { simpleRatio: [95, 100], compoundRatio: [0, 5], complexRatio: [0, 0] },
+    vocabularyProfile: { tier1Max: 99, tier2Min: 0, tier3Expected: false },
     discourseMarkers: { basicMin: 0, intermediateMin: 0, advancedMin: 0 },
+    grammarErrorRate: 20,
+    lexicalDiversity: [0.2, 0.4],
+  },
+  {
+    level: 'A1',
+    label: 'Beginner',
+    description: 'Can interact in a simple way with slow, clear speech',
+    avgWordsPerTurn: [5, 12],
+    sentenceComplexity: { simpleRatio: [85, 100], compoundRatio: [0, 15], complexRatio: [0, 5] },
+    vocabularyProfile: { tier1Max: 97, tier2Min: 1, tier3Expected: false },
+    discourseMarkers: { basicMin: 0.5, intermediateMin: 0, advancedMin: 0 },
     grammarErrorRate: 15,
     lexicalDiversity: [0.3, 0.5],
   },
   {
-    grade: '1-2',
-    usGrade: 'Grade 1-2',
-    ukYear: 'Year 1-2',
-    ageRange: '6-8',
-    avgWordsPerTurn: [8, 18],
-    sentenceComplexity: {
-      simpleRatio: [70, 90],
-      compoundRatio: [10, 25],
-      complexRatio: [0, 10],
-    },
-    vocabularyProfile: { tier1Max: 95, tier2Min: 2, tier3Expected: false },
-    discourseMarkers: { basicMin: 1, intermediateMin: 0, advancedMin: 0 },
-    grammarErrorRate: 12,
+    level: 'A2',
+    label: 'Elementary',
+    description: 'Can describe immediate environment and basic needs',
+    avgWordsPerTurn: [10, 22],
+    sentenceComplexity: { simpleRatio: [65, 85], compoundRatio: [10, 25], complexRatio: [0, 15] },
+    vocabularyProfile: { tier1Max: 93, tier2Min: 5, tier3Expected: false },
+    discourseMarkers: { basicMin: 1.5, intermediateMin: 0.3, advancedMin: 0 },
+    grammarErrorRate: 10,
     lexicalDiversity: [0.35, 0.55],
   },
   {
-    grade: '3-4',
-    usGrade: 'Grade 3-4',
-    ukYear: 'Year 3-4',
-    ageRange: '8-10',
-    avgWordsPerTurn: [15, 30],
-    sentenceComplexity: {
-      simpleRatio: [50, 70],
-      compoundRatio: [20, 35],
-      complexRatio: [10, 25],
-    },
-    vocabularyProfile: { tier1Max: 90, tier2Min: 8, tier3Expected: false },
-    discourseMarkers: { basicMin: 2, intermediateMin: 0.5, advancedMin: 0 },
-    grammarErrorRate: 8,
+    level: 'B1',
+    label: 'Intermediate',
+    description: 'Can deal with most situations in travel and daily life',
+    avgWordsPerTurn: [18, 38],
+    sentenceComplexity: { simpleRatio: [45, 65], compoundRatio: [20, 35], complexRatio: [10, 30] },
+    vocabularyProfile: { tier1Max: 88, tier2Min: 10, tier3Expected: false },
+    discourseMarkers: { basicMin: 2, intermediateMin: 1, advancedMin: 0 },
+    grammarErrorRate: 7,
     lexicalDiversity: [0.4, 0.6],
   },
   {
-    grade: '5-6',
-    usGrade: 'Grade 5-6',
-    ukYear: 'Year 5-6',
-    ageRange: '10-12',
-    avgWordsPerTurn: [25, 45],
-    sentenceComplexity: {
-      simpleRatio: [35, 55],
-      compoundRatio: [25, 40],
-      complexRatio: [20, 35],
-    },
-    vocabularyProfile: { tier1Max: 85, tier2Min: 12, tier3Expected: false },
-    discourseMarkers: { basicMin: 2, intermediateMin: 1, advancedMin: 0 },
-    grammarErrorRate: 6,
-    lexicalDiversity: [0.45, 0.65],
-  },
-  {
-    grade: '7-8',
-    usGrade: 'Grade 7-8 (Middle School)',
-    ukYear: 'Year 7-8',
-    ageRange: '12-14',
-    avgWordsPerTurn: [35, 60],
-    sentenceComplexity: {
-      simpleRatio: [25, 45],
-      compoundRatio: [25, 40],
-      complexRatio: [30, 45],
-    },
-    vocabularyProfile: { tier1Max: 78, tier2Min: 18, tier3Expected: true },
+    level: 'B2',
+    label: 'Upper Intermediate',
+    description: 'Can interact with fluency and spontaneity on a wide range of topics',
+    avgWordsPerTurn: [30, 60],
+    sentenceComplexity: { simpleRatio: [30, 50], compoundRatio: [25, 35], complexRatio: [25, 45] },
+    vocabularyProfile: { tier1Max: 80, tier2Min: 16, tier3Expected: true },
     discourseMarkers: { basicMin: 2, intermediateMin: 1.5, advancedMin: 0.3 },
     grammarErrorRate: 4,
     lexicalDiversity: [0.5, 0.7],
   },
   {
-    grade: '9-10',
-    usGrade: 'Grade 9-10 (High School)',
-    ukYear: 'Year 9-10 (GCSE)',
-    ageRange: '14-16',
-    avgWordsPerTurn: [45, 80],
-    sentenceComplexity: {
-      simpleRatio: [20, 35],
-      compoundRatio: [25, 40],
-      complexRatio: [35, 50],
-    },
+    level: 'C1',
+    label: 'Advanced',
+    description: 'Can express ideas fluently with flexible and effective language use',
+    avgWordsPerTurn: [45, 90],
+    sentenceComplexity: { simpleRatio: [20, 35], compoundRatio: [25, 35], complexRatio: [35, 55] },
     vocabularyProfile: { tier1Max: 72, tier2Min: 22, tier3Expected: true },
-    discourseMarkers: { basicMin: 2, intermediateMin: 2, advancedMin: 0.5 },
-    grammarErrorRate: 3,
+    discourseMarkers: { basicMin: 2, intermediateMin: 2, advancedMin: 1 },
+    grammarErrorRate: 2,
     lexicalDiversity: [0.55, 0.75],
   },
   {
-    grade: '11-12',
-    usGrade: 'Grade 11-12 (High School)',
-    ukYear: 'Year 11-12 (A-Level)',
-    ageRange: '16-18',
-    avgWordsPerTurn: [55, 100],
-    sentenceComplexity: {
-      simpleRatio: [15, 30],
-      compoundRatio: [25, 40],
-      complexRatio: [40, 55],
-    },
-    vocabularyProfile: { tier1Max: 68, tier2Min: 26, tier3Expected: true },
-    discourseMarkers: { basicMin: 2, intermediateMin: 2, advancedMin: 1 },
-    grammarErrorRate: 2,
-    lexicalDiversity: [0.6, 0.8],
-  },
-  {
-    grade: 'College',
-    usGrade: 'College/University',
-    ukYear: 'University',
-    ageRange: '18+',
-    avgWordsPerTurn: [70, 150],
-    sentenceComplexity: {
-      simpleRatio: [10, 25],
-      compoundRatio: [25, 35],
-      complexRatio: [45, 60],
-    },
-    vocabularyProfile: { tier1Max: 62, tier2Min: 30, tier3Expected: true },
+    level: 'C2',
+    label: 'Proficient',
+    description: 'Can express with precision and natural flow in complex situations',
+    avgWordsPerTurn: [60, 150],
+    sentenceComplexity: { simpleRatio: [10, 25], compoundRatio: [25, 35], complexRatio: [45, 60] },
+    vocabularyProfile: { tier1Max: 65, tier2Min: 28, tier3Expected: true },
     discourseMarkers: { basicMin: 2, intermediateMin: 2.5, advancedMin: 1.5 },
-    grammarErrorRate: 1.5,
-    lexicalDiversity: [0.65, 0.85],
+    grammarErrorRate: 1,
+    lexicalDiversity: [0.6, 0.85],
   },
 ];
+
+/** @deprecated Use CEFR_BENCHMARKS instead */
+export const GRADE_BENCHMARKS = CEFR_BENCHMARKS;
 
 // ========== METRICS CALCULATION ==========
 
@@ -380,13 +331,13 @@ export interface SpeakingMetricsResult {
     estimatedErrorsPer100: number;
   };
 
-  // Grade matching
-  gradeMatch: {
-    bestMatch: string;
-    usGrade: string;
-    ukYear: string;
+  // CEFR level matching
+  cefrMatch: {
+    level: CefrLevel;
+    label: string;
+    description: string;
     confidence: 'high' | 'medium' | 'low';
-    matchScores: { grade: string; score: number }[];
+    matchScores: { level: CefrLevel; score: number }[];
     strengths: string[];
     weaknesses: string[];
   };
@@ -493,10 +444,10 @@ function estimateGrammarIssues(text: string): {
   return issues;
 }
 
-function calculateGradeMatch(metrics: Omit<SpeakingMetricsResult, 'gradeMatch'>): SpeakingMetricsResult['gradeMatch'] {
-  const scores: { grade: string; score: number; details: string[] }[] = [];
+function calculateCefrLevel(metrics: Omit<SpeakingMetricsResult, 'cefrMatch'>): SpeakingMetricsResult['cefrMatch'] {
+  const scores: { level: CefrLevel; score: number; details: string[] }[] = [];
 
-  for (const benchmark of GRADE_BENCHMARKS) {
+  for (const benchmark of CEFR_BENCHMARKS) {
     let score = 0;
     // Max score is 100 (20 + 25 + 25 + 15 + 15)
     const details: string[] = [];
@@ -534,10 +485,14 @@ function calculateGradeMatch(metrics: Omit<SpeakingMetricsResult, 'gradeMatch'>)
     let vocabScore = 0;
     if (tier1Pct <= benchmark.vocabularyProfile.tier1Max) vocabScore += 12;
     if (tier2Pct >= benchmark.vocabularyProfile.tier2Min) vocabScore += 13;
-    else vocabScore += (tier2Pct / benchmark.vocabularyProfile.tier2Min) * 13;
+    else if (benchmark.vocabularyProfile.tier2Min > 0) {
+      vocabScore += (tier2Pct / benchmark.vocabularyProfile.tier2Min) * 13;
+    } else {
+      vocabScore += 13;
+    }
 
     if (tier2Pct < benchmark.vocabularyProfile.tier2Min) {
-      details.push('Academic vocabulary below grade level');
+      details.push('Academic vocabulary below expected level');
     }
 
     score += vocabScore;
@@ -547,6 +502,11 @@ function calculateGradeMatch(metrics: Omit<SpeakingMetricsResult, 'gradeMatch'>)
     let discourseScore = 0;
 
     if (basicPer100 >= benchmark.discourseMarkers.basicMin) discourseScore += 5;
+    else if (benchmark.discourseMarkers.basicMin > 0) {
+      discourseScore += (basicPer100 / benchmark.discourseMarkers.basicMin) * 5;
+    } else {
+      discourseScore += 5;
+    }
     if (intermediatePer100 >= benchmark.discourseMarkers.intermediateMin) discourseScore += 5;
     else if (benchmark.discourseMarkers.intermediateMin > 0) {
       discourseScore += (intermediatePer100 / benchmark.discourseMarkers.intermediateMin) * 5;
@@ -573,14 +533,14 @@ function calculateGradeMatch(metrics: Omit<SpeakingMetricsResult, 'gradeMatch'>)
       }
     }
 
-    scores.push({ grade: benchmark.grade, score: Math.round(score), details });
+    scores.push({ level: benchmark.level, score: Math.round(score), details });
   }
 
   // Sort by score descending
   scores.sort((a, b) => b.score - a.score);
 
   const bestMatch = scores[0];
-  const benchmark = GRADE_BENCHMARKS.find(b => b.grade === bestMatch.grade)!;
+  const benchmark = CEFR_BENCHMARKS.find(b => b.level === bestMatch.level)!;
 
   // Determine confidence
   const scoreDiff = scores[0].score - (scores[1]?.score || 0);
@@ -598,9 +558,9 @@ function calculateGradeMatch(metrics: Omit<SpeakingMetricsResult, 'gradeMatch'>)
   const weaknesses: string[] = [];
 
   if (metrics.vocabulary.tier2Percentage >= benchmark.vocabularyProfile.tier2Min) {
-    strengths.push('Academic vocabulary at or above grade level');
+    strengths.push('Academic vocabulary at or above expected level');
   } else {
-    weaknesses.push('Academic vocabulary below grade level');
+    weaknesses.push('Academic vocabulary below expected level');
   }
 
   if (metrics.sentenceComplexity.complexRatio >= benchmark.sentenceComplexity.complexRatio[0]) {
@@ -622,11 +582,11 @@ function calculateGradeMatch(metrics: Omit<SpeakingMetricsResult, 'gradeMatch'>)
   }
 
   return {
-    bestMatch: bestMatch.grade,
-    usGrade: benchmark.usGrade,
-    ukYear: benchmark.ukYear,
+    level: bestMatch.level,
+    label: benchmark.label,
+    description: benchmark.description,
     confidence,
-    matchScores: scores.slice(0, 4).map(s => ({ grade: s.grade, score: s.score })),
+    matchScores: scores.slice(0, 4).map(s => ({ level: s.level, score: s.score })),
     strengths,
     weaknesses,
   };
@@ -718,12 +678,12 @@ export function analyzeSpeaking(userMessages: string[]): SpeakingMetricsResult {
     grammarIndicators,
   };
 
-  // Calculate grade match
-  const gradeMatch = calculateGradeMatch(intermediateResult);
+  // Calculate CEFR level match
+  const cefrMatch = calculateCefrLevel(intermediateResult);
 
   return {
     ...intermediateResult,
-    gradeMatch,
+    cefrMatch,
   };
 }
 
@@ -808,15 +768,14 @@ export function compareProgress(
 }
 
 // ========== TEST SCORE CONVERSIONS ==========
-// Based on grade level and performance metrics
+// Based on CEFR level and performance metrics
 
 /**
- * Grade to standardized test score conversion tables
+ * CEFR to standardized test score conversion tables
  * Based on:
  * - IELTS Speaking Band Descriptors (0-9)
  * - TOEFL iBT Speaking Rubric (0-30)
  * - TOEIC Speaking Score (0-200, Levels 1-8)
- * - CEFR Levels (Pre-A1 to C2)
  */
 
 export interface StandardizedScores {
@@ -844,59 +803,29 @@ export interface StandardizedScores {
     descriptor: string;
   };
 
-  // CEFR Level
+  // CEFR Level (primary framework)
   cefr: {
-    level: 'Pre-A1' | 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
+    level: CefrLevel;
     descriptor: string;
   };
 }
 
-// Grade to score conversion maps
-const GRADE_TO_IELTS: Record<string, number> = {
-  'K': 2.0,
-  '1-2': 2.5,
-  '3-4': 3.5,
-  '5-6': 4.5,
-  '7-8': 5.5,
-  '9-10': 6.0,
-  '11-12': 6.5,
-  'College': 7.5,
+// CEFR to score conversion maps
+const CEFR_TO_IELTS: Record<CefrLevel, number> = {
+  'Pre-A1': 1.5, 'A1': 2.5, 'A2': 3.5, 'B1': 4.5, 'B2': 6.0, 'C1': 7.5, 'C2': 8.5,
 };
 
-const GRADE_TO_TOEFL: Record<string, number> = {
-  'K': 5,
-  '1-2': 8,
-  '3-4': 12,
-  '5-6': 16,
-  '7-8': 20,
-  '9-10': 23,
-  '11-12': 26,
-  'College': 28,
+const CEFR_TO_TOEFL: Record<CefrLevel, number> = {
+  'Pre-A1': 3, 'A1': 8, 'A2': 13, 'B1': 18, 'B2': 23, 'C1': 28, 'C2': 30,
 };
 
-const GRADE_TO_TOEIC: Record<string, number> = {
-  'K': 40,
-  '1-2': 60,
-  '3-4': 90,
-  '5-6': 120,
-  '7-8': 140,
-  '9-10': 160,
-  '11-12': 180,
-  'College': 190,
-};
-
-const GRADE_TO_CEFR: Record<string, StandardizedScores['cefr']['level']> = {
-  'K': 'Pre-A1',
-  '1-2': 'A1',
-  '3-4': 'A2',
-  '5-6': 'B1',
-  '7-8': 'B1',
-  '9-10': 'B2',
-  '11-12': 'B2',
-  'College': 'C1',
+const CEFR_TO_TOEIC: Record<CefrLevel, number> = {
+  'Pre-A1': 20, 'A1': 50, 'A2': 80, 'B1': 120, 'B2': 155, 'C1': 180, 'C2': 195,
 };
 
 const IELTS_DESCRIPTORS: Record<number, string> = {
+  1.0: 'Non-user',
+  1.5: 'Extremely limited communication',
   2.0: 'Extremely limited communication',
   2.5: 'Intermittent communication',
   3.0: 'Very limited range of language',
@@ -933,7 +862,7 @@ const TOEIC_LEVELS: { min: number; max: number; level: 1 | 2 | 3 | 4 | 5 | 6 | 7
   { min: 180, max: 200, level: 8, descriptor: 'Professional proficiency' },
 ];
 
-const CEFR_DESCRIPTORS: Record<StandardizedScores['cefr']['level'], string> = {
+const CEFR_DESCRIPTORS: Record<CefrLevel, string> = {
   'Pre-A1': 'Can use isolated words and basic phrases',
   'A1': 'Can interact in a simple way with clear, slow speech',
   'A2': 'Can describe immediate environment and basic needs',
@@ -946,49 +875,44 @@ const CEFR_DESCRIPTORS: Record<StandardizedScores['cefr']['level'], string> = {
 export function convertToStandardizedScores(
   metrics: SpeakingMetricsResult
 ): StandardizedScores {
-  const grade = metrics.gradeMatch.bestMatch;
-  const matchScore = metrics.gradeMatch.matchScores[0]?.score || 50;
+  const cefrLevel = metrics.cefrMatch.level;
+  const matchScore = metrics.cefrMatch.matchScores[0]?.score || 50;
 
-  // Adjust base scores based on match score (0-100)
-  // If match score is high (80+), they might be at the upper end of that grade
-  // If match score is low (50-), they might be at the lower end
+  // Adjust base scores based on match confidence
   const scoreMultiplier = matchScore >= 70 ? 1.1 : matchScore <= 50 ? 0.9 : 1.0;
 
   // ===== IELTS =====
-  let baseIelts = GRADE_TO_IELTS[grade] || 4.0;
-  baseIelts = Math.min(9, Math.max(2, baseIelts * scoreMultiplier));
+  let baseIelts = CEFR_TO_IELTS[cefrLevel];
+  baseIelts = Math.min(9, Math.max(1, baseIelts * scoreMultiplier));
   // Round to nearest 0.5
   const ieltsBand = Math.round(baseIelts * 2) / 2;
 
   // Calculate sub-scores based on metrics
-  const fluencyScore = Math.min(9, Math.max(2,
+  const fluencyScore = Math.min(9, Math.max(1,
     ieltsBand + (metrics.avgWordsPerTurn > 30 ? 0.5 : metrics.avgWordsPerTurn < 15 ? -0.5 : 0)
   ));
-  const vocabScore = Math.min(9, Math.max(2,
+  const vocabScore = Math.min(9, Math.max(1,
     ieltsBand + (metrics.vocabulary.tier2Percentage > 15 ? 0.5 : metrics.vocabulary.tier2Percentage < 5 ? -0.5 : 0)
   ));
-  const grammarScore = Math.min(9, Math.max(2,
+  const grammarScore = Math.min(9, Math.max(1,
     ieltsBand + (metrics.sentenceComplexity.complexRatio > 25 ? 0.5 : metrics.sentenceComplexity.simpleRatio > 80 ? -0.5 : 0)
   ));
   const pronScore = ieltsBand; // Cannot estimate from text
 
   // ===== TOEFL =====
-  let baseToefl = GRADE_TO_TOEFL[grade] || 15;
+  let baseToefl = CEFR_TO_TOEFL[cefrLevel];
   baseToefl = Math.min(30, Math.max(0, Math.round(baseToefl * scoreMultiplier)));
   const toeflLevel = TOEFL_LEVELS.find(l => baseToefl >= l.min && baseToefl <= l.max) || TOEFL_LEVELS[0];
 
   // ===== TOEIC =====
-  let baseToeic = GRADE_TO_TOEIC[grade] || 100;
+  let baseToeic = CEFR_TO_TOEIC[cefrLevel];
   baseToeic = Math.min(200, Math.max(0, Math.round(baseToeic * scoreMultiplier)));
   const toeicLevel = TOEIC_LEVELS.find(l => baseToeic >= l.min && baseToeic <= l.max) || TOEIC_LEVELS[0];
-
-  // ===== CEFR =====
-  const cefrLevel = GRADE_TO_CEFR[grade] || 'A2';
 
   return {
     ielts: {
       band: ieltsBand,
-      descriptor: IELTS_DESCRIPTORS[ieltsBand] || IELTS_DESCRIPTORS[Math.floor(ieltsBand)],
+      descriptor: IELTS_DESCRIPTORS[ieltsBand] || IELTS_DESCRIPTORS[Math.floor(ieltsBand)] || '',
       fluency: Math.round(fluencyScore * 2) / 2,
       vocabulary: Math.round(vocabScore * 2) / 2,
       grammar: Math.round(grammarScore * 2) / 2,
@@ -1030,8 +954,8 @@ export function generateImprovementGuide(
 ): ImprovementGuideItem[] {
   const isKo = language === 'ko';
   const guide: ImprovementGuideItem[] = [];
-  const grade = metrics.gradeMatch.bestMatch;
-  const benchmark = GRADE_BENCHMARKS.find(b => b.grade === grade);
+  const cefrLevel = metrics.cefrMatch.level;
+  const benchmark = CEFR_BENCHMARKS.find(b => b.level === cefrLevel);
   if (!benchmark) return guide;
 
   // 1. Vocabulary Diversity
