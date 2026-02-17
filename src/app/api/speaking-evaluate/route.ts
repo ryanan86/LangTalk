@@ -107,11 +107,6 @@ export interface SpeakingEvaluationResponse {
   };
 }
 
-function getCefrIndex(level: CefrLevel): number {
-  const levels: CefrLevel[] = ['Pre-A1', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
-  return levels.indexOf(level);
-}
-
 function generateFeedback(
   metrics: SpeakingMetricsResult,
   language: string
@@ -209,7 +204,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       userMessages,      // Array of user message strings
-      birthYear,         // Optional: for age-appropriate comparison
+      // birthYear reserved for future age-appropriate comparison
       language = 'en',   // 'en' or 'ko' for feedback language
     } = body;
 

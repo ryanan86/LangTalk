@@ -19,7 +19,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 }
 
 const CONVERSATION_FALLBACK = "Hmm, let me think about that for a moment. Could you tell me a bit more?";
-const ANALYSIS_FALLBACK_MSG = 'Analysis temporarily unavailable';
+
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
