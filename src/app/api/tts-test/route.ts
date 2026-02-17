@@ -5,9 +5,11 @@ import { authOptions } from '@/lib/auth';
 
 const ADMIN_EMAILS = ['ryan@nuklabs.com', 'taewoongan@gmail.com'];
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let _openai: OpenAI | null = null;
+function getOpenAI() {
+  if (!_openai) _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  return _openai;
+}
 
 // OpenAI voice mapping
 const OPENAI_VOICES: Record<string, 'alloy' | 'echo' | 'fable' | 'nova' | 'onyx' | 'shimmer'> = {
@@ -35,7 +37,7 @@ async function generateWithOpenAI(text: string, tutorId: string): Promise<ArrayB
   const voice = OPENAI_VOICES[tutorId] || 'shimmer';
   const isKid = KID_TUTORS.includes(tutorId);
 
-  const mp3 = await openai.audio.speech.create({
+  const mp3 = await getOpenAI().audio.speech.create({
     model: 'tts-1',
     voice,
     input: text,

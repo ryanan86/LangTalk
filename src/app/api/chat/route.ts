@@ -21,9 +21,11 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 const CONVERSATION_FALLBACK = "Hmm, let me think about that for a moment. Could you tell me a bit more?";
 
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let _openai: OpenAI | null = null;
+function getOpenAI() {
+  if (!_openai) _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  return _openai;
+}
 
 // Gemini 2.0 Flash (primary: faster + better corrections + lower cost)
 const gemini = process.env.GEMINI_API_KEY
@@ -535,7 +537,7 @@ Be specific, helpful, and maintain your teaching persona.`;
       }
 
       // OpenAI fallback for streaming
-      const stream = await openai.chat.completions.create({
+      const stream = await getOpenAI().chat.completions.create({
         model: 'gpt-4o-mini',
         max_tokens: maxTokens,
         temperature: 0.8,
@@ -603,7 +605,7 @@ Be specific, helpful, and maintain your teaching persona.`;
       if (!assistantMessage) {
         try {
           const response = await withTimeout(
-            openai.chat.completions.create({
+            getOpenAI().chat.completions.create({
               model: 'gpt-4o',
               max_tokens: maxTokens,
               temperature: 0.5,
@@ -647,7 +649,7 @@ Be specific, helpful, and maintain your teaching persona.`;
       if (!assistantMessage) {
         try {
           const response = await withTimeout(
-            openai.chat.completions.create({
+            getOpenAI().chat.completions.create({
               model: 'gpt-4o-mini',
               max_tokens: maxTokens,
               temperature: 0.8,

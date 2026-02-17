@@ -6,9 +6,11 @@ import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getDebatePersona, moderator } from '@/lib/debatePersonas';
 import { DebateMessage, DebatePhase, DebateTopic, DebateTeam } from '@/lib/debateTypes';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let _openai: OpenAI | null = null;
+function getOpenAI() {
+  if (!_openai) _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  return _openai;
+}
 
 interface DebateChatRequest {
   messages: DebateMessage[];
@@ -72,7 +74,7 @@ export async function POST(request: NextRequest) {
     // More tokens for opening/closing (2min turns), less for rebuttals (90s)
     const maxTokens = (phase === 'opening' || phase === 'closing') ? 350 : 250;
 
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAI().chat.completions.create({
       model: 'gpt-4o-mini',
       max_tokens: maxTokens,
       temperature: 0.8,
@@ -297,7 +299,7 @@ Return ONLY valid JSON in this EXACT format:
 
 Be fair and objective in scoring. The total for each team must equal the sum of their 5 criteria scores.`;
 
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAI().chat.completions.create({
       model: 'gpt-4o',
       max_tokens: 2000,
       temperature: 0.3,

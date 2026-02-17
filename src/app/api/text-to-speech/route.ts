@@ -4,9 +4,11 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let _openai: OpenAI | null = null;
+function getOpenAI() {
+  if (!_openai) _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  return _openai;
+}
 
 // Fish Audio voice reference IDs (primary provider)
 const FISH_AUDIO_VOICE_MAP: Record<string, string> = {
@@ -61,7 +63,7 @@ async function generateWithFishAudio(text: string, voice: string, speed?: number
 }
 
 async function generateWithOpenAI(text: string, voice: string): Promise<ArrayBuffer> {
-  const mp3 = await openai.audio.speech.create({
+  const mp3 = await getOpenAI().audio.speech.create({
     model: 'tts-1',
     voice: voice as 'nova' | 'onyx' | 'alloy' | 'echo' | 'fable' | 'shimmer',
     input: text,
