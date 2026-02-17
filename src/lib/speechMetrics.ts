@@ -120,7 +120,17 @@ export function calculateAdaptiveDifficulty(
 
   let difficulty = baseDifficultyMap[ageGroup.key];
 
-  // Expected grade ranges per age group
+  // CEFR level order (primary) and legacy US grade order (fallback)
+  const cefrOrder = ['Pre-A1', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+  const expectedCefr: Record<AgeGroupKey, string[]> = {
+    young_child: ['Pre-A1', 'A1'],
+    older_child: ['A1', 'A2'],
+    teenager: ['A2', 'B1'],
+    adult: ['B1', 'B2'],
+  };
+
+  // Legacy grade support
+  const gradeOrder = ['K', '1-2', '3-4', '5-6', '7-8', '9-10', '11-12', 'College'];
   const expectedGrades: Record<AgeGroupKey, string[]> = {
     young_child: ['K', '1-2'],
     older_child: ['3-4', '5-6'],
@@ -128,19 +138,32 @@ export function calculateAdaptiveDifficulty(
     adult: ['11-12', 'College'],
   };
 
-  const gradeOrder = ['K', '1-2', '3-4', '5-6', '7-8', '9-10', '11-12', 'College'];
-
-  // Adjust based on previous grade vs expected
+  // Adjust based on previous level vs expected
   if (previousGrade) {
-    const prevIndex = gradeOrder.indexOf(previousGrade);
-    const expectedRange = expectedGrades[ageGroup.key];
-    const expectedMinIndex = gradeOrder.indexOf(expectedRange[0]);
-    const expectedMaxIndex = gradeOrder.indexOf(expectedRange[expectedRange.length - 1]);
-
-    if (prevIndex > expectedMaxIndex) {
-      difficulty = Math.min(5, difficulty + 1); // Above expectation → harder
-    } else if (prevIndex < expectedMinIndex) {
-      difficulty = Math.max(1, difficulty - 1); // Below expectation → easier
+    const cefrIndex = cefrOrder.indexOf(previousGrade);
+    if (cefrIndex !== -1) {
+      // CEFR level path
+      const expectedRange = expectedCefr[ageGroup.key];
+      const expectedMinIndex = cefrOrder.indexOf(expectedRange[0]);
+      const expectedMaxIndex = cefrOrder.indexOf(expectedRange[expectedRange.length - 1]);
+      if (cefrIndex > expectedMaxIndex) {
+        difficulty = Math.min(5, difficulty + 1);
+      } else if (cefrIndex < expectedMinIndex) {
+        difficulty = Math.max(1, difficulty - 1);
+      }
+    } else {
+      // Legacy grade path (backward compat)
+      const prevIndex = gradeOrder.indexOf(previousGrade);
+      if (prevIndex !== -1) {
+        const expectedRange = expectedGrades[ageGroup.key];
+        const expectedMinIndex = gradeOrder.indexOf(expectedRange[0]);
+        const expectedMaxIndex = gradeOrder.indexOf(expectedRange[expectedRange.length - 1]);
+        if (prevIndex > expectedMaxIndex) {
+          difficulty = Math.min(5, difficulty + 1);
+        } else if (prevIndex < expectedMinIndex) {
+          difficulty = Math.max(1, difficulty - 1);
+        }
+      }
     }
   }
 

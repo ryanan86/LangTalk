@@ -15,6 +15,9 @@ import html2canvas from 'html2canvas';
 import TapTalkLogo from '@/components/TapTalkLogo';
 // import { useLipSync } from '@/hooks/useLipSync';
 import AnalysisReview from '@/components/AnalysisReview';
+import { buildSessionVocabItems } from '@/lib/vocabBook';
+import { calculateLearningRank } from '@/lib/learningRank';
+import type { VocabBookItem } from '@/lib/sheetTypes';
 
 type Phase = 'ready' | 'recording' | 'interview' | 'analysis' | 'review' | 'shadowing' | 'summary';
 
@@ -116,6 +119,7 @@ function TalkContent() {
   // Previous session data for adaptive difficulty
   const [previousGrade, setPreviousGrade] = useState<string | null>(null);
   const [previousLevelDetails, setPreviousLevelDetails] = useState<{ grammar: number; vocabulary: number; fluency: number; comprehension: number } | null>(null);
+  const [sessionVocab, setSessionVocab] = useState<VocabBookItem[]>([]);
 
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -367,6 +371,32 @@ function TalkContent() {
           const historyData = await historyRes.json();
           if (historyData.success) {
             console.log('Lesson history saved' + (correctionsToSave ? ` with ${correctionsToSave.length} corrections` : ''));
+          }
+
+          // Step 3: Build and save vocab book items
+          try {
+            const userUtterances = messages.filter(m => m.role === 'user').map(m => m.content);
+            const vocabItems = buildSessionVocabItems({
+              userUtterances,
+              corrections: analysis?.corrections?.map(c => ({
+                original: c.original,
+                corrected: c.corrected,
+                category: c.category,
+              })),
+              sourceSessionId: `${tutorId}-${Date.now()}`,
+            });
+            setSessionVocab(vocabItems);
+
+            if (vocabItems.length > 0) {
+              await fetch('/api/vocab-book', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items: vocabItems }),
+              });
+              console.log(`Vocab book: ${vocabItems.length} items saved`);
+            }
+          } catch (vocabErr) {
+            console.error('Vocab book save failed:', vocabErr);
           }
         } catch (err) {
           console.error('Failed to save session data:', err);
@@ -2364,6 +2394,88 @@ function TalkContent() {
                   <p className="text-white italic text-sm sm:text-base">&ldquo;{analysis.encouragement}&rdquo;</p>
                   <p className="text-xs sm:text-sm text-violet-400 mt-2">— {persona.name}</p>
                 </div>
+
+                {/* Learning Rank */}
+                {analysis.levelDetails && (
+                  (() => {
+                    const rank = calculateLearningRank({
+                      levelDetails: analysis.levelDetails,
+                      currentLevel: analysis.evaluatedGrade,
+                    });
+                    return (
+                      <div className="report-glass rounded-2xl p-4 sm:p-6 report-fade-up report-fade-up-5">
+                        <h3 className="font-semibold text-white mb-3 flex items-center gap-2 text-sm sm:text-base">
+                          <span className="w-5 h-5 sm:w-6 sm:h-6 bg-cyan-500/20 rounded-full flex items-center justify-center">
+                            <svg className="w-3 h-3 sm:w-4 sm:h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                          </span>
+                          {language === 'ko' ? '학습 포지션' : 'Learning Position'}
+                        </h3>
+                        <div className="flex items-center gap-4">
+                          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center">
+                            <span className="text-white font-bold text-lg">{rank.compositeScore}</span>
+                          </div>
+                          <div>
+                            <p className="text-lg font-bold text-white">{rank.band}</p>
+                            <p className="text-xs text-slate-400">
+                              {language === 'ko' ? '종합 점수' : 'Composite Score'}: {rank.compositeScore}/100
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-3 h-2 bg-white/10 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-cyan-500 to-teal-400 rounded-full transition-all duration-1000"
+                            style={{ width: `${rank.compositeScore}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()
+                )}
+
+                {/* Session Vocabulary */}
+                {sessionVocab.length > 0 && (
+                  <div className="report-glass rounded-2xl p-4 sm:p-6 report-fade-up report-fade-up-5">
+                    <h3 className="font-semibold text-white mb-3 flex items-center gap-2 text-sm sm:text-base">
+                      <span className="w-5 h-5 sm:w-6 sm:h-6 bg-teal-500/20 rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 sm:w-4 sm:h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                      </span>
+                      {language === 'ko' ? `오늘의 단어장 (${sessionVocab.length})` : `Session Vocabulary (${sessionVocab.length})`}
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      {sessionVocab.slice(0, 8).map((item) => (
+                        <div key={item.id} className="bg-white/[0.04] rounded-lg p-2.5">
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="text-sm font-medium text-white">{item.term}</span>
+                            <div className="flex gap-0.5">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <div
+                                  key={i}
+                                  className={`w-1 h-3 rounded-full ${i < item.difficulty ? 'bg-teal-400' : 'bg-white/10'}`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-teal-500 rounded-full"
+                              style={{ width: `${item.proficiency}%` }}
+                            />
+                          </div>
+                          <p className="text-[10px] text-slate-500 mt-1 truncate">{item.sourceSentence}</p>
+                        </div>
+                      ))}
+                    </div>
+                    {sessionVocab.length > 8 && (
+                      <p className="text-xs text-slate-500 mt-2 text-center">
+                        +{sessionVocab.length - 8} {language === 'ko' ? '개 더' : 'more'}
+                      </p>
+                    )}
+                  </div>
+                )}
                 </div>
               </>
             )}

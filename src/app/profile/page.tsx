@@ -80,6 +80,7 @@ export default function ProfilePage() {
   const [selectedType, setSelectedType] = useState<string>('');
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [customContext, setCustomContext] = useState('');
+  const [difficultyPreference, setDifficultyPreference] = useState<string>('adaptive');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [schedule, setSchedule] = useState<{
@@ -102,6 +103,7 @@ export default function ProfilePage() {
           setSelectedType(data.profile.profileType || '');
           setSelectedInterests(data.profile.interests || []);
           setCustomContext(data.profile.customContext || '');
+          setDifficultyPreference(data.profile.difficultyPreference || 'adaptive');
           if (data.profile.schedule) {
             setSchedule(data.profile.schedule);
           }
@@ -165,6 +167,7 @@ export default function ProfilePage() {
           profileType: selectedType,
           interests: selectedInterests,
           customContext,
+          difficultyPreference,
         }),
       });
 
@@ -308,6 +311,44 @@ export default function ProfilePage() {
             className="w-full p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-dark-surface text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
             rows={3}
           />
+        </section>
+
+        {/* Difficulty Preference */}
+        <section>
+          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
+            {language === 'ko' ? '학습 난이도' : 'Learning Difficulty'}
+          </h2>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
+            {language === 'ko'
+              ? '교정과 피드백의 난이도를 설정합니다.'
+              : 'Set the difficulty level for corrections and feedback.'}
+          </p>
+
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { id: 'easy', labelEn: 'Easy', labelKo: '쉬움', descEn: 'Simple corrections, basic vocabulary', descKo: '기본 교정, 쉬운 어휘' },
+              { id: 'medium', labelEn: 'Medium', labelKo: '보통', descEn: 'Balanced corrections and vocabulary', descKo: '균형 잡힌 교정과 어휘' },
+              { id: 'hard', labelEn: 'Hard', labelKo: '어려움', descEn: 'Advanced corrections, rich vocabulary', descKo: '고급 교정, 풍부한 어휘' },
+              { id: 'adaptive', labelEn: 'Adaptive', labelKo: '자동 조절', descEn: 'Adjusts based on your performance', descKo: '성과에 따라 자동 조절' },
+            ].map(option => (
+              <button
+                key={option.id}
+                onClick={() => setDifficultyPreference(option.id)}
+                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                  difficultyPreference === option.id
+                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10'
+                    : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-dark-surface hover:border-neutral-300 dark:hover:border-neutral-600'
+                }`}
+              >
+                <span className="font-medium text-neutral-900 dark:text-white block text-sm">
+                  {language === 'ko' ? option.labelKo : option.labelEn}
+                </span>
+                <span className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 block">
+                  {language === 'ko' ? option.descKo : option.descEn}
+                </span>
+              </button>
+            ))}
+          </div>
         </section>
 
         {/* Schedule Settings */}
