@@ -1108,20 +1108,33 @@ function TalkContent() {
         body: JSON.stringify({ text, voice: persona.voice, ...(speed && { speed }) }),
       });
 
+      if (!response.ok) {
+        console.error('TTS API error:', response.status);
+        return;
+      }
+
       const audioBlob = await response.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
 
       if (audioRef.current) {
         const audio = audioRef.current;
 
-        // Wait for audio to be fully loaded before playing
+        // Wait for audio to be fully loaded before playing (with timeout)
         await new Promise<void>((resolve, reject) => {
+          const loadTimeout = setTimeout(() => {
+            audio.removeEventListener('canplaythrough', onCanPlay);
+            audio.removeEventListener('error', onError);
+            reject(new Error('Audio load timeout'));
+          }, 10000);
+
           const onCanPlay = () => {
+            clearTimeout(loadTimeout);
             audio.removeEventListener('canplaythrough', onCanPlay);
             audio.removeEventListener('error', onError);
             resolve();
           };
           const onError = () => {
+            clearTimeout(loadTimeout);
             audio.removeEventListener('canplaythrough', onCanPlay);
             audio.removeEventListener('error', onError);
             reject(new Error('Audio load failed'));
@@ -1134,7 +1147,29 @@ function TalkContent() {
           audio.load();
         });
 
-        await audio.play();
+        // Wait for audio to finish playing (not just start)
+        await new Promise<void>((resolve) => {
+          const playTimeout = setTimeout(() => {
+            audio.pause();
+            resolve();
+          }, 30000);
+
+          audio.onended = () => {
+            clearTimeout(playTimeout);
+            resolve();
+          };
+          audio.onerror = () => {
+            clearTimeout(playTimeout);
+            resolve();
+          };
+
+          audio.play().catch(() => {
+            clearTimeout(playTimeout);
+            resolve();
+          });
+        });
+
+        URL.revokeObjectURL(audioUrl);
       }
     } catch (error) {
       console.error('TTS error:', error);
@@ -1196,13 +1231,23 @@ function TalkContent() {
       if (audioRef.current) {
         const audio = audioRef.current;
 
+        // Wait for audio to load (with timeout to prevent queue hang)
         await new Promise<void>((resolve, reject) => {
+          const loadTimeout = setTimeout(() => {
+            audio.removeEventListener('canplaythrough', onCanPlay);
+            audio.removeEventListener('error', onError);
+            console.warn('Audio load timeout - skipping sentence');
+            reject(new Error('Audio load timeout'));
+          }, 8000);
+
           const onCanPlay = () => {
+            clearTimeout(loadTimeout);
             audio.removeEventListener('canplaythrough', onCanPlay);
             audio.removeEventListener('error', onError);
             resolve();
           };
           const onError = () => {
+            clearTimeout(loadTimeout);
             audio.removeEventListener('canplaythrough', onCanPlay);
             audio.removeEventListener('error', onError);
             reject(new Error('Audio load failed'));
@@ -1220,7 +1265,7 @@ function TalkContent() {
             console.warn('Audio play timeout - skipping sentence');
             audio.pause();
             resolve();
-          }, 15000); // 15초 타임아웃
+          }, 15000);
 
           audio.onended = () => {
             clearTimeout(playTimeout);
@@ -1269,7 +1314,12 @@ function TalkContent() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: sentence, voice: persona.voice }),
-    }).then(res => res.blob());
+    }).then(res => {
+      if (!res.ok) {
+        throw new Error(`TTS API error: ${res.status}`);
+      }
+      return res.blob();
+    });
 
     audioCacheRef.current.set(sentence, promise);
     return promise;
