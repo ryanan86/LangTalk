@@ -4,6 +4,12 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 
+let _openai: OpenAI | null = null;
+function getOpenAI() {
+  if (!_openai) _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  return _openai;
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Auth check
@@ -19,12 +25,10 @@ export async function POST(request: NextRequest) {
     // Check API key
     if (!process.env.OPENAI_API_KEY) {
       console.error('OPENAI_API_KEY is not set');
-      return NextResponse.json({ error: 'API key not configured', text: '' }, { status: 500 });
+      return NextResponse.json({ error: 'API key not configured', text: '' }, { status: 503 });
     }
 
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+    const openai = getOpenAI();
 
     const formData = await request.formData();
     const audioFile = formData.get('audio') as File;
@@ -33,12 +37,6 @@ export async function POST(request: NextRequest) {
       console.error('No audio file in request');
       return NextResponse.json({ error: 'No audio file provided', text: '' }, { status: 400 });
     }
-
-    console.log('\n=== Audio File Info ===');
-    console.log('File name:', audioFile.name);
-    console.log('File size:', audioFile.size, 'bytes');
-    console.log('File type:', audioFile.type);
-    console.log('========================\n');
 
     if (audioFile.size < 100) {
       console.error('Audio file too small:', audioFile.size);
@@ -50,10 +48,6 @@ export async function POST(request: NextRequest) {
       model: 'whisper-1',
       prompt: 'This is an English conversation practice. The speaker may have a Korean accent.',
     });
-
-    console.log('\n=== STT Result ===');
-    console.log('User said:', transcription.text);
-    console.log('==================\n');
 
     return NextResponse.json({ text: transcription.text || '' });
   } catch (error: unknown) {
