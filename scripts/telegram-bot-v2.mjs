@@ -597,22 +597,39 @@ console.log('📡 양방향 텔레그램 봇 v2 시작...');
 let pollingOffset = 0;
 const POLL_TIMEOUT = 30; // seconds (long polling)
 
-function httpGet(url) {
+function httpGet(url, timeoutMs = 60000) {
   return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
+    const req = https.get(url, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
         try { resolve(JSON.parse(data)); }
         catch (e) { reject(new Error('JSON parse error: ' + data.substring(0, 100))); }
       });
-    }).on('error', reject);
+    });
+    req.on('error', reject);
+    req.setTimeout(timeoutMs, () => {
+      req.destroy();
+      reject(new Error(`HTTP request timeout after ${timeoutMs}ms`));
+    });
   });
 }
 
 let pollCount = 0;
 let consecutiveErrors = 0;
 const MAX_CONSECUTIVE_ERRORS = 10; // 10회 연속 실패 시 프로세스 재시작 (~30초)
+let lastSuccessfulPoll = Date.now();
+const HEALTH_CHECK_INTERVAL = 60000; // 1분마다 헬스체크
+const MAX_NO_SUCCESS_MS = 5 * 60 * 1000; // 5분간 성공 없으면 재시작
+
+// 헬스체크: 장시간 성공적 poll이 없으면 프로세스 강제 재시작
+setInterval(() => {
+  const elapsed = Date.now() - lastSuccessfulPoll;
+  if (elapsed > MAX_NO_SUCCESS_MS) {
+    console.error(`[HEALTH] ${Math.round(elapsed / 1000)}초간 성공적 poll 없음. 프로세스 재시작.`);
+    process.exit(1);
+  }
+}, HEALTH_CHECK_INTERVAL);
 
 async function pollUpdates() {
   pollCount++;
@@ -623,6 +640,7 @@ async function pollUpdates() {
       console.log(`[Recovery] ${consecutiveErrors}회 에러 후 연결 복구됨`);
     }
     consecutiveErrors = 0; // 성공 시 카운터 리셋
+    lastSuccessfulPoll = Date.now(); // 헬스체크용 타임스탬프 갱신
     if (data.ok && data.result?.length > 0) {
       console.log(`${data.result.length}개 업데이트 수신`);
       for (const update of data.result) {

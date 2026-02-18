@@ -11,7 +11,7 @@ import {
   getAgeGroup,
   calculateAdaptiveDifficulty,
 } from '@/lib/speechMetrics';
-import html2canvas from 'html2canvas';
+// html2canvas is dynamically imported when needed (lazy loading for ~46kB bundle savings)
 import TapTalkLogo from '@/components/TapTalkLogo';
 // import { useLipSync } from '@/hooks/useLipSync';
 import AnalysisReview from '@/components/AnalysisReview';
@@ -164,6 +164,7 @@ function TalkContent() {
       // Capture all sections first
       const canvases: HTMLCanvasElement[] = [];
       for (let i = 0; i < sections.length; i++) {
+        const { default: html2canvas } = await import('html2canvas');
         const canvas = await html2canvas(sections[i], {
           backgroundColor: bgColor,
           scale,

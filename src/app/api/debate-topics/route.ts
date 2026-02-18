@@ -8,6 +8,8 @@ import {
   generateTopicFromContext,
 } from '@/lib/debateTopicsV2';
 
+export const dynamic = 'force-dynamic';
+
 // GET: Get debate topics suitable for the user
 export async function GET(request: NextRequest) {
   try {

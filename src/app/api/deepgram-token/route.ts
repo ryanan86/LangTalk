@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 // Returns Deepgram API key for authenticated users (browser WebSocket STT)
 export async function GET() {
   try {

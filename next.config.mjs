@@ -78,9 +78,6 @@ export default withSentryConfig(nextConfig, {
   // Hide source maps from browser devtools
   hideSourceMaps: true,
 
-  // Automatically tree-shake Sentry logger statements
-  disableLogger: true,
-
   // Enable tunneling to avoid ad blockers
   tunnelRoute: "/monitoring",
 

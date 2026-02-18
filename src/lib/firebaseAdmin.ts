@@ -11,9 +11,11 @@ if (!admin.apps.length) {
         credential: admin.credential.cert(serviceAccount),
       });
     } catch (e) {
-      console.error('Firebase Admin initialization error:', e);
+      if (process.env.NODE_ENV !== 'production' || process.env.NEXT_PHASE !== 'phase-production-build') {
+        console.error('Firebase Admin initialization error:', e);
+      }
     }
-  } else {
+  } else if (process.env.NODE_ENV !== 'production' || process.env.NEXT_PHASE !== 'phase-production-build') {
     console.warn('FIREBASE_SERVICE_ACCOUNT_KEY not set, push notifications disabled');
   }
 }
