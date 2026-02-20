@@ -56,6 +56,7 @@ interface Analysis {
   evaluatedGrade?: string;
   levelDetails?: LevelDetails;
   encouragement: string;
+  confidence?: 'high' | 'medium' | 'low';
 }
 
 function TalkContent() {
@@ -2058,7 +2059,20 @@ function TalkContent() {
                         <span className="text-white font-bold text-lg">{analysis.evaluatedGrade}</span>
                       </div>
                       <div>
-                        <p className="text-xs dark:text-slate-400 text-zinc-500">{language === 'ko' ? 'CEFR 등급' : 'CEFR Level'}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs dark:text-slate-400 text-zinc-500">{language === 'ko' ? 'CEFR 등급' : 'CEFR Level'}</p>
+                          {analysis.confidence && (
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                              analysis.confidence === 'high' ? 'bg-green-500/20 text-green-400' :
+                              analysis.confidence === 'low' ? 'bg-amber-500/20 text-amber-400' :
+                              'bg-blue-500/20 text-blue-400'
+                            }`}>
+                              {analysis.confidence === 'high' ? (language === 'ko' ? '신뢰도 높음' : 'High confidence') :
+                               analysis.confidence === 'low' ? (language === 'ko' ? '대화 부족' : 'Low confidence') :
+                               (language === 'ko' ? '보통' : 'Medium')}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-lg font-bold dark:text-white text-zinc-900">
                           {analysis.evaluatedGrade === 'Pre-A1' && (language === 'ko' ? '입문' : 'Beginner')}
                           {analysis.evaluatedGrade === 'A1' && (language === 'ko' ? '초급' : 'Elementary')}

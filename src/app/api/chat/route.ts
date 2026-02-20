@@ -791,6 +791,23 @@ Be specific, helpful, and maintain your teaching persona.`;
           });
         }
 
+        // Confidence estimation based on analysis quality indicators
+        const userMsgCount = messages.filter((m: Message) => m.role === 'user').length;
+        const ld = data.levelDetails as Record<string, unknown> | undefined;
+        const hasAllScores = ld && typeof ld.grammar === 'number' && typeof ld.vocabulary === 'number'
+          && typeof ld.fluency === 'number' && typeof ld.comprehension === 'number';
+        const correctionCount = Array.isArray(data.corrections) ? (data.corrections as unknown[]).length : 0;
+        const gradeWasDirect = data.rawEvaluatedGrade
+          && validCefrLevels.some(l => (data.rawEvaluatedGrade as string).toUpperCase().includes(l.toUpperCase()));
+
+        let confidence: 'high' | 'medium' | 'low' = 'medium';
+        if (userMsgCount >= 5 && hasAllScores && correctionCount >= 2 && gradeWasDirect) {
+          confidence = 'high';
+        } else if (userMsgCount < 3 || !hasAllScores) {
+          confidence = 'low';
+        }
+        data.confidence = confidence;
+
         timings['total.ms'] = since(t0);
         return NextResponse.json({ analysis: data, meta: { rid, timings } });
       } else {
