@@ -603,10 +603,10 @@ function HomePageContent() {
         )}
 
         {/* Grid Pattern - Dark only */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]" />
+        <div className="absolute inset-0 dark:bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[linear-gradient(rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.03)_1px,transparent_1px)] bg-[size:64px_64px]" />
 
         {/* Radial Gradient Overlay - Dark only */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,#020617_70%)]" />
+        <div className="absolute inset-0 dark:bg-[radial-gradient(ellipse_at_center,transparent_0%,#020617_70%)] bg-[radial-gradient(ellipse_at_center,transparent_0%,#f8fafc_70%)]" />
       </div>
 
       {/* Header - safe area for notch/status bar */}
@@ -655,7 +655,7 @@ function HomePageContent() {
                         alt=""
                         width={40}
                         height={40}
-                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full ring-2 ring-white/10 hover:ring-primary-400 transition-all cursor-pointer"
+                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full ring-2 dark:ring-white/10 ring-black/10 hover:ring-primary-400 transition-all cursor-pointer"
                         referrerPolicy="no-referrer"
                       />
                     </a>
@@ -1185,8 +1185,8 @@ function HomePageContent() {
                             {/* Card Container */}
                             <div className={`relative rounded-3xl overflow-hidden transition-all duration-300 ${
                               isSelected
-                                ? 'bg-white/[0.04] ring-2 ring-purple-500'
-                                : 'bg-white/[0.04] hover:bg-white/[0.06]'
+                                ? 'dark:bg-white/[0.04] bg-black/[0.03] ring-2 ring-purple-500'
+                                : 'dark:bg-white/[0.04] bg-black/[0.03] dark:hover:bg-white/[0.06] hover:bg-black/[0.05]'
                             }`}>
                               {/* Video / Image Area */}
                               <div className="relative h-44 sm:h-56 lg:h-72 overflow-hidden dark:bg-slate-950 bg-zinc-100">
@@ -1377,7 +1377,7 @@ function HomePageContent() {
                     ].map((tutor) => (
                       <div
                         key={tutor.id}
-                        className="group relative rounded-2xl sm:rounded-3xl overflow-hidden bg-neutral-950 shadow-2xl shadow-black/20 aspect-[3/4] cursor-pointer"
+                        className="group relative rounded-2xl sm:rounded-3xl overflow-hidden dark:bg-neutral-950 bg-neutral-50 shadow-2xl shadow-black/20 aspect-[3/4] cursor-pointer"
                         onMouseEnter={() => {
                           const video = videoRefs.current[`demo-${tutor.id}`];
                           if (video) {

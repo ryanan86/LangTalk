@@ -47,8 +47,8 @@ export default function TutorCard({
       <div
         className={`relative rounded-3xl overflow-hidden transition-all duration-300 ${
           isSelected
-            ? 'ring-2 ring-violet-500 ring-offset-2 ring-offset-slate-950 bg-white/[0.06]'
-            : 'bg-white/[0.04] hover:bg-white/[0.08]'
+            ? 'ring-2 ring-violet-500 ring-offset-2 dark:ring-offset-slate-950 ring-offset-white dark:bg-white/[0.06] bg-black/[0.05]'
+            : 'dark:bg-white/[0.04] bg-black/[0.03] dark:hover:bg-white/[0.08] hover:bg-black/[0.06]'
         }`}
       >
         {/* Large Profile Image */}
@@ -101,18 +101,18 @@ export default function TutorCard({
           )}
 
           {/* Flag Badge */}
-          <div className="absolute top-3 left-3 z-10 bg-slate-900/80 backdrop-blur-sm rounded-md p-1 border border-white/10">
+          <div className="absolute top-3 left-3 z-10 dark:bg-slate-900/80 bg-white/80 backdrop-blur-sm rounded-md p-1 dark:border-white/10 border-black/[0.08] border">
             <Flag country={persona.flag as 'US' | 'UK'} size={24} />
           </div>
         </div>
 
         {/* Info Section */}
         <div className="relative p-4 sm:p-5 bg-transparent -mt-8 pt-12 z-10">
-          <h3 className="text-xl sm:text-2xl font-bold text-white mb-1">
+          <h3 className="text-xl sm:text-2xl font-bold dark:text-white text-zinc-900 mb-1">
             {persona.name}
           </h3>
-          <p className="text-white/60 text-sm mb-1">{desc}</p>
-          <p className="text-white/40 text-xs mb-4">{style}</p>
+          <p className="dark:text-white/60 text-zinc-600 text-sm mb-1">{desc}</p>
+          <p className="dark:text-white/40 text-zinc-400 text-xs mb-4">{style}</p>
 
           {/* Voice Preview Button */}
           <button
@@ -120,7 +120,7 @@ export default function TutorCard({
             className={`w-full py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
               isPlaying
                 ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
-                : 'bg-white/[0.06] text-white/60 border border-white/10 hover:bg-white/[0.12] hover:text-white'
+                : 'dark:bg-white/[0.06] bg-black/[0.04] dark:text-white/60 text-zinc-600 dark:border-white/10 border-black/[0.08] border dark:hover:bg-white/[0.12] hover:bg-black/[0.08] dark:hover:text-white hover:text-zinc-900'
             }`}
           >
             {isPlaying ? (

@@ -25,7 +25,7 @@ export default function QuickActions({
       {correctionsToReview > 0 && (
         <button
           onClick={() => onNavigate('/review')}
-          className="group relative w-full overflow-hidden rounded-3xl bg-white/[0.04] p-5 text-left transition-all duration-300 hover:scale-[1.01] hover:bg-white/[0.06] border border-white/[0.06]"
+          className="group relative w-full overflow-hidden rounded-3xl dark:bg-white/[0.04] bg-black/[0.03] p-5 text-left transition-all duration-300 hover:scale-[1.01] dark:hover:bg-white/[0.06] hover:bg-black/[0.05] border dark:border-white/[0.06] border-black/[0.08]"
         >
           <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-amber-500/20 blur-3xl" />
           <div className="relative flex items-center gap-4">
@@ -36,14 +36,14 @@ export default function QuickActions({
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-base font-bold text-white">
+                <span className="text-base font-bold dark:text-white text-zinc-900">
                   {language === 'ko' ? '복습할 항목' : 'Due for Review'}
                 </span>
                 <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold">
                   {correctionsToReview}
                 </span>
               </div>
-              <p className="text-white/40 text-sm mt-0.5">
+              <p className="dark:text-white/40 text-zinc-400 text-sm mt-0.5">
                 {language === 'ko' ? '지금 복습하고 기억을 강화하세요' : 'Strengthen your memory now'}
               </p>
             </div>
@@ -58,7 +58,7 @@ export default function QuickActions({
       {!hasProfile && (
         <button
           onClick={() => onNavigate('/profile')}
-          className="group relative w-full overflow-hidden rounded-3xl bg-white/[0.04] p-5 text-left transition-all duration-300 hover:scale-[1.01] hover:bg-white/[0.06] border border-white/[0.06]"
+          className="group relative w-full overflow-hidden rounded-3xl dark:bg-white/[0.04] bg-black/[0.03] p-5 text-left transition-all duration-300 hover:scale-[1.01] dark:hover:bg-white/[0.06] hover:bg-black/[0.05] border dark:border-white/[0.06] border-black/[0.08]"
         >
           <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-indigo-500/20 blur-3xl" />
           <div className="relative flex items-center gap-4">
@@ -69,14 +69,14 @@ export default function QuickActions({
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-base font-bold text-white">
+                <span className="text-base font-bold dark:text-white text-zinc-900">
                   {language === 'ko' ? '학습 프로필 설정' : 'Set Up Profile'}
                 </span>
                 <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 text-xs font-bold">
                   {language === 'ko' ? '추천' : 'New'}
                 </span>
               </div>
-              <p className="text-white/40 text-sm mt-0.5">
+              <p className="dark:text-white/40 text-zinc-400 text-sm mt-0.5">
                 {language === 'ko' ? '맞춤형 학습을 위해 프로필을 완성하세요' : 'Complete your profile for personalized learning'}
               </p>
             </div>

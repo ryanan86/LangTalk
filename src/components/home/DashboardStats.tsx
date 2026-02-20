@@ -51,7 +51,7 @@ export default function DashboardStats({
   // Debate: every 5 sessions = 1 debate ticket
   const sessionsTowardDebate = sessionCount % 5;
   const debateTickets = Math.floor(sessionCount / 5);
-  const cardBase = "relative overflow-hidden rounded-3xl bg-white/[0.04] p-5 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] border border-white/10";
+  const cardBase = "relative overflow-hidden rounded-3xl dark:bg-white/[0.04] bg-black/[0.03] p-5 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] border dark:border-white/10 border-black/[0.08]";
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-2xl mx-auto mb-8">
@@ -60,7 +60,7 @@ export default function DashboardStats({
         <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-purple-500/20 blur-2xl" />
         <div className="relative">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-white/50">
+            <span className="text-sm font-medium dark:text-white/50 text-zinc-400">
               {language === 'ko' ? '완료 세션' : 'Sessions'}
             </span>
             <div className="rounded-full bg-purple-500/20 p-1.5">
@@ -70,12 +70,12 @@ export default function DashboardStats({
             </div>
           </div>
           <div className="flex items-end gap-1.5 mb-3">
-            <span className="text-3xl font-bold tracking-tight text-white">
+            <span className="text-3xl font-bold tracking-tight dark:text-white text-zinc-900">
               <AnimatedCounter target={sessionCount} />
             </span>
-            <span className="mb-1 text-sm font-medium text-white/40">/ 10</span>
+            <span className="mb-1 text-sm font-medium dark:text-white/40 text-zinc-400">/ 10</span>
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+          <div className="h-1.5 w-full overflow-hidden rounded-full dark:bg-white/10 bg-black/[0.06]">
             <div
               className="h-full rounded-full bg-purple-400 transition-all duration-1000"
               style={{ width: `${Math.min((sessionCount / 10) * 100, 100)}%` }}
@@ -89,7 +89,7 @@ export default function DashboardStats({
         <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-amber-500/20 blur-2xl" />
         <div className="relative">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-white/50">
+            <span className="text-sm font-medium dark:text-white/50 text-zinc-400">
               {language === 'ko' ? '디베이트' : 'Debate'}
             </span>
             <div className="rounded-full bg-amber-500/20 p-1.5">
@@ -104,20 +104,20 @@ export default function DashboardStats({
                 <span className="text-3xl font-bold tracking-tight text-amber-400">
                   <AnimatedCounter target={debateTickets} />
                 </span>
-                <span className="mb-1 text-sm font-medium text-white/40">
+                <span className="mb-1 text-sm font-medium dark:text-white/40 text-zinc-400">
                   {language === 'ko' ? '회 가능' : 'available'}
                 </span>
               </>
             ) : (
               <>
-                <span className="text-3xl font-bold tracking-tight text-white">
+                <span className="text-3xl font-bold tracking-tight dark:text-white text-zinc-900">
                   <AnimatedCounter target={sessionsTowardDebate} />
                 </span>
-                <span className="mb-1 text-sm font-medium text-white/40">/ 5</span>
+                <span className="mb-1 text-sm font-medium dark:text-white/40 text-zinc-400">/ 5</span>
               </>
             )}
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+          <div className="h-1.5 w-full overflow-hidden rounded-full dark:bg-white/10 bg-black/[0.06]">
             <div
               className="h-full rounded-full bg-amber-400 transition-all duration-1000"
               style={{ width: `${(sessionsTowardDebate / 5) * 100}%` }}
@@ -131,7 +131,7 @@ export default function DashboardStats({
         <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-orange-500/20 blur-2xl" />
         <div className="relative">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-white/50">
+            <span className="text-sm font-medium dark:text-white/50 text-zinc-400">
               {language === 'ko' ? '연속 학습' : 'Streak'}
             </span>
             <div className="rounded-full bg-orange-500/20 p-1.5">
@@ -141,10 +141,10 @@ export default function DashboardStats({
             </div>
           </div>
           <div className="flex items-end gap-1.5">
-            <span className="text-3xl font-bold tracking-tight text-white">
+            <span className="text-3xl font-bold tracking-tight dark:text-white text-zinc-900">
               <AnimatedCounter target={currentStreak} />
             </span>
-            <span className="mb-1 text-sm font-medium text-white/40">
+            <span className="mb-1 text-sm font-medium dark:text-white/40 text-zinc-400">
               {language === 'ko' ? '일' : 'days'}
             </span>
           </div>
@@ -156,7 +156,7 @@ export default function DashboardStats({
         <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-blue-500/20 blur-2xl" />
         <div className="relative">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-white/50">
+            <span className="text-sm font-medium dark:text-white/50 text-zinc-400">
               {language === 'ko' ? '현재 레벨' : 'Level'}
             </span>
             <div className="rounded-full bg-blue-500/20 p-1.5">
@@ -171,10 +171,10 @@ export default function DashboardStats({
                 <span className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
                   {currentLevel.grade}
                 </span>
-                <span className="mb-1 text-sm font-medium text-white/40">AI</span>
+                <span className="mb-1 text-sm font-medium dark:text-white/40 text-zinc-400">AI</span>
               </>
             ) : (
-              <span className="text-3xl font-bold tracking-tight text-white/40">-</span>
+              <span className="text-3xl font-bold tracking-tight dark:text-white/40 text-zinc-400">-</span>
             )}
           </div>
         </div>

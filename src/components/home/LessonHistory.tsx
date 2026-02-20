@@ -34,7 +34,7 @@ export default function LessonHistory({ lessonHistory, language }: LessonHistory
 
   return (
     <div className="max-w-2xl mx-auto mt-8">
-      <h3 className="text-sm font-medium text-white/40 uppercase tracking-wider mb-4 text-center">
+      <h3 className="text-sm font-medium dark:text-white/40 text-zinc-400 uppercase tracking-wider mb-4 text-center">
         {language === 'ko' ? '최근 학습 기록' : 'Recent Lessons'}
       </h3>
       <div className="space-y-3">
@@ -45,7 +45,7 @@ export default function LessonHistory({ lessonHistory, language }: LessonHistory
           return (
             <div
               key={idx}
-              className="rounded-xl bg-white/[0.04] border border-white/10 hover:bg-white/[0.06] transition-all overflow-hidden"
+              className="rounded-xl dark:bg-white/[0.04] bg-black/[0.03] border dark:border-white/10 border-black/[0.08] dark:hover:bg-white/[0.06] hover:bg-black/[0.05] transition-all overflow-hidden"
             >
               {/* Main row - always visible */}
               <button
@@ -60,10 +60,10 @@ export default function LessonHistory({ lessonHistory, language }: LessonHistory
                       {lesson.tutor ? lesson.tutor[0].toUpperCase() : '?'}
                     </div>
                     <div>
-                      <p className="text-white font-medium capitalize">
+                      <p className="dark:text-white text-zinc-900 font-medium capitalize">
                         {lesson.tutor || 'Unknown'}
                       </p>
-                      <p className="text-white/40 text-xs">{lesson.dateTime}</p>
+                      <p className="dark:text-white/40 text-zinc-400 text-xs">{lesson.dateTime}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -74,14 +74,14 @@ export default function LessonHistory({ lessonHistory, language }: LessonHistory
                         </span>
                       )}
                       {lesson.duration > 0 && (
-                        <p className="text-white/40 text-xs mt-1">
+                        <p className="dark:text-white/40 text-zinc-400 text-xs mt-1">
                           {lesson.duration}
                           {language === 'ko' ? '분' : 'min'}
                         </p>
                       )}
                     </div>
                     <svg
-                      className={`w-4 h-4 text-white/40 transition-transform duration-200 ${
+                      className={`w-4 h-4 dark:text-white/40 text-zinc-400 transition-transform duration-200 ${
                         isExpanded ? 'rotate-180' : ''
                       }`}
                       fill="none"
@@ -94,7 +94,7 @@ export default function LessonHistory({ lessonHistory, language }: LessonHistory
                 </div>
 
                 {lesson.topicSummary && (
-                  <p className="text-white/60 text-sm line-clamp-1">
+                  <p className="dark:text-white/60 text-zinc-600 text-sm line-clamp-1">
                     {lesson.topicSummary}
                   </p>
                 )}
@@ -102,25 +102,25 @@ export default function LessonHistory({ lessonHistory, language }: LessonHistory
 
               {/* Expanded details */}
               {isExpanded && (
-                <div className="px-4 pb-4 border-t border-white/5 pt-3 animate-fade-in">
+                <div className="px-4 pb-4 border-t dark:border-white/5 border-black/[0.05] pt-3 animate-fade-in">
                   {lesson.feedbackSummary && (
                     <div className="mb-3">
-                      <p className="text-xs font-medium text-white/50 mb-1">
+                      <p className="text-xs font-medium dark:text-white/50 text-zinc-400 mb-1">
                         {language === 'ko' ? '피드백 요약' : 'Feedback Summary'}
                       </p>
-                      <p className="text-sm text-white/70">{lesson.feedbackSummary}</p>
+                      <p className="text-sm dark:text-white/70 text-zinc-600">{lesson.feedbackSummary}</p>
                     </div>
                   )}
                   {lesson.keyCorrections && (
                     <div>
-                      <p className="text-xs font-medium text-white/50 mb-1">
+                      <p className="text-xs font-medium dark:text-white/50 text-zinc-400 mb-1">
                         {language === 'ko' ? '주요 교정' : 'Key Corrections'}
                       </p>
                       <p className="text-sm text-amber-400/70">{lesson.keyCorrections}</p>
                     </div>
                   )}
                   {!lesson.feedbackSummary && !lesson.keyCorrections && (
-                    <p className="text-sm text-white/40 italic">
+                    <p className="text-sm dark:text-white/40 text-zinc-400 italic">
                       {language === 'ko' ? '상세 정보가 없습니다.' : 'No additional details available.'}
                     </p>
                   )}
