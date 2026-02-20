@@ -3,10 +3,14 @@ import OpenAI from 'openai';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
+import { makeRid, nowMs, since, withTimeoutAbort } from '@/lib/perf';
 
 let _openai: OpenAI | null = null;
 function getOpenAI() {
-  if (!_openai) _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  if (!_openai) {
+    if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is not configured');
+    _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
   return _openai;
 }
 
@@ -20,7 +24,7 @@ const FISH_AUDIO_VOICE_MAP: Record<string, string> = {
   alloy: '12d3a04e3dca4e49a40ee52fea6e7c0e',    // Henry - Mackenzie Bluey (young boy)
 };
 
-async function generateWithFishAudio(text: string, voice: string, speed?: number): Promise<ArrayBuffer> {
+async function generateWithFishAudio(text: string, voice: string, speed?: number, timings?: Record<string, number>): Promise<ArrayBuffer> {
   const apiKey = process.env.FISH_AUDIO_API_KEY;
   if (!apiKey) {
     throw new Error('Fish Audio API key not configured');
@@ -43,6 +47,7 @@ async function generateWithFishAudio(text: string, voice: string, speed?: number
     body.prosody = { speed };
   }
 
+  const t0 = nowMs();
   const response = await fetch('https://api.fish.audio/v1/tts', {
     method: 'POST',
     headers: {
@@ -59,21 +64,33 @@ async function generateWithFishAudio(text: string, voice: string, speed?: number
     throw new Error(`Fish Audio TTS failed: ${response.status} - ${errorText}`);
   }
 
-  return response.arrayBuffer();
+  const buf = await response.arrayBuffer();
+  if (timings) timings['fish.tts.ms'] = since(t0);
+  return buf;
 }
 
-async function generateWithOpenAI(text: string, voice: string): Promise<ArrayBuffer> {
-  const mp3 = await getOpenAI().audio.speech.create({
-    model: 'tts-1',
-    voice: voice as 'nova' | 'onyx' | 'alloy' | 'echo' | 'fable' | 'shimmer',
-    input: text,
-    speed: 1.0,
-  });
+async function generateWithOpenAI(text: string, voice: string, timings?: Record<string, number>): Promise<ArrayBuffer> {
+  const mp3 = await withTimeoutAbort(
+    (signal) =>
+      getOpenAI().audio.speech.create({
+        model: 'tts-1',
+        voice: voice as 'nova' | 'onyx' | 'alloy' | 'echo' | 'fable' | 'shimmer',
+        input: text,
+        speed: 1.0,
+      }, { signal }),
+    15000,
+    'openai.tts',
+    timings
+  );
 
   return mp3.arrayBuffer();
 }
 
 export async function POST(request: NextRequest) {
+  const rid = makeRid('tts');
+  const t0 = nowMs();
+  const timings: Record<string, number> = {};
+
   try {
     // Auth check
     const session = await getServerSession(authOptions);
@@ -88,14 +105,17 @@ export async function POST(request: NextRequest) {
     const { text, voice = 'shimmer', speed } = await request.json();
 
     if (!text || typeof text !== 'string') {
-      return NextResponse.json({ error: 'No text provided' }, { status: 400 });
+      timings['total.ms'] = since(t0);
+      return NextResponse.json({ error: 'No text provided', meta: { rid, timings } }, { status: 400 });
     }
     if (text.length > 5000) {
-      return NextResponse.json({ error: 'Text too long (max 5000 characters)' }, { status: 400 });
+      timings['total.ms'] = since(t0);
+      return NextResponse.json({ error: 'Text too long (max 5000 characters)', meta: { rid, timings } }, { status: 400 });
     }
     const allowedVoices = ['shimmer', 'echo', 'fable', 'onyx', 'nova', 'alloy'];
     if (!allowedVoices.includes(voice)) {
-      return NextResponse.json({ error: 'Invalid voice' }, { status: 400 });
+      timings['total.ms'] = since(t0);
+      return NextResponse.json({ error: 'Invalid voice', meta: { rid, timings } }, { status: 400 });
     }
 
     // Validate speed parameter (0.5 ~ 2.0)
@@ -105,30 +125,35 @@ export async function POST(request: NextRequest) {
     let audioBuffer: ArrayBuffer;
     let provider = 'OpenAI';
 
+    timings['text.chars'] = text.length;
+
     if (process.env.FISH_AUDIO_API_KEY?.trim()) {
       try {
-        audioBuffer = await generateWithFishAudio(text, voice, validSpeed);
+        audioBuffer = await generateWithFishAudio(text, voice, validSpeed, timings);
         provider = 'FishAudio';
       } catch (fishError) {
         console.error('Fish Audio failed, falling back to OpenAI:', fishError);
-        audioBuffer = await generateWithOpenAI(text, voice);
+        audioBuffer = await generateWithOpenAI(text, voice, timings);
       }
     } else {
-      audioBuffer = await generateWithOpenAI(text, voice);
+      audioBuffer = await generateWithOpenAI(text, voice, timings);
     }
 
-    console.log(`TTS: voice=${voice}, provider=${provider}`);
+    timings['total.ms'] = since(t0);
+    const metaJson = JSON.stringify({ rid, provider, timings });
 
     return new NextResponse(audioBuffer, {
       headers: {
         'Content-Type': 'audio/mpeg',
         'Content-Length': audioBuffer.byteLength.toString(),
+        'X-TapTalk-Meta': metaJson,
       },
     });
   } catch (error) {
     console.error('Text to speech error:', error);
+    timings['total.ms'] = since(t0);
     return NextResponse.json(
-      { error: 'Failed to generate speech' },
+      { error: 'Failed to generate speech', meta: { rid, timings } },
       { status: 500 }
     );
   }

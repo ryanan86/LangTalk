@@ -7,34 +7,34 @@ import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getPersona } from '@/lib/personas';
 import { getAgeGroup, calculateAdaptiveDifficulty } from '@/lib/speechMetrics';
 import { getUserData } from '@/lib/sheetHelper';
+import { makeRid, nowMs, since, withTimeoutAbort } from '@/lib/perf';
 
-// AbortSignal-based timeout: returns a signal to pass to SDKs that support it,
-// plus a clear() to cancel the timer on success.
-function createAbortTimeout(ms: number, label: string): { signal: AbortSignal; clear: () => void } {
-  const controller = new AbortController();
-  const timer = setTimeout(() => {
-    controller.abort(new Error(`${label} timeout after ${ms}ms`));
-  }, ms);
-  return {
-    signal: controller.signal,
-    clear: () => clearTimeout(timer),
-  };
+const CONVERSATION_FALLBACK_POOL = [
+  "Hmm, let me think about that for a moment. Could you tell me a bit more?",
+  "Give me one more detail—what happened next?",
+  "Interesting. Can you rephrase that in a simpler sentence?",
+  "Got it. What do you mean by that exactly?",
+  "Okay—can you give an example?",
+];
+
+function pickFallback(rid: string) {
+  const idx = (rid.charCodeAt(rid.length - 1) + rid.length) % CONVERSATION_FALLBACK_POOL.length;
+  return CONVERSATION_FALLBACK_POOL[idx];
 }
 
-// Gemini SDK does not accept AbortSignal directly, so we race manually.
-// On timeout the abort fires (for observability) and the timer is cleared on success.
-function withGeminiTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  const { signal, clear } = createAbortTimeout(ms, label);
-  const timeoutRace = new Promise<never>((_, reject) => {
-    signal.addEventListener('abort', () => reject(signal.reason), { once: true });
-  });
-  return Promise.race([
-    promise.then(v => { clear(); return v; }),
-    timeoutRace,
-  ]);
+function applyManualDifficulty(
+  adaptive: ReturnType<typeof calculateAdaptiveDifficulty> | null,
+  preference: 'easy' | 'medium' | 'hard' | 'adaptive'
+) {
+  if (!adaptive || preference === 'adaptive') return adaptive;
+  if (preference === 'easy') {
+    return { ...adaptive, difficulty: Math.min(2, adaptive.difficulty), description: 'Manual easy mode' };
+  }
+  if (preference === 'medium') {
+    return { ...adaptive, difficulty: 3, description: 'Manual medium mode' };
+  }
+  return { ...adaptive, difficulty: Math.max(4, adaptive.difficulty), description: 'Manual hard mode' };
 }
-
-const CONVERSATION_FALLBACK = "Hmm, let me think about that for a moment. Could you tell me a bit more?";
 
 
 let _openai: OpenAI | null = null;
@@ -54,6 +54,10 @@ interface Message {
 }
 
 export async function POST(request: NextRequest) {
+  const rid = makeRid('chat');
+  const t0 = nowMs();
+  const timings: Record<string, number> = {};
+
   try {
     // Auth check
     const session = await getServerSession(authOptions);
@@ -89,31 +93,36 @@ export async function POST(request: NextRequest) {
     // Calculate age if birthYear is provided
     const learnerAge = birthYear ? new Date().getFullYear() - birthYear : null;
 
-    // Calculate age group and adaptive difficulty
+    // Fetch user data once (shared across all modes)
+    let userData: Awaited<ReturnType<typeof getUserData>> = null;
+    try {
+      userData = await getUserData(session.user.email);
+      timings['getUserData.ms'] = since(t0);
+    } catch (e) {
+      console.error('getUserData failed (non-blocking):', e);
+    }
+
+    const difficultyPreference = (userData?.profile?.difficultyPreference as 'easy' | 'medium' | 'hard' | 'adaptive') || 'adaptive';
+
+    // Calculate age group and adaptive difficulty (with manual override)
     const ageGroup = birthYear ? getAgeGroup(birthYear) : null;
-    const adaptiveDifficulty = ageGroup
+    const rawAdaptive = ageGroup
       ? calculateAdaptiveDifficulty(ageGroup, previousGrade || null, previousLevelDetails || null, clientSpeechMetrics || null)
       : null;
+    const adaptiveDifficulty = applyManualDifficulty(rawAdaptive, difficultyPreference);
 
-    // Fetch profile data for analysis mode (interests, customContext, difficulty preference)
+    // Build profile context for analysis mode
     let profileContext = '';
-    if (mode === 'analysis' && session.user.email) {
-      try {
-        const userData = await getUserData(session.user.email);
-        if (userData?.profile) {
-          const p = userData.profile;
-          const parts: string[] = [];
-          if (p.type) parts.push(`Learner type: ${p.type}`);
-          if (p.interests?.length) parts.push(`Interests: ${p.interests.join(', ')}`);
-          if (p.customContext) parts.push(`Custom context: ${p.customContext}`);
-          if (p.difficultyPreference) parts.push(`Difficulty preference: ${p.difficultyPreference}`);
-          if (p.grade) parts.push(`Korean grade: ${p.grade}`);
-          if (parts.length > 0) {
-            profileContext = `\n=== LEARNER PROFILE (from saved settings) ===\n${parts.join('\n')}\n\nUse this profile to personalize your evaluation. Reference their interests when giving examples or encouragement. Adjust correction complexity to match their type and difficulty preference.\n`;
-          }
-        }
-      } catch (e) {
-        console.error('Profile fetch for analysis failed (non-blocking):', e);
+    if (mode === 'analysis' && userData?.profile) {
+      const p = userData.profile;
+      const parts: string[] = [];
+      if (p.type) parts.push(`Learner type: ${p.type}`);
+      if (p.interests?.length) parts.push(`Interests: ${p.interests.join(', ')}`);
+      if (p.customContext) parts.push(`Custom context: ${p.customContext}`);
+      if (p.difficultyPreference) parts.push(`Difficulty preference: ${p.difficultyPreference}`);
+      if (p.grade) parts.push(`Korean grade: ${p.grade}`);
+      if (parts.length > 0) {
+        profileContext = `\n=== LEARNER PROFILE (from saved settings) ===\n${parts.join('\n')}\n\nUse this profile to personalize your evaluation. Reference their interests when giving examples or encouragement. Adjust correction complexity to match their type and difficulty preference.\n`;
       }
     }
 
@@ -603,10 +612,11 @@ Be specific, helpful, and maintain your teaching persona.`;
               responseMimeType: 'application/json',
             },
           });
-          const result = await withGeminiTimeout(
-            model.generateContent({ contents: geminiContents }),
+          const result = await withTimeoutAbort(
+            () => model.generateContent({ contents: geminiContents }),
             15000,
-            'Gemini analysis'
+            'gemini.analysis',
+            timings
           );
           assistantMessage = result.response.text();
         } catch (geminiError) {
@@ -618,15 +628,18 @@ Be specific, helpful, and maintain your teaching persona.`;
       // GPT-4o fallback for analysis
       if (!assistantMessage) {
         try {
-          const { signal: gpt4oSignal, clear: gpt4oClear } = createAbortTimeout(20000, 'GPT-4o analysis');
-          const response = await getOpenAI().chat.completions.create({
-            model: 'gpt-4o',
-            max_tokens: maxTokens,
-            temperature: 0.5,
-            messages: openaiMessages,
-            response_format: { type: 'json_object' as const },
-          }, { signal: gpt4oSignal });
-          gpt4oClear();
+          const response = await withTimeoutAbort(
+            (signal) => getOpenAI().chat.completions.create({
+              model: 'gpt-4o',
+              max_tokens: maxTokens,
+              temperature: 0.5,
+              messages: openaiMessages,
+              response_format: { type: 'json_object' as const },
+            }, { signal }),
+            20000,
+            'openai.analysis',
+            timings
+          );
           assistantMessage = response.choices[0]?.message?.content || '';
         } catch (gpt4oError) {
           console.error('GPT-4o analysis fallback also failed:', gpt4oError);
@@ -645,10 +658,11 @@ Be specific, helpful, and maintain your teaching persona.`;
               maxOutputTokens: maxTokens,
             },
           });
-          const result = await withGeminiTimeout(
-            model.generateContent({ contents: geminiContents }),
+          const result = await withTimeoutAbort(
+            () => model.generateContent({ contents: geminiContents }),
             8000,
-            'Gemini conversation'
+            'gemini.conversation',
+            timings
           );
           assistantMessage = result.response.text();
         } catch (geminiError) {
@@ -660,16 +674,19 @@ Be specific, helpful, and maintain your teaching persona.`;
       // OpenAI fallback for conversation
       if (!assistantMessage) {
         try {
-          const { signal: openaiSignal, clear: openaiClear } = createAbortTimeout(10000, 'OpenAI conversation');
-          const response = await getOpenAI().chat.completions.create({
-            model: 'gpt-4o-mini',
-            max_tokens: maxTokens,
-            temperature: 0.8,
-            presence_penalty: 0.6,
-            frequency_penalty: 0.3,
-            messages: openaiMessages,
-          }, { signal: openaiSignal });
-          openaiClear();
+          const response = await withTimeoutAbort(
+            (signal) => getOpenAI().chat.completions.create({
+              model: 'gpt-4o-mini',
+              max_tokens: maxTokens,
+              temperature: 0.8,
+              presence_penalty: 0.6,
+              frequency_penalty: 0.3,
+              messages: openaiMessages,
+            }, { signal }),
+            10000,
+            'openai.conversation',
+            timings
+          );
           assistantMessage = response.choices[0]?.message?.content || '';
         } catch (openaiError) {
           console.error('OpenAI conversation fallback also failed:', openaiError);
@@ -679,7 +696,7 @@ Be specific, helpful, and maintain your teaching persona.`;
       // Final fallback: prevent empty response / session freeze
       if (!assistantMessage) {
         console.warn('All conversation providers failed, using fallback response');
-        assistantMessage = CONVERSATION_FALLBACK;
+        assistantMessage = pickFallback(rid);
       }
     }
 
@@ -774,19 +791,23 @@ Be specific, helpful, and maintain your teaching persona.`;
           });
         }
 
-        return NextResponse.json({ analysis: data });
+        timings['total.ms'] = since(t0);
+        return NextResponse.json({ analysis: data, meta: { rid, timings } });
       } else {
         // JSON extraction completely failed - return raw message
         console.error('Analysis JSON extraction failed. Raw response:', assistantMessage.slice(0, 200));
-        return NextResponse.json({ message: assistantMessage, parseError: true });
+        timings['total.ms'] = since(t0);
+        return NextResponse.json({ message: assistantMessage, parseError: true, meta: { rid, timings } });
       }
     }
 
-    return NextResponse.json({ message: assistantMessage });
+    timings['total.ms'] = since(t0);
+    return NextResponse.json({ message: assistantMessage, meta: { rid, timings } });
   } catch (error) {
     console.error('Chat error:', error);
+    timings['total.ms'] = since(t0);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', meta: { rid, timings } },
       { status: 500 }
     );
   }
