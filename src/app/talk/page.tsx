@@ -132,6 +132,8 @@ function TalkContent() {
   const processedSentencesRef = useRef<Set<string>>(new Set());
   const audioCacheRef = useRef<Map<string, Promise<Blob>>>(new Map());
   const fillerAudioRef = useRef<HTMLAudioElement | null>(null);
+  const ttsAbortRef = useRef<AbortController | null>(null);
+  const queueAbortRef = useRef<AbortController | null>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
 
   // Deepgram streaming STT refs
@@ -1130,6 +1132,13 @@ function TalkContent() {
   // ========== TTS Function ==========
 
   const playTTS = async (text: string, speed?: number) => {
+    // Abort any in-flight TTS request before starting a new one
+    ttsAbortRef.current?.abort();
+    const controller = new AbortController();
+    ttsAbortRef.current = controller;
+
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     setIsPlaying(true);
     stopFiller();
     try {
@@ -1137,7 +1146,10 @@ function TalkContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, voice: persona.voice, ...(speed && { speed }) }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         console.error('TTS API error:', response.status);
@@ -1203,6 +1215,11 @@ function TalkContent() {
         URL.revokeObjectURL(audioUrl);
       }
     } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        // Normal cancellation — ignore
+        return;
+      }
       console.error('TTS error:', error);
     } finally {
       setIsPlaying(false);
@@ -1251,12 +1268,12 @@ function TalkContent() {
 
     // Prefetch next sentence while playing current one
     if (audioQueueRef.current.length > 0) {
-      prefetchAudio(audioQueueRef.current[0]);
+      prefetchAudio(audioQueueRef.current[0], queueAbortRef.current?.signal);
     }
 
     try {
       // Use cached audio or fetch if not available
-      const audioBlob = await prefetchAudio(sentence);
+      const audioBlob = await prefetchAudio(sentence, queueAbortRef.current?.signal);
       const audioUrl = URL.createObjectURL(audioBlob);
 
       if (audioRef.current) {
@@ -1319,6 +1336,10 @@ function TalkContent() {
         URL.revokeObjectURL(audioUrl);
       }
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        // Queue was cancelled — stop processing
+        return;
+      }
       console.error('TTS queue error:', error);
     }
 
@@ -1336,7 +1357,7 @@ function TalkContent() {
   };
 
   // Prefetch audio for a sentence
-  const prefetchAudio = (sentence: string): Promise<Blob> => {
+  const prefetchAudio = (sentence: string, signal?: AbortSignal): Promise<Blob> => {
     if (audioCacheRef.current.has(sentence)) {
       return audioCacheRef.current.get(sentence)!;
     }
@@ -1345,6 +1366,7 @@ function TalkContent() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: sentence, voice: persona.voice }),
+      signal,
     }).then(res => {
       if (!res.ok) {
         throw new Error(`TTS API error: ${res.status}`);
@@ -1364,8 +1386,14 @@ function TalkContent() {
     }
     processedSentencesRef.current.add(sentence);
 
+    // Create a new abort controller when starting a fresh queue
+    if (!isPlayingQueueRef.current) {
+      queueAbortRef.current?.abort();
+      queueAbortRef.current = new AbortController();
+    }
+
     // Start prefetching audio immediately
-    prefetchAudio(sentence);
+    prefetchAudio(sentence, queueAbortRef.current?.signal);
 
     audioQueueRef.current.push(sentence);
 
@@ -2438,14 +2466,22 @@ function TalkContent() {
                 {/* Session Vocabulary */}
                 {sessionVocab.length > 0 && (
                   <div className="report-glass rounded-2xl p-4 sm:p-6 report-fade-up report-fade-up-5">
-                    <h3 className="font-semibold text-white mb-3 flex items-center gap-2 text-sm sm:text-base">
-                      <span className="w-5 h-5 sm:w-6 sm:h-6 bg-teal-500/20 rounded-full flex items-center justify-center">
-                        <svg className="w-3 h-3 sm:w-4 sm:h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
-                      </span>
-                      {language === 'ko' ? `오늘의 단어장 (${sessionVocab.length})` : `Session Vocabulary (${sessionVocab.length})`}
-                    </h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-white flex items-center gap-2 text-sm sm:text-base">
+                        <span className="w-5 h-5 sm:w-6 sm:h-6 bg-teal-500/20 rounded-full flex items-center justify-center">
+                          <svg className="w-3 h-3 sm:w-4 sm:h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                          </svg>
+                        </span>
+                        {language === 'ko' ? `오늘의 단어장 (${sessionVocab.length})` : `Session Vocabulary (${sessionVocab.length})`}
+                      </h3>
+                      <button
+                        onClick={() => router.push('/vocab-book')}
+                        className="text-xs text-teal-400 hover:text-teal-300 transition-colors"
+                      >
+                        {language === 'ko' ? '전체 보기' : 'View All'}
+                      </button>
+                    </div>
                     <div className="grid grid-cols-2 gap-2">
                       {sessionVocab.slice(0, 8).map((item) => (
                         <div key={item.id} className="bg-white/[0.04] rounded-lg p-2.5">
@@ -2471,9 +2507,12 @@ function TalkContent() {
                       ))}
                     </div>
                     {sessionVocab.length > 8 && (
-                      <p className="text-xs text-slate-500 mt-2 text-center">
-                        +{sessionVocab.length - 8} {language === 'ko' ? '개 더' : 'more'}
-                      </p>
+                      <button
+                        onClick={() => router.push('/vocab-book')}
+                        className="text-xs text-teal-400 hover:text-teal-300 mt-2 text-center w-full transition-colors"
+                      >
+                        +{sessionVocab.length - 8} {language === 'ko' ? '개 더 보기 →' : 'more →'}
+                      </button>
                     )}
                   </div>
                 )}

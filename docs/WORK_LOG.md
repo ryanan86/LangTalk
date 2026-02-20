@@ -4,6 +4,34 @@ Daily development history for TapTalk (taptalk.xyz).
 
 ---
 
+## 2026-02-21 (Fri)
+
+### Summary
+펜딩항목 일괄 진행: AbortSignal 기반 타임아웃 전환(API+TTS), Debate Motion 명제형 전환(27토픽), Vocab Book 전체 보기 페이지 신규 생성.
+
+### Changes
+| Category | Description |
+|----------|-------------|
+| Performance | chat/route.ts: withTimeout → AbortSignal 전환 (실제 요청 취소) |
+| Performance | talk/page.tsx: playTTS/prefetchAudio/queueTTS에 AbortController 적용 |
+| Debate | debateTopicsV2.ts: 27개 토픽 질문형→명제형 전환 + proArguments/conArguments 추가 |
+| Debate | debateTopicsV2.ts: generateTopicFromContext 명제형 변경 |
+| UI | vocab-book/page.tsx: 전체 단어장 페이지 신규 (stats/탭/카드그리드) |
+| UI | talk/page.tsx: 단어장 섹션에 "전체 보기" 버튼 + "+N개 더 보기→" 링크 |
+
+### Files Changed
+- `src/app/api/chat/route.ts` - createAbortTimeout, withGeminiTimeout, signal 전달
+- `src/app/talk/page.tsx` - ttsAbortRef, queueAbortRef, vocab-book 링크
+- `src/lib/debateTopicsV2.ts` - 27토픽 명제형 + proArguments/conArguments
+- `src/app/vocab-book/page.tsx` - NEW: 전체 단어장 페이지
+
+### Key Decisions
+- OpenAI SDK는 signal 네이티브 지원, Gemini SDK는 미지원 → 이원화 전략
+- Debate 토픽: 질문형은 찬반 구분이 모호 → 명제형으로 전환하여 isDebateReadyTopic 필터 활성화
+- Vocab Book: mastered 탭은 API scope 미지원 → scope=all + 클라이언트 필터링
+
+---
+
 ## 2026-02-18 (Tue)
 
 ### Summary

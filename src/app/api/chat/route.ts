@@ -8,13 +8,29 @@ import { getPersona } from '@/lib/personas';
 import { getAgeGroup, calculateAdaptiveDifficulty } from '@/lib/speechMetrics';
 import { getUserData } from '@/lib/sheetHelper';
 
-// Timeout wrapper to prevent session freezing on API hangs
-function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+// AbortSignal-based timeout: returns a signal to pass to SDKs that support it,
+// plus a clear() to cancel the timer on success.
+function createAbortTimeout(ms: number, label: string): { signal: AbortSignal; clear: () => void } {
+  const controller = new AbortController();
+  const timer = setTimeout(() => {
+    controller.abort(new Error(`${label} timeout after ${ms}ms`));
+  }, ms);
+  return {
+    signal: controller.signal,
+    clear: () => clearTimeout(timer),
+  };
+}
+
+// Gemini SDK does not accept AbortSignal directly, so we race manually.
+// On timeout the abort fires (for observability) and the timer is cleared on success.
+function withGeminiTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  const { signal, clear } = createAbortTimeout(ms, label);
+  const timeoutRace = new Promise<never>((_, reject) => {
+    signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+  });
   return Promise.race([
-    promise,
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`${label} timeout after ${ms}ms`)), ms)
-    ),
+    promise.then(v => { clear(); return v; }),
+    timeoutRace,
   ]);
 }
 
@@ -589,7 +605,7 @@ Be specific, helpful, and maintain your teaching persona.`;
               responseMimeType: 'application/json',
             },
           });
-          const result = await withTimeout(
+          const result = await withGeminiTimeout(
             model.generateContent({ contents: geminiContents }),
             15000,
             'Gemini analysis'
@@ -604,17 +620,15 @@ Be specific, helpful, and maintain your teaching persona.`;
       // GPT-4o fallback for analysis
       if (!assistantMessage) {
         try {
-          const response = await withTimeout(
-            getOpenAI().chat.completions.create({
-              model: 'gpt-4o',
-              max_tokens: maxTokens,
-              temperature: 0.5,
-              messages: openaiMessages,
-              response_format: { type: 'json_object' as const },
-            }),
-            20000,
-            'GPT-4o analysis'
-          );
+          const { signal: gpt4oSignal, clear: gpt4oClear } = createAbortTimeout(20000, 'GPT-4o analysis');
+          const response = await getOpenAI().chat.completions.create({
+            model: 'gpt-4o',
+            max_tokens: maxTokens,
+            temperature: 0.5,
+            messages: openaiMessages,
+            response_format: { type: 'json_object' as const },
+          }, { signal: gpt4oSignal });
+          gpt4oClear();
           assistantMessage = response.choices[0]?.message?.content || '';
         } catch (gpt4oError) {
           console.error('GPT-4o analysis fallback also failed:', gpt4oError);
@@ -633,7 +647,7 @@ Be specific, helpful, and maintain your teaching persona.`;
               maxOutputTokens: maxTokens,
             },
           });
-          const result = await withTimeout(
+          const result = await withGeminiTimeout(
             model.generateContent({ contents: geminiContents }),
             8000,
             'Gemini conversation'
@@ -648,18 +662,16 @@ Be specific, helpful, and maintain your teaching persona.`;
       // OpenAI fallback for conversation
       if (!assistantMessage) {
         try {
-          const response = await withTimeout(
-            getOpenAI().chat.completions.create({
-              model: 'gpt-4o-mini',
-              max_tokens: maxTokens,
-              temperature: 0.8,
-              presence_penalty: 0.6,
-              frequency_penalty: 0.3,
-              messages: openaiMessages,
-            }),
-            10000,
-            'OpenAI conversation'
-          );
+          const { signal: openaiSignal, clear: openaiClear } = createAbortTimeout(10000, 'OpenAI conversation');
+          const response = await getOpenAI().chat.completions.create({
+            model: 'gpt-4o-mini',
+            max_tokens: maxTokens,
+            temperature: 0.8,
+            presence_penalty: 0.6,
+            frequency_penalty: 0.3,
+            messages: openaiMessages,
+          }, { signal: openaiSignal });
+          openaiClear();
           assistantMessage = response.choices[0]?.message?.content || '';
         } catch (openaiError) {
           console.error('OpenAI conversation fallback also failed:', openaiError);
