@@ -2058,16 +2058,15 @@ function TalkContent() {
                         <span className="text-white font-bold text-lg">{analysis.evaluatedGrade}</span>
                       </div>
                       <div>
-                        <p className="text-xs dark:text-slate-400 text-zinc-500">{language === 'ko' ? '평가 등급' : 'Evaluated Grade'}</p>
+                        <p className="text-xs dark:text-slate-400 text-zinc-500">{language === 'ko' ? 'CEFR 등급' : 'CEFR Level'}</p>
                         <p className="text-lg font-bold dark:text-white text-zinc-900">
-                          {analysis.evaluatedGrade === 'K' && (language === 'ko' ? '유치원' : 'Kindergarten')}
-                          {analysis.evaluatedGrade === '1-2' && (language === 'ko' ? '초등 1-2학년' : 'Grade 1-2')}
-                          {analysis.evaluatedGrade === '3-4' && (language === 'ko' ? '초등 3-4학년' : 'Grade 3-4')}
-                          {analysis.evaluatedGrade === '5-6' && (language === 'ko' ? '초등 5-6학년' : 'Grade 5-6')}
-                          {analysis.evaluatedGrade === '7-8' && (language === 'ko' ? '중학교' : 'Middle School')}
-                          {analysis.evaluatedGrade === '9-10' && (language === 'ko' ? '고등학교' : 'High School')}
-                          {analysis.evaluatedGrade === '11-12' && (language === 'ko' ? '고급' : 'Advanced')}
-                          {analysis.evaluatedGrade === 'College' && (language === 'ko' ? '대학 수준' : 'College Level')}
+                          {analysis.evaluatedGrade === 'Pre-A1' && (language === 'ko' ? '입문' : 'Beginner')}
+                          {analysis.evaluatedGrade === 'A1' && (language === 'ko' ? '초급' : 'Elementary')}
+                          {analysis.evaluatedGrade === 'A2' && (language === 'ko' ? '초중급' : 'Pre-Intermediate')}
+                          {analysis.evaluatedGrade === 'B1' && (language === 'ko' ? '중급' : 'Intermediate')}
+                          {analysis.evaluatedGrade === 'B2' && (language === 'ko' ? '중상급' : 'Upper-Intermediate')}
+                          {analysis.evaluatedGrade === 'C1' && (language === 'ko' ? '고급' : 'Advanced')}
+                          {analysis.evaluatedGrade === 'C2' && (language === 'ko' ? '최상급' : 'Proficient')}
                         </p>
                       </div>
                     </div>

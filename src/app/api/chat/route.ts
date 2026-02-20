@@ -334,33 +334,31 @@ For EACH correction, provide:
 - A more NATURAL version that ${ageGroup ? '학습자 수준보다 살짝 높은 i+1 수준이면서 대화 register에 맞는 표현 (캐주얼 대화는 캐주얼하게, 포멀 대화는 포멀하게)' : 'sounds like what a native speaker would actually say in this same conversation context'}
 - Clear explanation of WHY the improved version is better
 
-LEVEL EVALUATION (US Grade Equivalent):
+LEVEL EVALUATION (CEFR - Common European Framework):
 ${learnerAge ? (() => {
-        const koreanAge = learnerAge + 1; // Korean age
-        // Expected US grade for age - extended to all ages
-        const expectedGradeMap: Record<number, string> = {
-          3: 'K', 4: 'K', 5: 'K', 6: '1-2', 7: '1-2', 8: '3-4', 9: '3-4', 10: '5-6', 11: '5-6',
-          12: '7-8', 13: '7-8', 14: '9-10', 15: '9-10', 16: '11-12', 17: '11-12',
+        const koreanAge = learnerAge + 1;
+        const expectedCefrMap: Record<number, string> = {
+          3: 'Pre-A1', 4: 'Pre-A1', 5: 'Pre-A1', 6: 'A1', 7: 'A1', 8: 'A1', 9: 'A2', 10: 'A2', 11: 'A2',
+          12: 'B1', 13: 'B1', 14: 'B1', 15: 'B2', 16: 'B2', 17: 'B2',
         };
-        const expectedGrade = expectedGradeMap[learnerAge] || (learnerAge >= 18 ? 'College' : '5-6');
+        const expectedCefr = expectedCefrMap[learnerAge] || (learnerAge >= 18 ? 'B2' : 'A2');
         return `LEARNER INFO:
 - Name: ${userName || 'Student'}
 - Age: ${learnerAge} years old (Korean age: ${koreanAge}세)
-- Expected US grade for this age: ${expectedGrade}
+- Expected CEFR level for ESL learner this age: ${expectedCefr}
 
-AGE-TO-GRADE REFERENCE (US system):
-Age 3-5 → K, Age 6-7 → G1-G2, Age 8-9 → G3-G4, Age 10-11 → G5-G6, Age 12-13 → G7-G8, Age 14-15 → G9-G10, Age 16-17 → G11-G12, Age 18+ → College
+AGE-TO-CEFR REFERENCE (ESL learner):
+Age 3-5 → Pre-A1, Age 6-8 → A1, Age 9-11 → A2, Age 12-14 → B1, Age 15-17 → B2, Age 18+ → B2+
 \n`;
       })() : ''}
-Based on the student's conversation, evaluate their English proficiency using US school grade levels:
-- K (Kindergarten): Very basic words, single words or 2-3 word phrases, many grammar errors
-- 1-2 (Grade 1-2): Simple sentences, basic vocabulary, frequent grammar mistakes
-- 3-4 (Grade 3-4): Can form sentences, limited vocabulary, some grammar errors
-- 5-6 (Grade 5-6): Good sentence structure, developing vocabulary, occasional errors
-- 7-8 (Middle School): Clear communication, varied vocabulary, minor errors
-- 9-10 (High School): Fluent conversation, good vocabulary range, rare errors
-- 11-12 (Advanced): Near-native fluency, rich vocabulary, very few errors
-- College: Native-like proficiency, sophisticated vocabulary and grammar
+Based on the student's conversation, evaluate their English proficiency using CEFR levels:
+- Pre-A1 (Beginner): Very basic words, single words or 2-3 word phrases, many grammar errors
+- A1 (Elementary): Simple sentences, basic vocabulary, frequent grammar mistakes
+- A2 (Pre-Intermediate): Can form sentences, limited vocabulary, some grammar errors
+- B1 (Intermediate): Good sentence structure, developing vocabulary, occasional errors
+- B2 (Upper-Intermediate): Clear communication, varied vocabulary, minor errors
+- C1 (Advanced): Fluent conversation, rich vocabulary range, rare errors
+- C2 (Proficient): Native-like proficiency, sophisticated vocabulary and grammar
 
 Evaluate based on:
 1. Grammar accuracy (40%): Verb tenses, articles, prepositions, sentence structure
@@ -369,14 +367,14 @@ Evaluate based on:
 4. Comprehension (15%): Understanding context, appropriate responses
 ${learnerAge ? (() => {
         const koreanAge = learnerAge + 1;
-        const expectedGradeMap: Record<number, string> = {
-          3: 'K', 4: 'K', 5: 'K', 6: '1-2', 7: '1-2', 8: '3-4', 9: '3-4', 10: '5-6', 11: '5-6',
-          12: '7-8', 13: '7-8', 14: '9-10', 15: '9-10', 16: '11-12', 17: '11-12',
+        const expectedCefrMap2: Record<number, string> = {
+          3: 'Pre-A1', 4: 'Pre-A1', 5: 'Pre-A1', 6: 'A1', 7: 'A1', 8: 'A1', 9: 'A2', 10: 'A2', 11: 'A2',
+          12: 'B1', 13: 'B1', 14: 'B1', 15: 'B2', 16: 'B2', 17: 'B2',
         };
-        const expectedGrade = expectedGradeMap[learnerAge] || (learnerAge >= 18 ? 'College' : '5-6');
+        const expectedCefr2 = expectedCefrMap2[learnerAge] || (learnerAge >= 18 ? 'B2' : 'A2');
         const summaryExample = isKorean
-          ? `한국나이 ${koreanAge}세는 영미권에서 G${expectedGrade}에 해당합니다. 탭톡 평가 결과 G[평가등급]으로, 동나이대 대비 [높은/적정/낮은] 수준입니다.`
-          : `A ${koreanAge}-year-old (Korean age) corresponds to US Grade ${expectedGrade}. TapTalk evaluated at G[grade], which is [above/at/below] the expected level for this age.`;
+          ? `한국나이 ${koreanAge}세 ESL 학습자의 기대 수준은 ${expectedCefr2}입니다. 탭톡 평가 결과 [평가등급]으로, 기대 수준 대비 [높은/적정/낮은] 수준입니다.`
+          : `Expected CEFR level for a ${koreanAge}-year-old (Korean age) ESL learner is ${expectedCefr2}. TapTalk evaluated at [level], which is [above/at/below] the expected level.`;
         return `\nIn levelDetails.summary, provide a DETAILED comparison like this example: "${summaryExample}"`;
       })() : ''}
 
@@ -402,7 +400,7 @@ RETURN THIS EXACT JSON FORMAT (no markdown, valid JSON only):
   ],
   "strengths": ${JSON.stringify(exampleStrengths)},
   "overallLevel": "beginner or intermediate or advanced (pick ONE)",
-  "evaluatedGrade": "PICK EXACTLY ONE: K, 1-2, 3-4, 5-6, 7-8, 9-10, 11-12, or College",
+  "evaluatedGrade": "PICK EXACTLY ONE: Pre-A1, A1, A2, B1, B2, C1, C2",
   "levelDetails": {
     "grammar": 0-100,
     "vocabulary": 0-100,
@@ -723,14 +721,29 @@ Be specific, helpful, and maintain your teaching persona.`;
       const analysisData = extractJSON(assistantMessage);
 
       if (analysisData && typeof analysisData === 'object') {
-        // Validate and sanitize evaluatedGrade
-        const validGrades = ['K', '1-2', '3-4', '5-6', '7-8', '9-10', '11-12', 'College'];
+        // Validate and normalize evaluatedGrade to CEFR
+        const validCefrLevels = ['Pre-A1', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+        const usGradeToCefr: Record<string, string> = {
+          'K': 'Pre-A1', '1-2': 'A1', '3-4': 'A1', '5-6': 'A2',
+          '7-8': 'B1', '9-10': 'B2', '11-12': 'C1', 'College': 'C2',
+        };
         const data = analysisData as Record<string, unknown>;
         if (data.evaluatedGrade && typeof data.evaluatedGrade === 'string') {
-          const foundGrade = validGrades.find(g =>
-            (data.evaluatedGrade as string).includes(g)
+          const rawGrade = (data.evaluatedGrade as string).trim();
+          data.rawEvaluatedGrade = rawGrade; // Preserve raw AI output for traceability
+
+          // Strict CEFR canonical parser (exact token match)
+          const cefrMatch = validCefrLevels.find(level =>
+            rawGrade.toUpperCase().includes(level.toUpperCase())
           );
-          data.evaluatedGrade = foundGrade || '5-6';
+
+          if (cefrMatch) {
+            data.evaluatedGrade = cefrMatch;
+          } else {
+            // Legacy US Grade fallback for backward compatibility
+            const legacyMatch = Object.keys(usGradeToCefr).find(g => rawGrade.includes(g));
+            data.evaluatedGrade = legacyMatch ? usGradeToCefr[legacyMatch] : 'A2';
+          }
         }
 
         // Ensure required fields exist with fallbacks

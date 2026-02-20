@@ -144,14 +144,23 @@ const personas: Persona[] = [
 
 // Grade level mapping for AI evaluation
 const gradeMapping: Record<string, { grade: string; name: string; nameKo: string }> = {
-  'K': { grade: 'K', name: 'Kindergarten', nameKo: '유치원' },
-  '1-2': { grade: '1-2', name: 'Grade 1-2', nameKo: '초등 1-2' },
-  '3-4': { grade: '3-4', name: 'Grade 3-4', nameKo: '초등 3-4' },
-  '5-6': { grade: '5-6', name: 'Grade 5-6', nameKo: '초등 5-6' },
-  '7-8': { grade: '7-8', name: 'Middle School', nameKo: '중학교' },
-  '9-10': { grade: '9-10', name: 'High School', nameKo: '고등학교' },
-  '11-12': { grade: '11-12', name: 'Advanced', nameKo: '고급' },
-  'College': { grade: 'College', name: 'College', nameKo: '대학' },
+  // CEFR levels (primary)
+  'Pre-A1': { grade: 'Pre-A1', name: 'Beginner', nameKo: '입문' },
+  'A1': { grade: 'A1', name: 'Elementary', nameKo: '초급' },
+  'A2': { grade: 'A2', name: 'Pre-Intermediate', nameKo: '초중급' },
+  'B1': { grade: 'B1', name: 'Intermediate', nameKo: '중급' },
+  'B2': { grade: 'B2', name: 'Upper-Intermediate', nameKo: '중상급' },
+  'C1': { grade: 'C1', name: 'Advanced', nameKo: '고급' },
+  'C2': { grade: 'C2', name: 'Proficient', nameKo: '최상급' },
+  // Legacy US Grade backward compatibility
+  'K': { grade: 'Pre-A1', name: 'Beginner', nameKo: '입문' },
+  '1-2': { grade: 'A1', name: 'Elementary', nameKo: '초급' },
+  '3-4': { grade: 'A1', name: 'Elementary', nameKo: '초급' },
+  '5-6': { grade: 'A2', name: 'Pre-Intermediate', nameKo: '초중급' },
+  '7-8': { grade: 'B1', name: 'Intermediate', nameKo: '중급' },
+  '9-10': { grade: 'B2', name: 'Upper-Intermediate', nameKo: '중상급' },
+  '11-12': { grade: 'C1', name: 'Advanced', nameKo: '고급' },
+  'College': { grade: 'C2', name: 'Proficient', nameKo: '최상급' },
 };
 
 function HomePageContent() {

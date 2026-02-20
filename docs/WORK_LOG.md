@@ -7,7 +7,7 @@ Daily development history for TapTalk (taptalk.xyz).
 ## 2026-02-21 (Fri)
 
 ### Summary
-펜딩항목 일괄 진행: AbortSignal 기반 타임아웃 전환(API+TTS), Debate Motion 명제형 전환(27토픽), Vocab Book 전체 보기 페이지 신규 생성.
+펜딩항목 일괄 진행: AbortSignal 타임아웃 전환, Debate Motion 명제형 전환, Vocab Book 페이지, 다크/라이트 모드 통일(10파일).
 
 ### Changes
 | Category | Description |
@@ -18,17 +18,30 @@ Daily development history for TapTalk (taptalk.xyz).
 | Debate | debateTopicsV2.ts: generateTopicFromContext 명제형 변경 |
 | UI | vocab-book/page.tsx: 전체 단어장 페이지 신규 (stats/탭/카드그리드) |
 | UI | talk/page.tsx: 단어장 섹션에 "전체 보기" 버튼 + "+N개 더 보기→" 링크 |
+| Theme | globals.css: .report-glass 듀얼 테마 (light/dark) |
+| Theme | 홈 컴포넌트 4개 (DashboardStats, LessonHistory, QuickActions, TutorCard) 듀얼 테마 |
+| Theme | vocab-book, BottomNavDock, AnalysisReview 듀얼 테마 |
+| Theme | talk/page.tsx 리포트/요약 섹션 + page.tsx 홈 장식 섹션 듀얼 테마 |
 
 ### Files Changed
+- `src/app/globals.css` - .report-glass 테마 인식
 - `src/app/api/chat/route.ts` - createAbortTimeout, withGeminiTimeout, signal 전달
-- `src/app/talk/page.tsx` - ttsAbortRef, queueAbortRef, vocab-book 링크
+- `src/app/talk/page.tsx` - ttsAbortRef, queueAbortRef, vocab-book 링크, 리포트 듀얼 테마
+- `src/app/page.tsx` - 홈 장식 섹션 듀얼 테마
+- `src/app/vocab-book/page.tsx` - NEW: 전체 단어장 페이지 + 듀얼 테마
 - `src/lib/debateTopicsV2.ts` - 27토픽 명제형 + proArguments/conArguments
-- `src/app/vocab-book/page.tsx` - NEW: 전체 단어장 페이지
+- `src/components/AnalysisReview.tsx` - 전체 듀얼 테마
+- `src/components/BottomNavDock.tsx` - 듀얼 테마 nav bar
+- `src/components/home/DashboardStats.tsx` - 듀얼 테마
+- `src/components/home/LessonHistory.tsx` - 듀얼 테마
+- `src/components/home/QuickActions.tsx` - 듀얼 테마
+- `src/components/home/TutorCard.tsx` - 듀얼 테마
 
 ### Key Decisions
 - OpenAI SDK는 signal 네이티브 지원, Gemini SDK는 미지원 → 이원화 전략
 - Debate 토픽: 질문형은 찬반 구분이 모호 → 명제형으로 전환하여 isDebateReadyTopic 필터 활성화
 - Vocab Book: mastered 탭은 API scope 미지원 → scope=all + 클라이언트 필터링
+- 테마 통일 패턴: dark-only bg-white/[0.04] → dark:bg-white/[0.04] bg-black/[0.03]
 
 ---
 
