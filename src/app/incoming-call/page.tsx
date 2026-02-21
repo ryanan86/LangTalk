@@ -269,10 +269,10 @@ function SlideToAnswerButton({ onAccept }: { onAccept: () => void }) {
     }
   };
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = useCallback(() => {
     if (!isDragging) return;
     setIsDragging(false);
-    
+
     if (dragX > maxDrag * 0.85) {
        // Snap to end and accept
        setDragX(maxDrag);
@@ -281,7 +281,7 @@ function SlideToAnswerButton({ onAccept }: { onAccept: () => void }) {
        // Snap back
        setDragX(0);
     }
-  };
+  }, [isDragging, dragX, maxDrag, onAccept]);
 
   // Add global listeners for mouse up to handle dragging outside
   useEffect(() => {
@@ -293,10 +293,10 @@ function SlideToAnswerButton({ onAccept }: { onAccept: () => void }) {
         window.removeEventListener('mouseup', handleTouchEnd);
         window.removeEventListener('touchend', handleTouchEnd);
      };
-  }, [isDragging, dragX, maxDrag, onAccept]);
+  }, [isDragging, handleTouchEnd]);
 
   return (
-    <div 
+    <div
       className="relative w-full h-16 rounded-full bg-black/20 backdrop-blur-md border border-white/20 overflow-hidden select-none"
       ref={containerRef}
       onTouchMove={handleTouchMove}

@@ -41,8 +41,40 @@ AGENTS.md
 .claude/
 android/
 
+# OMC state
+.omc/
+
 # Telegram bot session logs
 logs/
 
 # Setup bundle (contains API keys)
 setup-bundle/
+
+# Temp prompt/review files
+*-prompt.md
+*-result.txt
+team-test-*.txt
+
+# Design previews (local only)
+preview-*.png
+report-preview.png
+taptalk-report-*.png
+design-mockups/
+appstore-screenshots/
+
+# Test files
+test-audio/
+src/app/test-report/
+
+# Firebase keys
+firebase key/
+
+# Scripts (OMC/test only)
+scripts/.omc/
+
+# Misc analysis docs
+DESIGN_ANALYSIS_REVIEW.md
+omc-team-check-*.md
+
+# Tutors video (large files)
+public/tutors video/

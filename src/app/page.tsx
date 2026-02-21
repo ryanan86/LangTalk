@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useLanguage, LanguageToggle } from '@/lib/i18n';
 import { Flag } from '@/components/Icons';
 import TapTalkLogo from '@/components/TapTalkLogo';
@@ -659,7 +660,7 @@ function HomePageContent() {
                       title={language === 'ko' ? '프로필 설정' : 'Profile Settings'}
                       className="relative z-10 flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 -m-1 rounded-full"
                     >
-                      <img
+                      <Image
                         src={session.user.image}
                         alt=""
                         width={40}
@@ -1200,9 +1201,10 @@ function HomePageContent() {
                               {/* Video / Image Area */}
                               <div className="relative h-44 sm:h-56 lg:h-72 overflow-hidden dark:bg-slate-950 bg-zinc-100">
                                 {/* Tutor Image (always visible as base layer) */}
-                                <img
+                                <Image
                                   src={`/tutors/${getTutorFileName(persona.id)}.jpg`}
                                   alt={persona.name}
+                                  fill
                                   className="absolute inset-0 w-full h-full object-cover"
                                 />
                                 {/* Tutor Video (plays on hover/tap, overlays image) */}
@@ -1423,9 +1425,10 @@ function HomePageContent() {
                         }}
                       >
                         {/* Tutor Image (always visible as base layer) */}
-                        <img
+                        <Image
                           src={`/tutors/${getTutorFileName(tutor.id)}.jpg`}
                           alt={tutor.name}
+                          fill
                           className="absolute inset-0 w-full h-full object-cover"
                         />
                         {/* Tutor Video (plays on hover/tap, overlays image) */}
