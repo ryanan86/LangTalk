@@ -157,7 +157,7 @@ function IncomingCallContent() {
 
       {/* Top section - calling text */}
       <div className="text-center z-10">
-        <p className="text-white/80 text-lg font-medium tracking-wide uppercase">
+        <p className="text-slate-900/80 dark:text-white/80 text-lg font-medium tracking-wide uppercase">
           Incoming Call
         </p>
         <div className="flex items-center justify-center gap-1 mt-2">
@@ -179,10 +179,10 @@ function IncomingCallContent() {
             priority
           />
         </div>
-        <h1 className="text-white text-3xl font-bold mt-8 shadow-sm">{tutor.name}</h1>
-        <p className="text-white/80 text-lg mt-2 font-medium">{tutor.description}</p>
+        <h1 className="text-slate-900 dark:text-white text-3xl font-bold mt-8 shadow-sm">{tutor.name}</h1>
+        <p className="text-slate-700 dark:text-white/80 text-lg mt-2 font-medium">{tutor.description}</p>
         {accepted && (
-          <p className="text-white/90 text-sm mt-3 font-medium animate-pulse">Connecting audio...</p>
+          <p className="text-slate-700 dark:text-white/90 text-sm mt-3 font-medium animate-pulse">Connecting audio...</p>
         )}
       </div>
 
@@ -194,12 +194,12 @@ function IncomingCallContent() {
                 onClick={handleDecline}
                 className="flex flex-col items-center gap-2 group"
               >
-                 <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 transition-transform active:scale-95">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <div className="w-14 h-14 rounded-full bg-white/20 dark:bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 transition-transform active:scale-95">
+                    <svg className="w-6 h-6 text-slate-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                  </div>
-                 <span className="text-white/70 text-xs font-medium">Message</span>
+                 <span className="text-slate-600 dark:text-white/70 text-xs font-medium">Message</span>
               </button>
 
               <button 
@@ -209,12 +209,12 @@ function IncomingCallContent() {
                 }}
                 className="flex flex-col items-center gap-2 group"
               >
-                 <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 transition-transform active:scale-95">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <div className="w-14 h-14 rounded-full bg-white/20 dark:bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 transition-transform active:scale-95">
+                    <svg className="w-6 h-6 text-slate-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                  </div>
-                 <span className="text-white/70 text-xs font-medium">Remind</span>
+                 <span className="text-slate-600 dark:text-white/70 text-xs font-medium">Remind</span>
               </button>
            </div>
 
@@ -228,7 +228,7 @@ function IncomingCallContent() {
       {!accepted && elapsed > 0 && (
         <div className="absolute top-0 left-0 right-0 h-1 bg-black/10">
             <div 
-               className="h-full bg-white/30 transition-all duration-1000 ease-linear"
+               className="h-full bg-slate-900/20 dark:bg-white/30 transition-all duration-1000 ease-linear"
                style={{ width: `${((30 - elapsed) / 30) * 100}%` }}
             />
         </div>
@@ -304,7 +304,7 @@ function SlideToAnswerButton({ onAccept }: { onAccept: () => void }) {
     >
        {/* Shimmer Text */}
        <div className="absolute inset-0 flex items-center justify-center z-0">
-          <span className="text-white/50 text-base font-medium animate-pulse tracking-wider">
+          <span className="text-slate-700/60 dark:text-white/50 text-base font-medium animate-pulse tracking-wider">
              slide to answer
           </span>
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />

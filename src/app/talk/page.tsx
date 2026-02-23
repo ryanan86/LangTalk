@@ -435,7 +435,8 @@ function TalkContent() {
       }
       // Play correction explanation when index changes
       else if (currentReviewIndex !== lastPlayedReviewIndex) {
-        const correction = analysis.corrections[currentReviewIndex];
+        const clampedIndex = Math.min(currentReviewIndex, analysis.corrections.length - 1);
+        const correction = analysis.corrections[clampedIndex];
         const feedbackMessage = `You said: "${correction.original}". Try saying: "${correction.corrected}".`;
         playTTS(feedbackMessage);
         setLastPlayedReviewIndex(currentReviewIndex);
@@ -1473,6 +1474,14 @@ function TalkContent() {
   // Dynamic theme based on phase
   const isDarkPhase = phase === 'interview' || phase === 'recording';
 
+  // Safe array index clamping to prevent out-of-bounds crash if array shrinks
+  const safeReviewIndex = analysis
+    ? Math.min(currentReviewIndex, Math.max(0, analysis.corrections.length - 1))
+    : 0;
+  const safeShadowingIndex = analysis
+    ? Math.min(shadowingIndex, Math.max(0, analysis.corrections.length - 1))
+    : 0;
+
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-500 ${
       isDarkPhase ? 'bg-neutral-950' : 'bg-neutral-50 dark:bg-dark-bg'
@@ -1839,18 +1848,18 @@ function TalkContent() {
               <div className="flex-1 flex flex-col justify-center">
                 <div className="mb-4 sm:mb-6">
                   <CorrectionCard
-                    original={analysis.corrections[currentReviewIndex].original}
-                    intended={analysis.corrections[currentReviewIndex].intended}
-                    corrected={analysis.corrections[currentReviewIndex].corrected}
-                    explanation={analysis.corrections[currentReviewIndex].explanation}
-                    category={analysis.corrections[currentReviewIndex].category}
-                    isRepeated={repeatedCategories.has(analysis.corrections[currentReviewIndex].category)}
-                    correctionIndex={currentReviewIndex}
+                    original={analysis.corrections[safeReviewIndex].original}
+                    intended={analysis.corrections[safeReviewIndex].intended}
+                    corrected={analysis.corrections[safeReviewIndex].corrected}
+                    explanation={analysis.corrections[safeReviewIndex].explanation}
+                    category={analysis.corrections[safeReviewIndex].category}
+                    isRepeated={repeatedCategories.has(analysis.corrections[safeReviewIndex].category)}
+                    correctionIndex={safeReviewIndex}
 
                     isPlaying={isPlaying}
-                    onPlayCorrected={() => playTTS(analysis.corrections[currentReviewIndex].corrected, 0.85)}
+                    onPlayCorrected={() => playTTS(analysis.corrections[safeReviewIndex].corrected, 0.85)}
                     onPlayExplanation={() => {
-                      const c = analysis.corrections[currentReviewIndex];
+                      const c = analysis.corrections[safeReviewIndex];
                       playTTS(`You said: "${c.original}". A better way is: "${c.corrected}". ${c.explanation}`, 0.85);
                     }}
                     language={language}
@@ -1859,7 +1868,7 @@ function TalkContent() {
 
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => playTTS(analysis.corrections[currentReviewIndex].corrected, 0.85)}
+                    onClick={() => playTTS(analysis.corrections[safeReviewIndex].corrected, 0.85)}
                     disabled={isPlaying}
                     className="w-12 h-12 sm:w-14 sm:h-14 bg-emerald-500/15 rounded-xl flex items-center justify-center hover:bg-emerald-500/25 transition-colors flex-shrink-0"
                     aria-label={language === 'ko' ? '올바른 표현 듣기' : 'Listen to corrected form'}
@@ -1905,11 +1914,11 @@ function TalkContent() {
               <div className="card-premium p-4 sm:p-6 mb-4 sm:mb-6 text-center">
                 <p className="text-xs sm:text-sm text-neutral-500 mb-3 sm:mb-4">{t.listenAndRepeat}</p>
                 <p className="text-xl sm:text-2xl font-medium text-neutral-900 dark:text-white dark:text-white mb-4 sm:mb-6">
-                  {analysis.corrections[shadowingIndex].corrected}
+                  {analysis.corrections[safeShadowingIndex].corrected}
                 </p>
 
                 <button
-                  onClick={() => playTTS(analysis.corrections[shadowingIndex].corrected, 0.8)}
+                  onClick={() => playTTS(analysis.corrections[safeShadowingIndex].corrected, 0.8)}
                   disabled={isPlaying}
                   className="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-primary-100 rounded-full flex items-center justify-center hover:bg-primary-200 transition-colors mb-4 sm:mb-6"
                 >
