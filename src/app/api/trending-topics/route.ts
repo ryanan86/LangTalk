@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
+import { makeRid, nowMs, since } from '@/lib/perf';
 
 let _openai: OpenAI | null = null;
 function getOpenAI() {
@@ -53,6 +54,8 @@ const ageGroupFromBirthYear = (birthYear: number): string => {
 };
 
 export async function POST(request: NextRequest) {
+  const rid = makeRid('dtpc');
+  const t0 = nowMs();
   try {
     // Auth check
     const session = await getServerSession(authOptions);
@@ -208,6 +211,7 @@ Make topics ENGAGING and DEBATABLE - not one-sided questions.`;
       );
     }
 
+    console.log(`[${rid}] OK ${since(t0)}ms topics=${result.topics?.length}`);
     return NextResponse.json({
       success: true,
       ...result,
@@ -219,7 +223,7 @@ Make topics ENGAGING and DEBATABLE - not one-sided questions.`;
     });
 
   } catch (error) {
-    console.error('Trending Topics error:', error);
+    console.error(`[${rid}] ERR ${since(t0)}ms`, error);
     return NextResponse.json(
       { error: 'Failed to generate topics' },
       { status: 500 }
