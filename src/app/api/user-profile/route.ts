@@ -4,9 +4,13 @@ import { authOptions } from '@/lib/auth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getUserData, updateUserFields } from '@/lib/sheetHelper';
 import { ProfileData } from '@/lib/sheetTypes';
+import { makeRid, nowMs, since } from '@/lib/perf';
 
 // GET: Retrieve user profile
 export async function GET(request: Request) {
+  const rid = makeRid('prof');
+  const t0 = nowMs();
+
   try {
     const session = await getServerSession(authOptions);
 
@@ -53,8 +57,10 @@ export async function GET(request: Request) {
       schedule: userData.profile.schedule || null,
     };
 
+    console.log(`[${rid}] OK ${since(t0)}ms`);
     return NextResponse.json({ profile, email });
   } catch (error) {
+    console.error(`[${rid}] ERR ${since(t0)}ms`, error);
     console.error('User profile retrieval error:', error);
     return NextResponse.json({ profile: null, error: 'Failed to retrieve profile' });
   }
@@ -62,6 +68,9 @@ export async function GET(request: Request) {
 
 // POST: Create or update user profile
 export async function POST(request: NextRequest) {
+  const rid = makeRid('prof');
+  const t0 = nowMs();
+
   try {
     const session = await getServerSession(authOptions);
 
@@ -127,6 +136,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log(`[${rid}] OK ${since(t0)}ms`);
     return NextResponse.json({
       success: true,
       message: 'Profile saved',
@@ -144,6 +154,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
+    console.error(`[${rid}] ERR ${since(t0)}ms`, error);
     console.error('User profile save error:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to save profile' },

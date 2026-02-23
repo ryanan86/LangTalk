@@ -244,10 +244,10 @@ export default function TutorIntroCarousel({ onComplete, language }: TutorIntroC
 
   return (
     <div className="flex flex-col items-center w-full px-2">
-      <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1 text-center">
+      <h3 className="text-lg font-semibold text-theme-primary mb-1 text-center">
         {language === 'ko' ? '튜터를 만나보세요' : 'Meet Your Tutors'}
       </h3>
-      <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-5 text-center">
+      <p className="text-sm text-theme-secondary mb-5 text-center">
         {language === 'ko'
           ? '6명의 AI 튜터가 기다리고 있어요'
           : 'Six AI tutors are waiting for you'}
@@ -274,12 +274,12 @@ export default function TutorIntroCarousel({ onComplete, language }: TutorIntroC
                 onClick={() => setSelectedTutor(tutor.id === selectedTutor ? null : tutor.id)}
                 className={`
                   relative rounded-2xl overflow-hidden cursor-pointer
-                  border-2 transition-colors transition-shadow duration-300
+                  border-2 transition-all duration-300
+                  bg-surface
                   ${selectedTutor === tutor.id
-                    ? 'border-primary-500 shadow-lg shadow-primary-500/20'
+                    ? 'border-violet-500 shadow-lg shadow-violet-500/20'
                     : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
                   }
-                  bg-white dark:bg-dark-surface
                 `}
               >
                 {/* Avatar Area with Gradient */}
@@ -305,14 +305,14 @@ export default function TutorIntroCarousel({ onComplete, language }: TutorIntroC
                     </div>
                   </div>
 
-                  {/* Flag badge */}
-                  <div className="absolute top-3 right-3 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm rounded-md px-2 py-1 text-xs font-medium text-neutral-700 dark:text-neutral-300">
-                    {tutor.flag === 'US' ? '🇺🇸' : '🇬🇧'} {language === 'ko' ? tutor.nationalityKo : tutor.nationality}
+                  {/* Nationality badge (text only, no flag emoji) */}
+                  <div className="absolute top-3 right-3 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm rounded-md px-2 py-1 text-xs font-medium text-neutral-700 dark:text-neutral-300 border border-neutral-200/50 dark:border-white/10">
+                    {tutor.flag === 'US' ? 'US' : 'UK'} · {language === 'ko' ? tutor.nationalityKo : tutor.nationality}
                   </div>
 
                   {/* Selected badge */}
                   {selectedTutor === tutor.id && (
-                    <div className="absolute top-3 left-3 bg-primary-500 rounded-full p-1">
+                    <div className="absolute top-3 left-3 bg-violet-500 rounded-full p-1 shadow-lg">
                       <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
@@ -322,13 +322,13 @@ export default function TutorIntroCarousel({ onComplete, language }: TutorIntroC
 
                 {/* Info Area */}
                 <div className="p-4">
-                  <h4 className="text-xl font-bold text-neutral-900 dark:text-white mb-1">
+                  <h4 className="text-xl font-bold text-theme-primary mb-1">
                     {tutor.name}
                   </h4>
-                  <p className="text-sm font-medium text-primary-500 mb-2">
+                  <p className="text-sm font-medium text-violet-600 dark:text-violet-400 mb-2">
                     {language === 'ko' ? tutor.descriptionKo : tutor.descriptionEn}
                   </p>
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed mb-4">
+                  <p className="text-sm text-theme-secondary leading-relaxed mb-4">
                     {language === 'ko' ? tutor.personalityKo : tutor.personalityEn}
                   </p>
 
@@ -342,8 +342,8 @@ export default function TutorIntroCarousel({ onComplete, language }: TutorIntroC
                       w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium
                       transition-all duration-200
                       ${playingVoice === tutor.id
-                        ? `bg-gradient-to-r ${tutor.gradient} text-white`
-                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                        ? `bg-gradient-to-r ${tutor.gradient} text-white shadow-sm`
+                        : 'bg-neutral-100 dark:bg-white/5 text-theme-secondary hover:bg-neutral-200 dark:hover:bg-white/10 border border-neutral-200 dark:border-white/10'
                       }
                     `}
                   >
@@ -402,7 +402,7 @@ export default function TutorIntroCarousel({ onComplete, language }: TutorIntroC
         <button
           onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
           disabled={currentIndex === 0}
-          className="p-2 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          className="p-2 rounded-full bg-surface border border-theme text-theme-secondary hover:bg-surface-hover disabled:opacity-30 disabled:cursor-not-allowed transition-all"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -411,7 +411,7 @@ export default function TutorIntroCarousel({ onComplete, language }: TutorIntroC
         <button
           onClick={() => setCurrentIndex(prev => Math.min(tutors.length - 1, prev + 1))}
           disabled={currentIndex === tutors.length - 1}
-          className="p-2 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          className="p-2 rounded-full bg-surface border border-theme text-theme-secondary hover:bg-surface-hover disabled:opacity-30 disabled:cursor-not-allowed transition-all"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

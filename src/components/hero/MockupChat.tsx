@@ -199,7 +199,7 @@ export default function MockupChat() {
           </div>
 
           {/* Flag */}
-          <div className="absolute -bottom-0.5 -right-0.5 bg-[#0a0a0a] rounded-sm p-0.5">
+          <div className="absolute -bottom-0.5 -right-0.5 bg-[#0a0a0a]/90 rounded-sm p-0.5">
             <FlagSvg country={tutor.flagCountry} />
           </div>
         </div>

@@ -367,10 +367,10 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
     <section className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+          <h2 className="text-lg font-semibold text-theme-primary">
             {language === 'ko' ? 'AI 튜터 예약 알림' : 'Scheduled Call Reminders'}
           </h2>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+          <p className="text-sm text-theme-secondary mt-1">
             {language === 'ko'
               ? '설정한 시간에 AI 튜터가 알림을 보내드려요.'
               : 'Get notified at your scheduled times to practice.'}
@@ -389,12 +389,15 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
             setEnabled(!enabled);
             markDirty();
           }}
-          className={`relative w-12 h-7 rounded-full transition-colors ${
-            enabled ? 'bg-primary-500' : 'bg-neutral-300 dark:bg-neutral-600'
+          className={`relative w-12 h-7 rounded-full transition-colors duration-200 ${
+            enabled
+              ? 'bg-gradient-to-r from-violet-600 to-indigo-500'
+              : 'bg-neutral-200 dark:bg-neutral-700'
           }`}
+          aria-label={enabled ? 'Disable schedule' : 'Enable schedule'}
         >
           <span
-            className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${
+            className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-sm transition-transform duration-200 ${
               enabled ? 'translate-x-5' : 'translate-x-0'
             }`}
           />
@@ -403,8 +406,8 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
 
       {/* Permission denied warning */}
       {notifPermission === 'denied' && (
-        <div className="p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl">
-          <p className="text-sm text-red-700 dark:text-red-300">
+        <div className="p-3 report-glass rounded-xl border border-red-500/20">
+          <p className="text-sm text-red-600 dark:text-red-300">
             {language === 'ko'
               ? '알림이 차단되어 있습니다. 브라우저 설정에서 taptalk.xyz의 알림을 허용해주세요.'
               : 'Notifications are blocked. Please enable notifications for taptalk.xyz in your browser settings.'}
@@ -414,13 +417,13 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
 
       {/* Push registration status */}
       {pushStatus === 'error' && (
-        <div className="p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl">
-          <p className="text-sm text-red-700 dark:text-red-300">
+        <div className="p-3 report-glass rounded-xl border border-red-500/20">
+          <p className="text-sm text-red-600 dark:text-red-300">
             {language === 'ko' ? `Push 등록 실패: ${pushError}` : `Push registration failed: ${pushError}`}
           </p>
           <button
             onClick={() => registerPushSubscription()}
-            className="mt-2 text-xs text-red-600 dark:text-red-400 underline"
+            className="mt-2 text-xs text-red-500 dark:text-red-400 underline"
           >
             {language === 'ko' ? '다시 시도' : 'Retry'}
           </button>
@@ -428,13 +431,13 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
       )}
       {pushStatus === 'success' && (
         <div className="space-y-2">
-          <div className="p-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl">
-            <p className="text-sm text-green-700 dark:text-green-300">
+          <div className="p-3 report-glass rounded-xl border border-green-500/20">
+            <p className="text-sm text-green-600 dark:text-green-300">
               {language === 'ko' ? 'Push 알림이 활성화되었습니다.' : 'Push notifications enabled.'}
             </p>
           </div>
-          <div className="p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl">
-            <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
+          <div className="p-3 report-glass rounded-xl border border-amber-500/20">
+            <p className="text-xs text-amber-600 dark:text-amber-300 leading-relaxed">
               {language === 'ko'
                 ? 'iPhone/iPad: 무음 모드(사이드 스위치)에서는 알림 소리가 지원되지 않습니다. 소리 알림을 받으려면 설정 > 알림 > TapTalk에서 소리를 켜고, 무음 모드를 해제해주세요.'
                 : 'iPhone/iPad: Notification sounds are not supported in silent mode. To receive sound alerts, go to Settings > Notifications > TapTalk and enable Sound, then turn off silent mode.'}
@@ -447,7 +450,7 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
         <div className="space-y-5 pl-1">
           {/* Days selection */}
           <div>
-            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 block mb-2">
+            <label className="text-sm font-medium text-theme-secondary block mb-2">
               {language === 'ko' ? '요일 선택' : 'Select Days'}
             </label>
             <div className="flex gap-2">
@@ -455,10 +458,10 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
                 <button
                   key={day.value}
                   onClick={() => toggleDay(day.value)}
-                  className={`w-10 h-10 rounded-full text-sm font-medium transition-all ${
+                  className={`w-10 h-10 rounded-full text-sm font-medium transition-all duration-200 ${
                     days.includes(day.value)
-                      ? 'bg-primary-500 text-white'
-                      : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                      ? 'bg-gradient-to-br from-violet-600 to-indigo-500 text-white shadow-sm shadow-violet-500/20'
+                      : 'bg-neutral-100 dark:bg-white/5 text-theme-muted border border-neutral-200 dark:border-white/10 hover:bg-neutral-200 dark:hover:bg-white/10'
                   }`}
                 >
                   {language === 'ko' ? day.labelKo : day.labelEn}
@@ -469,7 +472,7 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
 
           {/* Time slots */}
           <div>
-            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 block mb-2">
+            <label className="text-sm font-medium text-theme-secondary block mb-2">
               {language === 'ko' ? `알림 시간 (${times.length}/3)` : `Reminder Times (${times.length}/3)`}
             </label>
             <div className="space-y-2">
@@ -478,7 +481,7 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
                   <select
                     value={time}
                     onChange={(e) => updateTime(index, e.target.value)}
-                    className="flex-1 px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-dark-surface text-neutral-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="flex-1 px-3 py-2.5 rounded-xl border border-theme bg-surface text-theme-primary text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all"
                   >
                     {TIME_SLOTS.map(slot => (
                       <option key={slot} value={slot}>{slot}</option>
@@ -487,7 +490,8 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
                   {times.length > 1 && (
                     <button
                       onClick={() => removeTime(index)}
-                      className="p-2 text-neutral-400 hover:text-red-500 transition-colors"
+                      className="p-2 text-theme-muted hover:text-red-500 transition-colors"
+                      aria-label="Remove time"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -499,7 +503,7 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
               {times.length < 3 && (
                 <button
                   onClick={addTime}
-                  className="w-full py-2.5 rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-600 text-neutral-500 dark:text-neutral-400 text-sm hover:border-primary-400 hover:text-primary-500 transition-colors"
+                  className="w-full py-2.5 rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-600 text-theme-muted text-sm hover:border-violet-400 hover:text-violet-500 dark:hover:text-violet-400 transition-colors"
                 >
                   + {language === 'ko' ? '시간 추가' : 'Add Time'}
                 </button>
@@ -509,7 +513,7 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
 
           {/* Preferred tutor */}
           <div>
-            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 block mb-2">
+            <label className="text-sm font-medium text-theme-secondary block mb-2">
               {language === 'ko' ? '선호 튜터' : 'Preferred Tutor'}
             </label>
             <div className="grid grid-cols-4 gap-2">
@@ -517,10 +521,10 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
                 <button
                   key={tutor.id}
                   onClick={() => { setPreferredTutor(tutor.id); markDirty(); }}
-                  className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                  className={`px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                     preferredTutor === tutor.id
-                      ? 'bg-primary-500 text-white'
-                      : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                      ? 'bg-gradient-to-br from-violet-600 to-indigo-500 text-white shadow-sm shadow-violet-500/20'
+                      : 'bg-neutral-100 dark:bg-white/5 text-theme-secondary border border-neutral-200 dark:border-white/10 hover:bg-neutral-200 dark:hover:bg-white/10'
                   }`}
                 >
                   {language === 'ko' ? tutor.nameKo : tutor.nameEn}
@@ -533,9 +537,9 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
           <button
             onClick={handleSave}
             disabled={isSaving || days.length === 0}
-            className={`w-full py-3 rounded-xl text-sm font-semibold transition-all ${
+            className={`w-full py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
               saved
-                ? 'bg-green-500 text-white'
+                ? 'bg-green-500 text-white shadow-sm'
                 : 'btn-primary disabled:opacity-50 disabled:cursor-not-allowed'
             }`}
           >
@@ -550,7 +554,7 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
           {pushStatus === 'success' && (
             <button
               onClick={sendTestNotification}
-              className="w-full py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-sm text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+              className="w-full py-2.5 rounded-xl border border-theme text-sm text-theme-secondary hover:bg-surface-hover transition-colors"
             >
               {language === 'ko' ? '테스트 알림 보내기' : 'Send Test Notification'}
             </button>

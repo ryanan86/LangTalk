@@ -826,8 +826,8 @@ function HomePageContent() {
 
         {/* Dashboard & User Content */}
         <section className={`pb-8 sm:pb-12 transition-[opacity,transform] duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <div className="text-center max-w-3xl mx-auto">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center max-w-4xl mx-auto">
 
               {/* Dashboard Stats - For logged in users with at least 1 session */}
               {session && isSubscribed && sessionCount > 0 && (
@@ -898,7 +898,7 @@ function HomePageContent() {
 
               {/* Gamification Widgets - compact row below lesson history */}
               {session && isSubscribed && sessionCount > 0 && (
-                <div className="max-w-2xl mx-auto mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="max-w-4xl mx-auto mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* XP Progress */}
                   <div className="p-4 rounded-2xl bg-surface border border-theme">
                     <XPBar totalXP={userXP} />
@@ -966,7 +966,7 @@ function HomePageContent() {
         {/* Talk Mode Content */}
         {(!session || !isSubscribed || activeTab === 'talk') && (
           <section className={`py-8 sm:py-12 transition-[opacity,transform] duration-700 delay-200 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-            <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 
               {/* Not Logged In State */}
               {!session && (
@@ -1057,7 +1057,7 @@ function HomePageContent() {
               {session && isSubscribed && (
                 <>
                   {/* Microphone Test */}
-                  <div className="max-w-md mx-auto mb-10">
+                  <div className="max-w-lg mx-auto mb-10">
                     <div className="p-5 rounded-2xl bg-surface border border-theme backdrop-blur-sm">
                       <div className="flex items-center gap-3 mb-4">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-400/20 to-emerald-400/20 flex items-center justify-center">
@@ -1120,7 +1120,7 @@ function HomePageContent() {
                   {/* Tutor Selection - Team Style */}
                   <div id="tutor-selection" className="mb-12">
                     <div className="text-center mb-10">
-                      <h2 className="text-2xl sm:text-3xl font-bold text-theme-primary mb-3">
+                      <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-theme-primary mb-3">
                         {language === 'ko' ? 'AI 튜터를 선택하세요' : 'Meet Your AI Tutors'}
                       </h2>
                       <p className="text-theme-secondary">
@@ -1286,7 +1286,7 @@ function HomePageContent() {
         {/* Debate Mode Content */}
         {session && isSubscribed && activeTab === 'debate' && (
           <section className={`py-8 sm:py-12 transition-[opacity,transform] duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-            <div className="max-w-2xl mx-auto px-4 sm:px-6">
+            <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
               {canAccessDebate ? (
                 /* Unlocked Debate */
                 <div className="text-center">
@@ -1300,7 +1300,7 @@ function HomePageContent() {
                   <p className="text-theme-secondary mb-8 max-w-md mx-auto">{t.debateDescription}</p>
 
                   {/* Features */}
-                  <div className="grid grid-cols-3 gap-4 mb-8">
+                  <div className="grid grid-cols-3 gap-4 sm:gap-6 mb-8">
                     <div className="p-4 rounded-xl bg-surface border border-theme">
                       <div className="text-2xl mb-2">5</div>
                       <div className="text-xs text-theme-muted">{language === 'ko' ? '참가자' : 'Participants'}</div>

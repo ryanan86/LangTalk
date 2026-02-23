@@ -42,16 +42,16 @@ export default function StreakCalendar({
     <div className={`${className}`}>
       {/* Streak Count Header */}
       <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-medium text-neutral-600 dark:text-white/60">
+        <span className="text-sm font-medium text-theme-secondary">
           {language === 'ko' ? '최근 7일' : 'Last 7 Days'}
         </span>
         <div className="flex items-center gap-1.5">
           <svg className="w-5 h-5 text-orange-500" fill="currentColor" viewBox="0 0 24 24">
             <path d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/>
           </svg>
-          <span className="text-sm font-bold text-neutral-900 dark:text-white">
+          <span className="text-sm font-bold text-theme-primary">
             {currentStreak}{' '}
-            <span className="font-medium text-neutral-500 dark:text-white/50">
+            <span className="font-medium text-theme-muted">
               {language === 'ko' ? '일 연속' : currentStreak === 1 ? 'day streak' : 'day streak'}
             </span>
           </span>
@@ -67,8 +67,8 @@ export default function StreakCalendar({
               {/* Day Label */}
               <span className={`text-2xs font-medium ${
                 isToday
-                  ? 'text-purple-600 dark:text-purple-400'
-                  : 'text-neutral-400 dark:text-white/40'
+                  ? 'text-violet-600 dark:text-violet-400'
+                  : 'text-theme-muted'
               }`}>
                 {dayLabels[index]}
               </span>
@@ -80,10 +80,10 @@ export default function StreakCalendar({
                   transition-all duration-300
                   ${
                     isActive
-                      ? 'bg-gradient-to-br from-purple-500 to-pink-500 shadow-glow-sm'
-                      : 'bg-neutral-100 dark:bg-white/5'
+                      ? 'bg-gradient-to-br from-violet-600 to-indigo-500 shadow-lg shadow-violet-500/20'
+                      : 'bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10'
                   }
-                  ${isToday ? 'ring-2 ring-purple-400/50 dark:ring-purple-400/30 ring-offset-2 ring-offset-white dark:ring-offset-neutral-900' : ''}
+                  ${isToday ? 'ring-2 ring-violet-400/50 dark:ring-violet-400/30 ring-offset-2 ring-offset-white dark:ring-offset-neutral-900' : ''}
                 `}
               >
                 {isActive ? (

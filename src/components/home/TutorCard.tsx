@@ -89,7 +89,7 @@ export default function TutorCard({
           </div>
 
           {/* Dark gradient overlay on image bottom */}
-          <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-[#020617] via-[#020617]/60 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t dark:from-[#020617] dark:via-[#020617]/60 from-zinc-100 via-zinc-100/60 to-transparent" />
 
           {/* Selection Check */}
           {isSelected && (

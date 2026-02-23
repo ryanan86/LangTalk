@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
+import { makeRid, nowMs, since } from '@/lib/perf';
 import {
   analyzeSpeaking,
   convertToStandardizedScores,
@@ -190,6 +191,9 @@ function generateFeedback(
 }
 
 export async function POST(request: NextRequest) {
+  const rid = makeRid('spkeval');
+  const t0 = nowMs();
+
   try {
     // Auth check
     const session = await getServerSession(authOptions);
@@ -304,9 +308,11 @@ export async function POST(request: NextRequest) {
       },
     };
 
+    console.log(`[${rid}] OK ${since(t0)}ms`);
     return NextResponse.json(response);
 
   } catch (error) {
+    console.error(`[${rid}] ERR ${since(t0)}ms`, error);
     console.error('Speaking evaluation error:', error);
     return NextResponse.json(
       { error: 'Evaluation failed', success: false },

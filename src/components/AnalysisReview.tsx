@@ -138,7 +138,7 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
                 <h4 className={`text-lg sm:text-xl font-bold bg-gradient-to-r ${encouragement.gradient} bg-clip-text text-transparent mb-2`}>
                   {encouragement.title}
                 </h4>
-                <p className="text-slate-300/70 text-sm leading-relaxed">
+                <p className="dark:text-slate-300/70 text-zinc-600 text-sm leading-relaxed">
                   {encouragement.message}
                 </p>
               </div>
@@ -191,11 +191,11 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
           <div className="flex justify-center py-2">
             <svg width={radarSize} height={radarSize} viewBox={`0 0 ${radarSize} ${radarSize}`}>
               {gridPolys.map((poly, i) => (
-                <polygon key={`grid-${i}`} points={poly} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+                <polygon key={`grid-${i}`} points={poly} fill="none" stroke="rgba(100,100,120,0.15)" strokeWidth="1" className="dark:[stroke:rgba(255,255,255,0.06)]" />
               ))}
               {Array.from({ length: axisCount }, (_, i) => {
                 const pt = radarPoint(i, 100);
-                return <line key={`axis-${i}`} x1={radarCx} y1={radarCy} x2={pt.x} y2={pt.y} stroke="rgba(255,255,255,0.04)" strokeWidth="1" />;
+                return <line key={`axis-${i}`} x1={radarCx} y1={radarCy} x2={pt.x} y2={pt.y} stroke="rgba(100,100,120,0.10)" strokeWidth="1" className="dark:[stroke:rgba(255,255,255,0.04)]" />;
               })}
               <polygon points={dataPoly} fill="rgba(124,58,237,0.12)" stroke="rgba(6,182,212,0.7)" strokeWidth="2" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 6px rgba(6,182,212,0.25))' }} />
               {dataPoints.map((pt, i) => (
@@ -204,7 +204,7 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
               {metrics.map((m, i) => {
                 const lp = radarPoint(i, 128);
                 return (
-                  <text key={`label-${i}`} x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle" fill="rgba(255,255,255,0.45)" fontSize="9" fontWeight="500">
+                  <text key={`label-${i}`} x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle" fill="rgba(80,80,100,0.7)" fontSize="9" fontWeight="500" className="dark:[fill:rgba(255,255,255,0.45)]">
                     {m.label}
                   </text>
                 );
@@ -345,14 +345,14 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
           </h4>
           <div className="space-y-2.5">
             {strengths.map((s) => (
-              <p key={`s-${s.label}`} className="text-xs sm:text-sm text-slate-300 flex items-start gap-2">
+              <p key={`s-${s.label}`} className="text-xs sm:text-sm dark:text-slate-300 text-zinc-600 flex items-start gap-2">
                 <svg className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                 </svg>
                 <span>
                   {language === 'ko'
-                    ? <><strong className="text-white">{s.label}</strong>{'이(가) 인상적이에요! '}{s.value}{' - 훌륭한 실력을 보여주셨어요.'}</>
-                    : <><strong className="text-white">{s.label}</strong>{' is impressive! '}{s.value}{' shows excellent skill.'}</>
+                    ? <><strong className="dark:text-white text-zinc-900">{s.label}</strong>{'이(가) 인상적이에요! '}{s.value}{' - 훌륭한 실력을 보여주셨어요.'}</>
+                    : <><strong className="dark:text-white text-zinc-900">{s.label}</strong>{' is impressive! '}{s.value}{' shows excellent skill.'}</>
                   }
                 </span>
               </p>
@@ -361,14 +361,14 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
               const tip = getImprovementTip(g.key, language);
               return (
                 <div key={`g-${g.label}`} className="space-y-1">
-                  <p className="text-xs sm:text-sm text-slate-300 flex items-start gap-2">
+                  <p className="text-xs sm:text-sm dark:text-slate-300 text-zinc-600 flex items-start gap-2">
                     <svg className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
                     <span>
                       {language === 'ko'
-                        ? <><strong className="text-white">{g.label}</strong>{'을(를) 조금 더 연습하면 더 성장할 수 있어요!'}</>
-                        : <>{'Practice '}<strong className="text-white">{g.label}</strong>{' a bit more to grow even further!'}</>
+                        ? <><strong className="dark:text-white text-zinc-900">{g.label}</strong>{'을(를) 조금 더 연습하면 더 성장할 수 있어요!'}</>
+                        : <>{'Practice '}<strong className="dark:text-white text-zinc-900">{g.label}</strong>{' a bit more to grow even further!'}</>
                       }
                     </span>
                   </p>
@@ -380,7 +380,7 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
                 </div>
               );
             })}
-            <p className="text-xs sm:text-sm text-slate-400 pt-1">
+            <p className="text-xs sm:text-sm dark:text-slate-400 text-zinc-500 pt-1">
               {language === 'ko'
                 ? `이번 세션에서 ${speechMetrics.totalWords}개 단어, ${speechMetrics.totalSentences}개 문장을 구성했어요. ${speechMetrics.uniqueWords}개의 다양한 단어를 활용한 점이 돋보여요!`
                 : `You used ${speechMetrics.totalWords} words in ${speechMetrics.totalSentences} sentences this session. Using ${speechMetrics.uniqueWords} unique words shows great range!`
@@ -390,7 +390,7 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
         </div>
 
         <div className="text-center py-2">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs dark:text-slate-500 text-zinc-400">
             {language === 'ko'
               ? '꾸준한 대화가 실력 향상의 비결이에요. 다음 대화도 기대돼요!'
               : 'Consistent practice is the key. Looking forward to your next conversation!'}

@@ -31,7 +31,7 @@ export default function StreakDisplay({ currentStreak, sessionCount, language }:
 
   return (
     <div className="max-w-md mx-auto mb-8">
-      <div className="p-5 rounded-2xl bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 backdrop-blur-sm shadow-card dark:shadow-none">
+      <div className="card-premium p-5">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -45,10 +45,10 @@ export default function StreakDisplay({ currentStreak, sessionCount, language }:
               </svg>
             )}
             <div>
-              <h3 className="font-semibold text-neutral-900 dark:text-white text-sm">
+              <h3 className="font-semibold text-theme-primary text-sm">
                 {language === 'ko' ? '연속 학습' : 'Learning Streak'}
               </h3>
-              <p className="text-xs text-neutral-500 dark:text-white/50">
+              <p className="text-xs text-theme-muted">
                 {currentStreak > 0
                   ? language === 'ko'
                     ? `${currentStreak}일 연속!`
@@ -60,8 +60,8 @@ export default function StreakDisplay({ currentStreak, sessionCount, language }:
             </div>
           </div>
           <div className="text-right">
-            <div className="text-lg font-bold text-neutral-900 dark:text-white">{sessionCount}</div>
-            <div className="text-xs text-neutral-400 dark:text-white/40">
+            <div className="text-lg font-bold text-theme-primary">{sessionCount}</div>
+            <div className="text-xs text-theme-muted">
               {language === 'ko' ? '총 세션' : 'total'}
             </div>
           </div>
@@ -71,18 +71,18 @@ export default function StreakDisplay({ currentStreak, sessionCount, language }:
         <div className="flex items-center justify-between gap-1">
           {days.map((day, idx) => (
             <div key={idx} className="flex flex-col items-center gap-1.5">
-              <span className="text-2xs text-neutral-400 dark:text-white/40 font-medium">
+              <span className="text-2xs text-theme-muted font-medium">
                 {day.label}
               </span>
               <div
                 className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
                   day.isActive
                     ? day.isToday
-                      ? 'bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg shadow-purple-500/30'
-                      : 'bg-gradient-to-br from-purple-400 to-pink-400'
+                      ? 'bg-gradient-to-br from-violet-600 to-indigo-500 shadow-lg shadow-violet-500/25'
+                      : 'bg-gradient-to-br from-violet-500 to-indigo-400'
                     : day.isToday
-                      ? 'bg-neutral-200 dark:bg-white/10 ring-2 ring-purple-400 dark:ring-purple-500'
-                      : 'bg-neutral-100 dark:bg-white/5'
+                      ? 'bg-neutral-100 dark:bg-white/10 border-2 border-violet-400 dark:border-violet-500'
+                      : 'bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10'
                 }`}
               >
                 {day.isActive ? (

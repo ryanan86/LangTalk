@@ -151,12 +151,12 @@ export default function MicTestStep({ onComplete, onSkip, language }: MicTestSte
             w-32 h-32 rounded-full flex items-center justify-center
             transition-all duration-500
             ${testStatus === 'recording'
-              ? 'bg-red-500/20 dark:bg-red-500/20'
+              ? 'bg-red-500/15 dark:bg-red-500/20 border border-red-500/30'
               : testStatus === 'success'
-                ? 'bg-green-500/20 dark:bg-green-500/20'
+                ? 'bg-green-500/15 dark:bg-green-500/20 border border-green-500/30'
                 : testStatus === 'error'
-                  ? 'bg-red-500/10 dark:bg-red-500/10'
-                  : 'bg-primary-500/10 dark:bg-primary-500/10'
+                  ? 'bg-red-500/10 dark:bg-red-500/10 border border-red-500/20'
+                  : 'bg-violet-500/10 dark:bg-violet-500/10 border border-violet-500/20'
             }
           `}
         >
@@ -178,7 +178,7 @@ export default function MicTestStep({ onComplete, onSkip, language }: MicTestSte
             </svg>
           ) : testStatus === 'processing' ? (
             // Spinner
-            <svg className="w-12 h-12 text-primary-500 animate-spin" fill="none" viewBox="0 0 24 24">
+            <svg className="w-12 h-12 text-violet-500 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
@@ -190,7 +190,7 @@ export default function MicTestStep({ onComplete, onSkip, language }: MicTestSte
                   ? 'text-red-500'
                   : testStatus === 'error'
                     ? 'text-red-400'
-                    : 'text-primary-500'
+                    : 'text-violet-500'
               }`}
               fill="none"
               viewBox="0 0 24 24"
@@ -244,10 +244,10 @@ export default function MicTestStep({ onComplete, onSkip, language }: MicTestSte
       <div className="mb-6 min-h-[80px] flex flex-col items-center justify-center">
         {testStatus === 'idle' && (
           <>
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
+            <h3 className="text-lg font-semibold text-theme-primary mb-2">
               {language === 'ko' ? '마이크 테스트' : 'Microphone Test'}
             </h3>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-xs">
+            <p className="text-sm text-theme-secondary max-w-xs">
               {language === 'ko'
                 ? '마이크가 제대로 작동하는지 확인해보세요. 아무 말이나 3초간 녹음합니다.'
                 : 'Let\'s make sure your microphone works. We\'ll record for 3 seconds.'}
@@ -256,7 +256,7 @@ export default function MicTestStep({ onComplete, onSkip, language }: MicTestSte
         )}
 
         {testStatus === 'requesting' && (
-          <p className="text-sm text-primary-500 font-medium">
+          <p className="text-sm text-violet-600 dark:text-violet-400 font-medium">
             {language === 'ko' ? '마이크 권한을 요청하는 중...' : 'Requesting microphone permission...'}
           </p>
         )}
@@ -266,28 +266,28 @@ export default function MicTestStep({ onComplete, onSkip, language }: MicTestSte
             <h3 className="text-lg font-semibold text-red-500 mb-2 animate-pulse">
               {language === 'ko' ? '녹음 중...' : 'Recording...'}
             </h3>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            <p className="text-sm text-theme-secondary">
               {language === 'ko' ? '지금 말해보세요!' : 'Speak now!'}
             </p>
           </>
         )}
 
         {testStatus === 'processing' && (
-          <p className="text-sm text-primary-500 font-medium">
+          <p className="text-sm text-violet-600 dark:text-violet-400 font-medium">
             {language === 'ko' ? '처리 중...' : 'Processing...'}
           </p>
         )}
 
         {testStatus === 'success' && (
           <>
-            <h3 className="text-lg font-semibold text-green-500 mb-2">
+            <h3 className="text-lg font-semibold text-green-600 dark:text-green-400 mb-2">
               {language === 'ko' ? '마이크가 정상 작동합니다!' : 'Your microphone works!'}
             </h3>
-            <div className="bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl px-4 py-3 max-w-xs">
+            <div className="report-glass rounded-xl px-4 py-3 max-w-xs border border-green-500/20">
               <p className="text-xs text-green-600 dark:text-green-400 mb-1">
                 {language === 'ko' ? '인식된 내용:' : 'We heard:'}
               </p>
-              <p className="text-sm text-green-800 dark:text-green-300 font-medium">
+              <p className="text-sm text-green-700 dark:text-green-300 font-medium">
                 &ldquo;{testResult}&rdquo;
               </p>
             </div>
@@ -296,11 +296,11 @@ export default function MicTestStep({ onComplete, onSkip, language }: MicTestSte
 
         {testStatus === 'error' && (
           <>
-            <h3 className="text-lg font-semibold text-red-500 mb-2">
+            <h3 className="text-lg font-semibold text-red-500 dark:text-red-400 mb-2">
               {language === 'ko' ? '다시 시도해주세요' : 'Let\'s try again'}
             </h3>
-            <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl px-4 py-3 max-w-xs">
-              <p className="text-sm text-red-700 dark:text-red-300">{testResult}</p>
+            <div className="report-glass rounded-xl px-4 py-3 max-w-xs border border-red-500/20">
+              <p className="text-sm text-red-600 dark:text-red-300">{testResult}</p>
             </div>
           </>
         )}
@@ -338,7 +338,7 @@ export default function MicTestStep({ onComplete, onSkip, language }: MicTestSte
         {(testStatus === 'idle' || testStatus === 'error') && (
           <button
             onClick={onSkip}
-            className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors py-2"
+            className="text-sm text-theme-muted hover:text-theme-secondary transition-colors py-2"
           >
             {language === 'ko' ? '나중에 할게요' : 'I\'ll do this later'}
           </button>

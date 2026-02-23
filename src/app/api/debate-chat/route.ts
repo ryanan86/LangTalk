@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getDebatePersona, moderator } from '@/lib/debatePersonas';
 import { DebateMessage, DebatePhase, DebateTopic, DebateTeam } from '@/lib/debateTypes';
+import { makeRid, nowMs, since } from '@/lib/perf';
 
 let _openai: OpenAI | null = null;
 function getOpenAI() {
@@ -25,6 +26,9 @@ interface DebateChatRequest {
 
 // POST: Generate AI debate response
 export async function POST(request: NextRequest) {
+  const rid = makeRid('dbt');
+  const t0 = nowMs();
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -85,8 +89,10 @@ export async function POST(request: NextRequest) {
 
     const assistantMessage = response.choices[0]?.message?.content || '';
 
+    console.log(`[${rid}] OK ${since(t0)}ms`);
     return NextResponse.json({ message: assistantMessage });
   } catch (error) {
+    console.error(`[${rid}] ERR ${since(t0)}ms`, error);
     console.error('Debate chat error:', error);
     return NextResponse.json(
       { error: 'Failed to get response' },
@@ -240,6 +246,9 @@ ${isKorean ? 'Note: The user understands Korean but this debate is conducted in 
 
 // PUT: Generate debate analysis with scoring
 export async function PUT(request: NextRequest) {
+  const rid = makeRid('dbt');
+  const t0 = nowMs();
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -322,12 +331,15 @@ Be fair and objective in scoring. The total for each team must equal the sum of 
         analysis.conScore.total = analysis.conScore.clarity + analysis.conScore.evidence +
           analysis.conScore.rebuttal + analysis.conScore.responsiveness + analysis.conScore.language;
       }
+      console.log(`[${rid}] OK ${since(t0)}ms`);
       return NextResponse.json({ analysis });
     } catch {
       console.error('Failed to parse analysis JSON:', analysisText);
+      console.error(`[${rid}] ERR ${since(t0)}ms`);
       return NextResponse.json({ analysis: null, raw: analysisText });
     }
   } catch (error) {
+    console.error(`[${rid}] ERR ${since(t0)}ms`, error);
     console.error('Debate analysis error:', error);
     return NextResponse.json(
       { error: 'Failed to generate analysis' },

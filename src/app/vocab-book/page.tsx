@@ -108,7 +108,7 @@ export default function VocabBookPage() {
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-[#0a0a1a] flex flex-col">
       {/* Header */}
-      <header className="dark:bg-white/[0.04] bg-black/[0.03] backdrop-blur-md border-b dark:border-white/[0.06] border-black/[0.08] px-4 py-4">
+      <header className="dark:bg-white/[0.04] bg-black/[0.03] backdrop-blur-md border-b dark:border-white/[0.06] border-black/[0.08] px-4 sm:px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center gap-3">
           <button
             onClick={() => router.back()}
@@ -124,7 +124,7 @@ export default function VocabBookPage() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-6 space-y-6">
+      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 space-y-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="dark:bg-white/[0.04] bg-black/[0.03] rounded-2xl p-4 border dark:border-white/[0.06] border-black/[0.08]">
@@ -200,7 +200,7 @@ export default function VocabBookPage() {
           </div>
         ) : (
           /* Word Card Grid */
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {items.map((item) => {
               const badge = statusBadge(item.status);
               return (

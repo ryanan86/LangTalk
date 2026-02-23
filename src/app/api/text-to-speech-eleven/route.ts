@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
+import { makeRid, nowMs, since } from '@/lib/perf';
 
 // ElevenLabs voice IDs - these are pre-made voices
 const VOICE_MAP: Record<string, string> = {
@@ -17,6 +18,9 @@ const VOICE_MAP: Record<string, string> = {
 };
 
 export async function POST(request: NextRequest) {
+  const rid = makeRid('tts11');
+  const t0 = nowMs();
+
   try {
     // Auth check
     const session = await getServerSession(authOptions);
@@ -66,11 +70,13 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       const error = await response.text();
       console.error('ElevenLabs error:', error);
+      console.error(`[${rid}] ERR ${since(t0)}ms`);
       return NextResponse.json({ error: 'TTS failed' }, { status: 500 });
     }
 
     const audioBuffer = await response.arrayBuffer();
 
+    console.log(`[${rid}] OK ${since(t0)}ms`);
     return new NextResponse(audioBuffer, {
       headers: {
         'Content-Type': 'audio/mpeg',
@@ -78,6 +84,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
+    console.error(`[${rid}] ERR ${since(t0)}ms`, error);
     console.error('Text to speech error:', error);
     return NextResponse.json(
       { error: 'Failed to generate speech' },

@@ -202,7 +202,7 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-neutral-50 dark:bg-dark-bg">
       {/* Header */}
       <header className="bg-white/80 dark:bg-dark-surface/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800 px-4 sm:px-6 py-4 sticky top-0 z-50">
-        <div className="max-w-2xl mx-auto flex justify-between items-center">
+        <div className="max-w-3xl mx-auto flex justify-between items-center">
           <button
             onClick={() => router.push('/')}
             className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 p-1"
@@ -218,7 +218,7 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6 space-y-8">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8">
         {/* Notice */}
         <div className="p-4 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl">
           <p className="text-sm text-blue-800 dark:text-blue-300">
@@ -239,7 +239,7 @@ export default function ProfilePage() {
               : 'We\'ll prioritize vocabulary and scenarios relevant to you.'}
           </p>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4">
             {profileTypes.map(type => (
               <button
                 key={type.id}
@@ -324,7 +324,7 @@ export default function ProfilePage() {
               : 'Set the difficulty level for corrections and feedback.'}
           </p>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
               { id: 'easy', labelEn: 'Easy', labelKo: '쉬움', descEn: 'Simple corrections, basic vocabulary', descKo: '기본 교정, 쉬운 어휘' },
               { id: 'medium', labelEn: 'Medium', labelKo: '보통', descEn: 'Balanced corrections and vocabulary', descKo: '균형 잡힌 교정과 어휘' },

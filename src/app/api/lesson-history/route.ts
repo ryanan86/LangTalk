@@ -10,9 +10,13 @@ import {
   updateUserFields,
 } from '@/lib/sheetHelper';
 import { SessionSummary, CorrectionItem } from '@/lib/sheetTypes';
+import { makeRid, nowMs, since } from '@/lib/perf';
 
 // GET: Retrieve lesson history for current user
 export async function GET(request: Request) {
+  const rid = makeRid('lhst');
+  const t0 = nowMs();
+
   try {
     const session = await getServerSession(authOptions);
 
@@ -60,12 +64,14 @@ export async function GET(request: Request) {
       levelDetails: null,
     }));
 
+    console.log(`[${rid}] OK ${since(t0)}ms`);
     return NextResponse.json({
       lessons,
       email,
       total: lessons.length,
     });
   } catch (error) {
+    console.error(`[${rid}] ERR ${since(t0)}ms`, error);
     console.error('Lesson history retrieval error:', error);
     return NextResponse.json({ lessons: [], error: 'Failed to retrieve lesson history' });
   }
@@ -73,6 +79,9 @@ export async function GET(request: Request) {
 
 // POST: Save a new lesson to history
 export async function POST(request: NextRequest) {
+  const rid = makeRid('lhst');
+  const t0 = nowMs();
+
   try {
     const session = await getServerSession(authOptions);
 
@@ -176,12 +185,14 @@ export async function POST(request: NextRequest) {
       stats: statsUpdate as Partial<import('@/lib/sheetTypes').StatsData>,
     });
 
+    console.log(`[${rid}] OK ${since(t0)}ms`);
     return NextResponse.json({
       success: true,
       message: 'Lesson saved to history',
       sessionId,
     });
   } catch (error) {
+    console.error(`[${rid}] ERR ${since(t0)}ms`, error);
     console.error('Lesson history save error:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to save lesson history' },

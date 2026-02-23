@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
+import { makeRid, nowMs, since } from '@/lib/perf';
 
 let _openai: OpenAI | null = null;
 function getOpenAI() {
@@ -387,6 +388,9 @@ export interface ComprehensiveEvaluationResult {
 }
 
 export async function POST(request: NextRequest) {
+  const rid = makeRid('eval');
+  const t0 = nowMs();
+
   try {
     // Auth check
     const session = await getServerSession(authOptions);
@@ -795,6 +799,7 @@ Provide comprehensive, methodology-accurate evaluation with cross-validated scor
       );
     }
 
+    console.log(`[${rid}] OK ${since(t0)}ms`);
     return NextResponse.json({
       success: true,
       evaluation,
@@ -811,6 +816,7 @@ Provide comprehensive, methodology-accurate evaluation with cross-validated scor
     });
 
   } catch (error) {
+    console.error(`[${rid}] ERR ${since(t0)}ms`, error);
     console.error('AI Evaluate error:', error);
     return NextResponse.json(
       { error: 'Evaluation failed', details: String(error) },

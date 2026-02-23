@@ -7,11 +7,15 @@ import {
   getTopicsForAgeGroup,
   generateTopicFromContext,
 } from '@/lib/debateTopicsV2';
+import { makeRid, nowMs, since } from '@/lib/perf';
 
 export const dynamic = 'force-dynamic';
 
 // GET: Get debate topics suitable for the user
 export async function GET(request: NextRequest) {
+  const rid = makeRid('dtpc');
+  const t0 = nowMs();
+
   try {
     const session = await getServerSession(authOptions);
 
@@ -123,6 +127,7 @@ export async function GET(request: NextRequest) {
     // Get available categories
     const availableCategories = getAvailableCategories(ageGroup);
 
+    console.log(`[${rid}] OK ${since(t0)}ms`);
     return NextResponse.json({
       topics: allTopics,
       personalized: personalizedTopics,
@@ -132,6 +137,7 @@ export async function GET(request: NextRequest) {
       email,
     });
   } catch (error) {
+    console.error(`[${rid}] ERR ${since(t0)}ms`, error);
     console.error('Debate topics error:', error);
     return NextResponse.json({ topics: [], error: 'Failed to get topics' });
   }

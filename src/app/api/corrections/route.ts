@@ -9,9 +9,13 @@ import {
   getDueCorrections,
 } from '@/lib/sheetHelper';
 import { CorrectionItem } from '@/lib/sheetTypes';
+import { makeRid, nowMs, since } from '@/lib/perf';
 
 // GET: Retrieve corrections for review (due today or earlier)
 export async function GET(request: NextRequest) {
+  const rid = makeRid('cor');
+  const t0 = nowMs();
+
   try {
     const session = await getServerSession(authOptions);
 
@@ -95,6 +99,7 @@ export async function GET(request: NextRequest) {
       categoryRepeatCount: categoryCounts[c.category] || 1,
     }));
 
+    console.log(`[${rid}] OK ${since(t0)}ms`);
     return NextResponse.json({
       corrections: formattedCorrections,
       count: corrections.length,
@@ -104,6 +109,7 @@ export async function GET(request: NextRequest) {
       email,
     });
   } catch (error) {
+    console.error(`[${rid}] ERR ${since(t0)}ms`, error);
     console.error('Corrections retrieval error:', error);
     return NextResponse.json({ corrections: [], error: 'Failed to retrieve corrections' });
   }
@@ -111,6 +117,9 @@ export async function GET(request: NextRequest) {
 
 // POST: Save new correction(s)
 export async function POST(request: NextRequest) {
+  const rid = makeRid('cor');
+  const t0 = nowMs();
+
   try {
     const session = await getServerSession(authOptions);
 
@@ -187,12 +196,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log(`[${rid}] OK ${since(t0)}ms`);
     return NextResponse.json({
       success: true,
       message: `${correctionItems.length} correction(s) saved`,
       count: correctionItems.length,
     });
   } catch (error) {
+    console.error(`[${rid}] ERR ${since(t0)}ms`, error);
     console.error('Corrections save error:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to save corrections' },

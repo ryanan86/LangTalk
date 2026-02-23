@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { updateCorrectionAfterReview } from '@/lib/sheetHelper';
+import { makeRid, nowMs, since } from '@/lib/perf';
 
 // POST: Process review result and update correction
 export async function POST(request: NextRequest) {
+  const rid = makeRid('corr');
+  const t0 = nowMs();
+
   try {
     const session = await getServerSession(authOptions);
 
@@ -54,6 +58,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log(`[${rid}] OK ${since(t0)}ms`);
     return NextResponse.json({
       success: true,
       message: 'Review processed',
@@ -61,6 +66,7 @@ export async function POST(request: NextRequest) {
       quality,
     });
   } catch (error) {
+    console.error(`[${rid}] ERR ${since(t0)}ms`, error);
     console.error('Review processing error:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to process review' },

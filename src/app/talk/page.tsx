@@ -15,6 +15,7 @@ import {
 import TapTalkLogo from '@/components/TapTalkLogo';
 // import { useLipSync } from '@/hooks/useLipSync';
 import AnalysisReview from '@/components/AnalysisReview';
+import CorrectionCard from '@/components/talk/CorrectionCard';
 import { buildSessionVocabItems } from '@/lib/vocabBook';
 import { calculateLearningRank } from '@/lib/learningRank';
 import type { VocabBookItem } from '@/lib/sheetTypes';
@@ -1465,7 +1466,7 @@ function TalkContent() {
           ? 'dark:bg-neutral-950/80 bg-white/90 backdrop-blur-xl border-b dark:border-white/5 border-black/[0.05]'
           : 'bg-white/80 dark:bg-dark-surface/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800'
       }`}>
-        <div className="max-w-2xl mx-auto flex justify-between items-center">
+        <div className="max-w-3xl mx-auto flex justify-between items-center">
           <button
             onClick={handleBackClick}
             className={`p-2 rounded-xl transition-colors ${
@@ -1502,7 +1503,7 @@ function TalkContent() {
       <div className={`px-4 sm:px-6 py-3 transition-colors duration-500 ${
         isDarkPhase ? 'bg-neutral-950' : 'bg-white dark:bg-dark-surface border-b border-neutral-100 dark:border-neutral-800'
       }`}>
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           <div className="flex gap-1.5">
             {['recording', 'interview', 'review', 'shadowing', 'summary'].map((step, idx) => (
               <div
@@ -1519,7 +1520,7 @@ function TalkContent() {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col max-w-2xl mx-auto w-full">
+      <main className="flex-1 flex flex-col max-w-3xl mx-auto w-full">
 
         {/* ========== READY PHASE ========== */}
         {phase === 'ready' && (
@@ -1740,7 +1741,7 @@ function TalkContent() {
 
             {/* Bottom Control Panel - Premium Glass */}
             <div className="p-4 sm:p-6 dark:bg-neutral-900/80 bg-neutral-100/90 backdrop-blur-xl border-t dark:border-white/5 border-black/[0.05]">
-              <div className="max-w-md mx-auto">
+              <div className="max-w-lg mx-auto">
                 <div className="flex gap-3">
                   {/* Main Record Button */}
                   <button
@@ -1807,105 +1808,31 @@ function TalkContent() {
 
         {/* ========== REVIEW PHASE ========== */}
         {phase === 'review' && analysis && (
-          <div className="flex-1 flex flex-col p-4 sm:p-6 bg-[#020617]">
+          <div className="flex-1 flex flex-col p-4 sm:p-6 dark:bg-[#020617] bg-neutral-50">
             <div className="text-center mb-4 sm:mb-6">
-              <span className="text-xs sm:text-sm text-slate-500">{t.correction} {currentReviewIndex + 1} {t.of} {analysis.corrections.length}</span>
+              <span className="text-xs sm:text-sm dark:text-slate-500 text-zinc-400">{t.correction} {currentReviewIndex + 1} {t.of} {analysis.corrections.length}</span>
             </div>
 
             {analysis.corrections.length > 0 ? (
               <div className="flex-1 flex flex-col justify-center">
-                <div className="report-glass rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6">
-                  {/* Repeated Pattern Warning */}
-                  {repeatedCategories.has(analysis.corrections[currentReviewIndex].category) && (
-                    <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-amber-500/[0.08] border border-amber-500/20 rounded-lg">
-                      <svg className="w-4 h-4 text-amber-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      <span className="text-xs font-medium text-amber-300">
-                        {language === 'ko'
-                          ? `반복되는 실수 패턴 - 이전 세션에서도 "${analysis.corrections[currentReviewIndex].category}" 관련 교정이 있었습니다`
-                          : `Recurring pattern - you had "${analysis.corrections[currentReviewIndex].category}" corrections in previous sessions too`}
-                      </span>
-                    </div>
-                  )}
+                <div className="mb-4 sm:mb-6">
+                  <CorrectionCard
+                    original={analysis.corrections[currentReviewIndex].original}
+                    intended={analysis.corrections[currentReviewIndex].intended}
+                    corrected={analysis.corrections[currentReviewIndex].corrected}
+                    explanation={analysis.corrections[currentReviewIndex].explanation}
+                    category={analysis.corrections[currentReviewIndex].category}
+                    isRepeated={repeatedCategories.has(analysis.corrections[currentReviewIndex].category)}
+                    correctionIndex={currentReviewIndex}
 
-                  {/* Original */}
-                  <div className="mb-4 sm:mb-6">
-                    <span className="text-xs font-medium text-red-400/80 uppercase tracking-wider">{t.whatYouSaid}</span>
-                    <p className="text-base sm:text-lg text-red-400/80 line-through decoration-red-500/50 mt-2 pl-3 border-l-2 border-red-500/40">
-                      {analysis.corrections[currentReviewIndex].original}
-                    </p>
-                  </div>
-
-                  {/* Intended */}
-                  <div className="mb-4 sm:mb-6 p-3 sm:p-4 dark:bg-white/[0.04] bg-black/[0.03] rounded-xl">
-                    <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t.whatYouMeant}</span>
-                    <p className="dark:text-slate-300 text-zinc-600 mt-2 text-sm sm:text-base">
-                      {analysis.corrections[currentReviewIndex].intended}
-                    </p>
-                  </div>
-
-                  {/* Corrected */}
-                  <div className="mb-4 sm:mb-6">
-                    <span className="text-xs font-medium text-emerald-300 uppercase tracking-wider">{t.correctWay}</span>
-                    <div className="flex items-center gap-2 sm:gap-3 mt-2 pl-3 border-l-2 border-emerald-500/60">
-                      <p className="text-base sm:text-lg text-emerald-300 font-semibold flex-1">
-                        {analysis.corrections[currentReviewIndex].corrected}
-                      </p>
-                      <button
-                        onClick={() => playTTS(analysis.corrections[currentReviewIndex].corrected, 0.85)}
-                        disabled={isPlaying}
-                        className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-500/15 rounded-xl flex items-center justify-center hover:bg-emerald-500/25 transition-colors flex-shrink-0"
-                      >
-                        {isPlaying ? (
-                          <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z" />
-                          </svg>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Explanation */}
-                  <div className="p-3 sm:p-4 bg-violet-500/[0.06] rounded-xl border border-violet-500/[0.1]">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
-                        <span className="text-xs font-medium text-violet-400 uppercase tracking-wider">{t.why}</span>
-                        <p className="text-slate-300 mt-2 text-xs sm:text-sm">
-                          {analysis.corrections[currentReviewIndex].explanation}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="inline-block px-2 py-1 text-xs rounded-full bg-violet-500/15 text-violet-300">
-                            {analysis.corrections[currentReviewIndex].category}
-                          </span>
-                          {repeatedCategories.has(analysis.corrections[currentReviewIndex].category) && (
-                            <span className="inline-block px-2 py-0.5 bg-red-500/15 text-red-400 text-[10px] font-bold rounded-full uppercase tracking-wider">
-                              {language === 'ko' ? '습관 주의' : 'Habit Alert'}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => {
-                          const correction = analysis.corrections[currentReviewIndex];
-                          playTTS(`You said: "${correction.original}". A better way is: "${correction.corrected}". ${correction.explanation}`, 0.85);
-                        }}
-                        disabled={isPlaying}
-                        className="w-9 h-9 bg-violet-500/15 rounded-lg flex items-center justify-center hover:bg-violet-500/25 transition-colors flex-shrink-0"
-                        title={language === 'ko' ? '설명 듣기' : 'Listen to explanation'}
-                      >
-                        {isPlaying ? (
-                          <div className="w-3 h-3 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <svg className="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                          </svg>
-                        )}
-                      </button>
-                    </div>
-                  </div>
+                    isPlaying={isPlaying}
+                    onPlayCorrected={() => playTTS(analysis.corrections[currentReviewIndex].corrected, 0.85)}
+                    onPlayExplanation={() => {
+                      const c = analysis.corrections[currentReviewIndex];
+                      playTTS(`You said: "${c.original}". A better way is: "${c.corrected}". ${c.explanation}`, 0.85);
+                    }}
+                    language={language}
+                  />
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -1913,6 +1840,7 @@ function TalkContent() {
                     onClick={() => playTTS(analysis.corrections[currentReviewIndex].corrected, 0.85)}
                     disabled={isPlaying}
                     className="w-12 h-12 sm:w-14 sm:h-14 bg-emerald-500/15 rounded-xl flex items-center justify-center hover:bg-emerald-500/25 transition-colors flex-shrink-0"
+                    aria-label={language === 'ko' ? '올바른 표현 듣기' : 'Listen to corrected form'}
                   >
                     {isPlaying ? (
                       <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />

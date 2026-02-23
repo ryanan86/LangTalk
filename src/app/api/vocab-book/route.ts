@@ -3,10 +3,14 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getLearningData, saveLearningData } from '@/lib/sheetHelper';
+import { makeRid, nowMs, since } from '@/lib/perf';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+  const rid = makeRid('voc');
+  const t0 = nowMs();
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -28,6 +32,7 @@ export async function GET(request: NextRequest) {
 
     const items = (scope === 'all' ? all : scope === 'due' ? dueToday : todayItems).slice(0, limit);
 
+    console.log(`[${rid}] OK ${since(t0)}ms`);
     return NextResponse.json({
       items,
       total: all.length,
@@ -36,12 +41,16 @@ export async function GET(request: NextRequest) {
       masteredCount: all.filter(i => i.status === 'mastered').length,
     });
   } catch (error) {
+    console.error(`[${rid}] ERR ${since(t0)}ms`, error);
     console.error('Vocab book error:', error);
     return NextResponse.json({ items: [], total: 0, error: 'Failed to load vocab book' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
+  const rid = makeRid('voc');
+  const t0 = nowMs();
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -81,8 +90,10 @@ export async function POST(request: NextRequest) {
       await saveLearningData(learningData);
     }
 
+    console.log(`[${rid}] OK ${since(t0)}ms`);
     return NextResponse.json({ success: true, total: merged.length, newItems: items.length });
   } catch (error) {
+    console.error(`[${rid}] ERR ${since(t0)}ms`, error);
     console.error('Vocab book save error:', error);
     return NextResponse.json({ error: 'Failed to save vocab book' }, { status: 500 });
   }
