@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ profile: null, error: 'Not logged in' });
+      return NextResponse.json({ profile: null, error: 'Not logged in' }, { status: 401 });
     }
 
     // Rate limit

@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ items: [], total: 0, dueToday: 0 });
+      return NextResponse.json({ items: [], total: 0, dueToday: 0, error: 'Not logged in' }, { status: 401 });
     }
 
     const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);

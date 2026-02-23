@@ -35,6 +35,7 @@ export default function VocabBookPage() {
   const [items, setItems] = useState<VocabBookItem[]>([]);
   const [stats, setStats] = useState({ total: 0, todayCount: 0, dueToday: 0, masteredCount: 0 });
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<'auth' | 'error' | null>(null);
 
   const tabs: { key: TabType; labelKo: string; labelEn: string }[] = [
     { key: 'all', labelKo: '전체', labelEn: 'All' },
@@ -46,18 +47,25 @@ export default function VocabBookPage() {
   useEffect(() => {
     const loadVocab = async () => {
       setIsLoading(true);
+      setLoadError(null);
       try {
-        const scope = activeTab === 'mastered' ? 'all' : activeTab;
-        const limit = activeTab === 'today' ? 20 : 100;
+        const scope = activeTab === 'mastered' ? 'mastered' : activeTab;
+        const limit = activeTab === 'today' ? 20 : 200;
         const response = await fetch(`/api/vocab-book?scope=${scope}&limit=${limit}`);
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            setLoadError('auth');
+          } else {
+            setLoadError('error');
+          }
+          setItems([]);
+          return;
+        }
+
         const data: VocabBookResponse = await response.json();
 
-        const filtered =
-          activeTab === 'mastered'
-            ? (data.items || []).filter((item) => item.status === 'mastered')
-            : data.items || [];
-
-        setItems(filtered);
+        setItems(data.items || []);
         setStats({
           total: data.total ?? 0,
           todayCount: data.todayCount ?? 0,
@@ -66,6 +74,7 @@ export default function VocabBookPage() {
         });
       } catch (error) {
         console.error('Failed to load vocab book:', error);
+        setLoadError('error');
         setItems([]);
       } finally {
         setIsLoading(false);
@@ -112,6 +121,7 @@ export default function VocabBookPage() {
         <div className="max-w-4xl mx-auto flex items-center gap-3">
           <button
             onClick={() => router.back()}
+            aria-label="Go back"
             className="w-9 h-9 flex items-center justify-center rounded-xl dark:bg-white/[0.06] bg-black/[0.03] dark:text-slate-400 text-zinc-500 dark:hover:text-white hover:text-zinc-900 dark:hover:bg-white/[0.10] hover:bg-black/[0.06] transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -146,10 +156,12 @@ export default function VocabBookPage() {
         </div>
 
         {/* Tab Filter */}
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div role="tablist" className="flex gap-2 overflow-x-auto pb-1">
           {tabs.map((tab) => (
             <button
               key={tab.key}
+              role="tab"
+              aria-selected={activeTab === tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                 activeTab === tab.key
@@ -174,6 +186,24 @@ export default function VocabBookPage() {
                 />
               ))}
             </div>
+          </div>
+        ) : loadError === 'auth' ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <p className="dark:text-slate-400 text-zinc-500 text-sm mb-4">
+              {language === 'ko' ? '로그인이 필요합니다.' : 'Please sign in to view your vocab book.'}
+            </p>
+            <button
+              onClick={() => router.push('/login')}
+              className="px-6 py-3 bg-teal-500/20 text-teal-400 border border-teal-500/30 rounded-xl text-sm font-medium hover:bg-teal-500/30 transition-colors"
+            >
+              {language === 'ko' ? '로그인' : 'Sign In'}
+            </button>
+          </div>
+        ) : loadError === 'error' ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <p className="dark:text-slate-400 text-zinc-500 text-sm">
+              {language === 'ko' ? '단어장을 불러오지 못했습니다.' : 'Failed to load vocab book.'}
+            </p>
           </div>
         ) : items.length === 0 ? (
           /* Empty State */

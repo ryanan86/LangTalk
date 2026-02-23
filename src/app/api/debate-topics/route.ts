@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ topics: [], error: 'Not logged in' });
+      return NextResponse.json({ topics: [], error: 'Not logged in' }, { status: 401 });
     }
 
     const email = session.user.email;

@@ -96,6 +96,14 @@ function DebateContent() {
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const debateStartedRef = useRef(false);
   const processingRef = useRef(false);
+  const isInitializingRef = useRef(false);
+  // Keep a ref in sync with messages to avoid stale closures in async callbacks
+  const messagesRef = useRef<DebateMessage[]>([]);
+
+  // Keep messagesRef in sync with messages state to avoid stale closures
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -110,106 +118,123 @@ function DebateContent() {
 
   // Preparation timer countdown
   useEffect(() => {
-    if (phase === 'preparation' && topic && prepTimeLeft > 0) {
+    if (phase === 'preparation' && topic) {
+      // Clear any existing interval before starting a new one
+      if (prepTimerRef.current) clearInterval(prepTimerRef.current);
       prepTimerRef.current = setInterval(() => {
         setPrepTimeLeft(prev => {
           if (prev <= 1) {
-            if (prepTimerRef.current) clearInterval(prepTimerRef.current);
+            if (prepTimerRef.current) {
+              clearInterval(prepTimerRef.current);
+              prepTimerRef.current = null;
+            }
             return 0;
           }
           return prev - 1;
         });
       }, 1000);
       return () => {
-        if (prepTimerRef.current) clearInterval(prepTimerRef.current);
+        if (prepTimerRef.current) {
+          clearInterval(prepTimerRef.current);
+          prepTimerRef.current = null;
+        }
       };
     }
-  }, [phase, topic, prepTimeLeft]);
+  // Only re-run when phase or topic changes, not on every prepTimeLeft tick
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, topic]);
 
   const initializeDebate = async () => {
-    // Fetch topic
-    let selectedTopic: DebateTopic;
+    if (isInitializingRef.current) return;
+    isInitializingRef.current = true;
+
     try {
-      const response = await fetch('/api/debate-topics');
-      const data = await response.json();
-      if (data.topics?.length > 0) {
-        const randomIndex = Math.floor(Math.random() * data.topics.length);
-        const apiTopic = data.topics[randomIndex];
-        selectedTopic = {
-          id: apiTopic.id,
-          category: apiTopic.category as DebateCategory,
-          title: apiTopic.title,
-          description: apiTopic.description,
-          keyVocabulary: apiTopic.keyVocabulary,
-          proHints: apiTopic.proArguments?.slice(0, 3),
-          conHints: apiTopic.conArguments?.slice(0, 3),
-        };
-      } else {
+      // Fetch topic
+      let selectedTopic: DebateTopic;
+      try {
+        const response = await fetch('/api/debate-topics');
+        const data = await response.json();
+        if (data.topics?.length > 0) {
+          const randomIndex = Math.floor(Math.random() * data.topics.length);
+          const apiTopic = data.topics[randomIndex];
+          selectedTopic = {
+            id: apiTopic.id,
+            category: apiTopic.category as DebateCategory,
+            title: apiTopic.title,
+            description: apiTopic.description,
+            keyVocabulary: apiTopic.keyVocabulary,
+            proHints: apiTopic.proArguments?.slice(0, 3),
+            conHints: apiTopic.conArguments?.slice(0, 3),
+          };
+        } else {
+          selectedTopic = getDefaultTopic();
+        }
+      } catch {
         selectedTopic = getDefaultTopic();
       }
-    } catch {
-      selectedTopic = getDefaultTopic();
+      setTopic(selectedTopic);
+
+      // Random team assignment
+      const team: DebateTeam = Math.random() < 0.5 ? 'pro' : 'con';
+      setUserTeam(team);
+
+      // Assign debaters to teams
+      const shuffled = [...debaters].sort(() => Math.random() - 0.5);
+      const partner = shuffled[0];
+      const opponents = [shuffled[1], shuffled[2]];
+
+      const participantList: DebateParticipant[] = [
+        {
+          id: 'moderator',
+          name: moderator.name,
+          team: 'moderator',
+          isUser: false,
+          voice: moderator.voice,
+          gradient: moderator.gradient,
+          avatar: moderator.avatar,
+        },
+        {
+          id: 'user',
+          name: language === 'ko' ? '나' : 'You',
+          team: team,
+          isUser: true,
+          voice: '',
+          gradient: 'from-indigo-400 to-purple-500',
+          avatar: 'U',
+        },
+        {
+          id: partner.id,
+          name: partner.name,
+          team: team,
+          isUser: false,
+          voice: partner.voice,
+          gradient: partner.gradient,
+          avatar: partner.avatar,
+        },
+        {
+          id: opponents[0].id,
+          name: opponents[0].name,
+          team: team === 'pro' ? 'con' : 'pro',
+          isUser: false,
+          voice: opponents[0].voice,
+          gradient: opponents[0].gradient,
+          avatar: opponents[0].avatar,
+        },
+        {
+          id: opponents[1].id,
+          name: opponents[1].name,
+          team: team === 'pro' ? 'con' : 'pro',
+          isUser: false,
+          voice: opponents[1].voice,
+          gradient: opponents[1].gradient,
+          avatar: opponents[1].avatar,
+        },
+      ];
+
+      setParticipants(participantList);
+    } finally {
+      isInitializingRef.current = false;
     }
-    setTopic(selectedTopic);
-
-    // Random team assignment
-    const team: DebateTeam = Math.random() < 0.5 ? 'pro' : 'con';
-    setUserTeam(team);
-
-    // Assign debaters to teams
-    const shuffled = [...debaters].sort(() => Math.random() - 0.5);
-    const partner = shuffled[0];
-    const opponents = [shuffled[1], shuffled[2]];
-
-    const participantList: DebateParticipant[] = [
-      {
-        id: 'moderator',
-        name: moderator.name,
-        team: 'moderator',
-        isUser: false,
-        voice: moderator.voice,
-        gradient: moderator.gradient,
-        avatar: moderator.avatar,
-      },
-      {
-        id: 'user',
-        name: language === 'ko' ? '나' : 'You',
-        team: team,
-        isUser: true,
-        voice: '',
-        gradient: 'from-indigo-400 to-purple-500',
-        avatar: 'U',
-      },
-      {
-        id: partner.id,
-        name: partner.name,
-        team: team,
-        isUser: false,
-        voice: partner.voice,
-        gradient: partner.gradient,
-        avatar: partner.avatar,
-      },
-      {
-        id: opponents[0].id,
-        name: opponents[0].name,
-        team: team === 'pro' ? 'con' : 'pro',
-        isUser: false,
-        voice: opponents[0].voice,
-        gradient: opponents[0].gradient,
-        avatar: opponents[0].avatar,
-      },
-      {
-        id: opponents[1].id,
-        name: opponents[1].name,
-        team: team === 'pro' ? 'con' : 'pro',
-        isUser: false,
-        voice: opponents[1].voice,
-        gradient: opponents[1].gradient,
-        avatar: opponents[1].avatar,
-      },
-    ];
-
-    setParticipants(participantList);
   };
 
   const getDefaultTopic = (): DebateTopic => ({
@@ -275,7 +300,7 @@ function DebateContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages,
+          messages: messagesRef.current,
           topic,
           currentSpeakerId: speaker.id,
           speakerTeam: speaker.team,
@@ -408,7 +433,8 @@ function DebateContent() {
     setIsUserTurn(false);
 
     try {
-      const file = new File([audioBlob], 'audio.webm', { type: 'audio/webm' });
+      const ext = audioBlob.type.includes('mp4') ? 'mp4' : 'webm';
+      const file = new File([audioBlob], `audio.${ext}`, { type: audioBlob.type });
       const formData = new FormData();
       formData.append('audio', file);
 
@@ -478,7 +504,7 @@ function DebateContent() {
       const response = await fetch('/api/debate-chat', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages, topic, userTeam, language }),
+        body: JSON.stringify({ messages: messagesRef.current, topic, userTeam, language }),
       });
       const data = await response.json();
 

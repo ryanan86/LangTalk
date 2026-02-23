@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ sessionCount: 0, canDebate: false, reason: 'Not logged in' });
+      return NextResponse.json({ sessionCount: 0, canDebate: false, reason: 'Not logged in' }, { status: 401 });
     }
 
     // Rate limit

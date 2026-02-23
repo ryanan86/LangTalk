@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import Link from 'next/link';
@@ -345,7 +345,7 @@ function HomePageContent() {
       const timeline = heroTutorTimeline.current;
       for (let i = timeline.length - 1; i >= 0; i--) {
         if (t >= timeline[i].start) {
-          setHeroTutorIndex(timeline[i].personaIdx);
+          setHeroTutorIndex((prev) => prev === timeline[i].personaIdx ? prev : timeline[i].personaIdx);
           break;
         }
       }
@@ -380,9 +380,11 @@ function HomePageContent() {
   }, [session]);
 
   useEffect(() => {
-    if (session?.user?.email) {
-      checkSubscription();
-    }
+    if (!session?.user?.email) return;
+    const controller = new AbortController();
+    checkSubscription(controller.signal);
+    return () => controller.abort();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
   const startMicTest = async () => {
@@ -484,10 +486,11 @@ function HomePageContent() {
     }
   };
 
-  const checkSubscription = async () => {
+  const checkSubscription = async (signal: AbortSignal) => {
     setCheckingSubscription(true);
     try {
-      const res = await fetch('/api/check-subscription');
+      // Fetch subscription data first (other calls may depend on it)
+      const res = await fetch('/api/check-subscription', { signal });
       const data = await res.json();
       setIsSubscribed(data.subscribed);
       setSubscriptionStatus(data.status || (data.subscribed ? 'active' : 'not_found'));
@@ -495,50 +498,52 @@ function HomePageContent() {
       setSessionCount(data.sessionCount || 0);
       setEvaluatedGrade(data.evaluatedGrade || null);
       setLevelDetails(data.levelDetails || null);
-
-      // Fetch lesson history
-      const historyRes = await fetch('/api/lesson-history');
-      const historyData = await historyRes.json();
-      if (historyData.lessons) {
-        setLessonHistory(historyData.lessons.slice(0, 5)); // Last 5 lessons
-      }
-
-      // Fetch corrections to review
-      const correctionsRes = await fetch('/api/corrections?due=true&limit=100');
-      const correctionsData = await correctionsRes.json();
-      setCorrectionsToReview(correctionsData.count || 0);
-
-      // Fetch user profile
-      const profileRes = await fetch('/api/user-profile');
-      const profileData = await profileRes.json();
-      setHasProfile(!!profileData.profile);
-
-      // Auto-sync device timezone if schedule exists and timezone changed
-      const schedule = profileData.profile?.schedule;
-      if (schedule?.enabled) {
-        const deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        if (schedule.timezone !== deviceTz) {
-          fetch('/api/user-profile', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ schedule: { ...schedule, timezone: deviceTz } }),
-          }).catch(() => {});
-        }
-      }
-
-      // Show onboarding only for logged-in subscribers who haven't completed it
-      const onboardingComplete = localStorage?.getItem('taptalk-onboarding-complete');
-      if (!onboardingComplete && data.subscribed && !profileData.profile) {
-        setShowOnboarding(true);
-      }
-
-      // Fetch gamification data (XP, streak)
       if (data.xp !== undefined) setUserXP(data.xp);
       if (data.currentStreak !== undefined) setCurrentStreak(data.currentStreak);
-    } catch {
-      setIsSubscribed(true);
-      setSubscriptionStatus('active');
-      setSessionCount(5);
+
+      // Fetch independent data in parallel
+      const [historyResult, correctionsResult, profileResult] = await Promise.allSettled([
+        fetch('/api/lesson-history', { signal }).then((r) => r.json()),
+        fetch('/api/corrections?due=true&limit=100', { signal }).then((r) => r.json()),
+        fetch('/api/user-profile', { signal }).then((r) => r.json()),
+      ]);
+
+      if (historyResult.status === 'fulfilled' && historyResult.value.lessons) {
+        setLessonHistory(historyResult.value.lessons.slice(0, 5));
+      }
+
+      if (correctionsResult.status === 'fulfilled') {
+        setCorrectionsToReview(correctionsResult.value.count || 0);
+      }
+
+      if (profileResult.status === 'fulfilled') {
+        const profileData = profileResult.value;
+        setHasProfile(!!profileData.profile);
+
+        // Auto-sync device timezone if schedule exists and timezone changed
+        const schedule = profileData.profile?.schedule;
+        if (schedule?.enabled) {
+          const deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          if (schedule.timezone !== deviceTz) {
+            fetch('/api/user-profile', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ schedule: { ...schedule, timezone: deviceTz } }),
+            }).catch(() => {});
+          }
+        }
+
+        // Show onboarding only for logged-in subscribers who haven't completed it
+        const onboardingComplete = localStorage?.getItem('taptalk-onboarding-complete');
+        if (!onboardingComplete && data.subscribed && !profileData.profile) {
+          setShowOnboarding(true);
+        }
+      }
+    } catch (err) {
+      // Do not grant access on error. AbortError means component unmounted — ignore silently.
+      if (err instanceof Error && err.name === 'AbortError') return;
+      setIsSubscribed(false);
+      setSubscriptionStatus('error');
     } finally {
       setCheckingSubscription(false);
     }
@@ -581,7 +586,18 @@ function HomePageContent() {
     return descriptions[id] || { desc: '', style: '' };
   };
 
-  const canAccessDebate = sessionCount >= 5;
+  const canAccessDebate = !checkingSubscription && sessionCount >= 5;
+
+  const particlePositions = useMemo(
+    () =>
+      [...Array(8)].map(() => ({
+        left: Math.random() * 100,
+        top: Math.random() * 100,
+        duration: 5 + Math.random() * 10,
+        delay: Math.random() * 5,
+      })),
+    []
+  );
   const currentLevel = evaluatedGrade && gradeMapping[evaluatedGrade] ? gradeMapping[evaluatedGrade] : null;
 
   return (
@@ -597,15 +613,15 @@ function HomePageContent() {
         {/* Floating Particles - Dark only (reduced count for performance) */}
         {mounted && (
           <div className="absolute inset-0">
-            {[...Array(8)].map((_, i) => (
+            {particlePositions.map((p, i) => (
               <div
                 key={i}
                 className="absolute w-1 h-1 bg-white/20 rounded-full"
                 style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  animation: `particle-float ${5 + Math.random() * 10}s ease-in-out infinite`,
-                  animationDelay: `${Math.random() * 5}s`,
+                  left: `${p.left}%`,
+                  top: `${p.top}%`,
+                  animation: `particle-float ${p.duration}s ease-in-out infinite`,
+                  animationDelay: `${p.delay}s`,
                 }}
               />
             ))}

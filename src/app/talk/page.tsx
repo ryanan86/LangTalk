@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { personas } from '@/lib/personas';
 import { useLanguage } from '@/lib/i18n';
@@ -137,6 +137,8 @@ function TalkContent() {
   const ttsAbortRef = useRef<AbortController | null>(null);
   const queueAbortRef = useRef<AbortController | null>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
+  const hasSavedSessionRef = useRef(false);
+  const messagesRef = useRef<Message[]>([]);
 
   // Deepgram streaming STT refs
   const deepgramSocketRef = useRef<WebSocket | null>(null);
@@ -268,6 +270,11 @@ function TalkContent() {
       .catch(() => { /* ignore */ });
   }, []);
 
+  // Keep messagesRef in sync with messages state
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
   // Auto-scroll messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -302,6 +309,8 @@ function TalkContent() {
   // calls caused data loss (last-write-wins on the same row).
   useEffect(() => {
     if (phase === 'summary') {
+      if (hasSavedSessionRef.current) return;
+      hasSavedSessionRef.current = true;
       const saveSessionData = async () => {
         try {
           // Step 1: Increment session count first (updates Users + Subscriptions sheets)
@@ -608,7 +617,7 @@ function TalkContent() {
     // Fallback: if onstop doesn't fire within 2 seconds (Android bug),
     // force stop tracks and proceed
     setTimeout(() => {
-      if (!initialRecordingStoppedRef.current && phase === 'recording') {
+      if (!initialRecordingStoppedRef.current) {
         console.warn('onstop did not fire, forcing fallback');
         initialRecordingStoppedRef.current = true;
         // Stop all media tracks
@@ -629,7 +638,7 @@ function TalkContent() {
       }
     }, 2000);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
+  }, []);
 
   const recordReply = async () => {
     if (isRecordingReply) {
@@ -717,7 +726,7 @@ function TalkContent() {
 
       if (sttData.text && sttData.text.trim()) {
         const userMessage: Message = { role: 'user', content: sttData.text };
-        const newMessages = [...messages, userMessage];
+        const newMessages = [...messagesRef.current, userMessage];
         setMessages(newMessages);
 
         if (isInitial) {
@@ -824,7 +833,7 @@ function TalkContent() {
     try {
       if (text.trim()) {
         const userMessage: Message = { role: 'user', content: text };
-        const newMessages = [...messages, userMessage];
+        const newMessages = [...messagesRef.current, userMessage];
         setMessages(newMessages);
         if (isInitial) setPhase('interview');
         await getAIResponse(newMessages);
@@ -947,7 +956,7 @@ function TalkContent() {
 
         // Wait for all audio to finish playing (max 30 seconds)
         const audioWaitStart = Date.now();
-        while (isPlayingQueueRef.current || audioQueueRef.current.length > 0) {
+        while ((isPlayingQueueRef.current || audioQueueRef.current.length > 0) && !isEndingSessionRef.current) {
           await new Promise(resolve => setTimeout(resolve, 100));
           if (Date.now() - audioWaitStart > 30000) {
             console.warn('Audio queue wait timeout - forcing continue');
@@ -1162,59 +1171,61 @@ function TalkContent() {
       const audioBlob = await response.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
 
-      if (audioRef.current) {
-        const audio = audioRef.current;
+      try {
+        if (audioRef.current) {
+          const audio = audioRef.current;
 
-        // Wait for audio to be fully loaded before playing (with timeout)
-        await new Promise<void>((resolve, reject) => {
-          const loadTimeout = setTimeout(() => {
-            audio.removeEventListener('canplaythrough', onCanPlay);
-            audio.removeEventListener('error', onError);
-            reject(new Error('Audio load timeout'));
-          }, 10000);
+          // Wait for audio to be fully loaded before playing (with timeout)
+          await new Promise<void>((resolve, reject) => {
+            const loadTimeout = setTimeout(() => {
+              audio.removeEventListener('canplaythrough', onCanPlay);
+              audio.removeEventListener('error', onError);
+              reject(new Error('Audio load timeout'));
+            }, 10000);
 
-          const onCanPlay = () => {
-            clearTimeout(loadTimeout);
-            audio.removeEventListener('canplaythrough', onCanPlay);
-            audio.removeEventListener('error', onError);
-            resolve();
-          };
-          const onError = () => {
-            clearTimeout(loadTimeout);
-            audio.removeEventListener('canplaythrough', onCanPlay);
-            audio.removeEventListener('error', onError);
-            reject(new Error('Audio load failed'));
-          };
+            const onCanPlay = () => {
+              clearTimeout(loadTimeout);
+              audio.removeEventListener('canplaythrough', onCanPlay);
+              audio.removeEventListener('error', onError);
+              resolve();
+            };
+            const onError = () => {
+              clearTimeout(loadTimeout);
+              audio.removeEventListener('canplaythrough', onCanPlay);
+              audio.removeEventListener('error', onError);
+              reject(new Error('Audio load failed'));
+            };
 
-          audio.addEventListener('canplaythrough', onCanPlay, { once: true });
-          audio.addEventListener('error', onError, { once: true });
-          audio.preload = 'auto';
-          audio.src = audioUrl;
-          audio.load();
-        });
-
-        // Wait for audio to finish playing (not just start)
-        await new Promise<void>((resolve) => {
-          const playTimeout = setTimeout(() => {
-            audio.pause();
-            resolve();
-          }, 30000);
-
-          audio.onended = () => {
-            clearTimeout(playTimeout);
-            resolve();
-          };
-          audio.onerror = () => {
-            clearTimeout(playTimeout);
-            resolve();
-          };
-
-          audio.play().catch(() => {
-            clearTimeout(playTimeout);
-            resolve();
+            audio.addEventListener('canplaythrough', onCanPlay, { once: true });
+            audio.addEventListener('error', onError, { once: true });
+            audio.preload = 'auto';
+            audio.src = audioUrl;
+            audio.load();
           });
-        });
 
+          // Wait for audio to finish playing (not just start)
+          await new Promise<void>((resolve) => {
+            const playTimeout = setTimeout(() => {
+              audio.pause();
+              resolve();
+            }, 30000);
+
+            audio.onended = () => {
+              clearTimeout(playTimeout);
+              resolve();
+            };
+            audio.onerror = () => {
+              clearTimeout(playTimeout);
+              resolve();
+            };
+
+            audio.play().catch(() => {
+              clearTimeout(playTimeout);
+              resolve();
+            });
+          });
+        }
+      } finally {
         URL.revokeObjectURL(audioUrl);
       }
     } catch (error) {
@@ -1279,62 +1290,64 @@ function TalkContent() {
       const audioBlob = await prefetchAudio(sentence, queueAbortRef.current?.signal);
       const audioUrl = URL.createObjectURL(audioBlob);
 
-      if (audioRef.current) {
-        const audio = audioRef.current;
+      try {
+        if (audioRef.current) {
+          const audio = audioRef.current;
 
-        // Wait for audio to load (with timeout to prevent queue hang)
-        await new Promise<void>((resolve, reject) => {
-          const loadTimeout = setTimeout(() => {
-            audio.removeEventListener('canplaythrough', onCanPlay);
-            audio.removeEventListener('error', onError);
-            console.warn('Audio load timeout - skipping sentence');
-            reject(new Error('Audio load timeout'));
-          }, 8000);
+          // Wait for audio to load (with timeout to prevent queue hang)
+          await new Promise<void>((resolve, reject) => {
+            const loadTimeout = setTimeout(() => {
+              audio.removeEventListener('canplaythrough', onCanPlay);
+              audio.removeEventListener('error', onError);
+              console.warn('Audio load timeout - skipping sentence');
+              reject(new Error('Audio load timeout'));
+            }, 8000);
 
-          const onCanPlay = () => {
-            clearTimeout(loadTimeout);
-            audio.removeEventListener('canplaythrough', onCanPlay);
-            audio.removeEventListener('error', onError);
-            resolve();
-          };
-          const onError = () => {
-            clearTimeout(loadTimeout);
-            audio.removeEventListener('canplaythrough', onCanPlay);
-            audio.removeEventListener('error', onError);
-            reject(new Error('Audio load failed'));
-          };
+            const onCanPlay = () => {
+              clearTimeout(loadTimeout);
+              audio.removeEventListener('canplaythrough', onCanPlay);
+              audio.removeEventListener('error', onError);
+              resolve();
+            };
+            const onError = () => {
+              clearTimeout(loadTimeout);
+              audio.removeEventListener('canplaythrough', onCanPlay);
+              audio.removeEventListener('error', onError);
+              reject(new Error('Audio load failed'));
+            };
 
-          audio.addEventListener('canplaythrough', onCanPlay, { once: true });
-          audio.addEventListener('error', onError, { once: true });
-          audio.preload = 'auto';
-          audio.src = audioUrl;
-          audio.load();
-        });
-
-        await new Promise<void>((resolve) => {
-          const playTimeout = setTimeout(() => {
-            console.warn('Audio play timeout - skipping sentence');
-            audio.pause();
-            resolve();
-          }, 15000);
-
-          audio.onended = () => {
-            clearTimeout(playTimeout);
-            resolve();
-          };
-          audio.onerror = () => {
-            clearTimeout(playTimeout);
-            console.warn('Audio play error - skipping');
-            resolve();
-          };
-
-          audio.play().catch((err) => {
-            clearTimeout(playTimeout);
-            console.warn('Audio play() rejected:', err);
-            resolve();
+            audio.addEventListener('canplaythrough', onCanPlay, { once: true });
+            audio.addEventListener('error', onError, { once: true });
+            audio.preload = 'auto';
+            audio.src = audioUrl;
+            audio.load();
           });
-        });
 
+          await new Promise<void>((resolve) => {
+            const playTimeout = setTimeout(() => {
+              console.warn('Audio play timeout - skipping sentence');
+              audio.pause();
+              resolve();
+            }, 15000);
+
+            audio.onended = () => {
+              clearTimeout(playTimeout);
+              resolve();
+            };
+            audio.onerror = () => {
+              clearTimeout(playTimeout);
+              console.warn('Audio play error - skipping');
+              resolve();
+            };
+
+            audio.play().catch((err) => {
+              clearTimeout(playTimeout);
+              console.warn('Audio play() rejected:', err);
+              resolve();
+            });
+          });
+        }
+      } finally {
         // Revoke URL to free memory
         URL.revokeObjectURL(audioUrl);
       }
@@ -1430,6 +1443,7 @@ function TalkContent() {
 
   const resetSession = () => {
     isEndingSessionRef.current = false;
+    hasSavedSessionRef.current = false;
     setMessages([]);
     setConversationTime(0);
     setAnalysis(null);
@@ -1445,6 +1459,12 @@ function TalkContent() {
     setIsSavingImage(false);
     setPhase('ready');
   };
+
+  // Pre-compute random bar heights for recording visualizer (avoids Math.random in render)
+  const recordingBarHeights = useMemo(
+    () => [1, 2, 3, 4, 5].map(() => 12 + Math.random() * 20),
+    []
+  );
 
   if (!persona) {
     return <div className="min-h-screen flex items-center justify-center">Invalid tutor</div>;
@@ -1469,6 +1489,7 @@ function TalkContent() {
         <div className="max-w-3xl mx-auto flex justify-between items-center">
           <button
             onClick={handleBackClick}
+            aria-label="Go back"
             className={`p-2 rounded-xl transition-colors ${
               isDarkPhase ? 'dark:text-white/60 text-zinc-600 dark:hover:text-white hover:text-zinc-900 dark:hover:bg-white/5 hover:bg-black/[0.03]' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-white'
             }`}
@@ -1716,12 +1737,12 @@ function TalkContent() {
                 {isRecordingReply && (
                   <div className="flex flex-col items-center">
                     <div className="flex items-center gap-1 h-10 mb-3">
-                      {[1,2,3,4,5].map((i) => (
+                      {[1,2,3,4,5].map((i, idx) => (
                         <div
                           key={i}
                           className="w-1 bg-red-500 rounded-full animate-pulse"
                           style={{
-                            height: `${12 + Math.random() * 20}px`,
+                            height: `${recordingBarHeights[idx]}px`,
                             animationDelay: `${i * 0.1}s`,
                             animationDuration: '0.4s'
                           }}
@@ -1747,6 +1768,7 @@ function TalkContent() {
                   <button
                     onClick={recordReply}
                     disabled={isProcessing || isPlaying}
+                    aria-label={isRecordingReply ? 'Stop recording' : 'Start recording'}
                     className={`flex-1 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2.5 transition-all text-base ${
                       isRecordingReply
                         ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 recording-active'
@@ -2478,7 +2500,7 @@ function TalkContent() {
 
       {/* Exit Session Confirmation Modal */}
       {showExitConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true">
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowExitConfirm(false)}
@@ -2520,7 +2542,7 @@ function TalkContent() {
 
       {/* User Info Modal - Birth Year & Name */}
       {showUserInfoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"

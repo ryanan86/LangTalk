@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 
 interface CorrectionCardProps {
   original: string;
@@ -120,7 +120,7 @@ export default function CorrectionCard({
     el.classList.add('correction-card-enter');
   }, [correctionIndex]);
 
-  const diffTokens = computeInlineDiff(original, corrected);
+  const diffTokens = useMemo(() => computeInlineDiff(original, corrected), [original, corrected]);
   const hasRealDiff = diffTokens.some((t) => t.type !== 'same');
 
   const isKo = language === 'ko';
@@ -247,7 +247,7 @@ export default function CorrectionCard({
               <span className="text-[10px] font-semibold text-violet-400 uppercase tracking-widest">
                 {isKo ? '이유' : 'Why'}
               </span>
-              <p className="text-slate-300 mt-1.5 text-xs sm:text-sm leading-relaxed">
+              <p className="dark:text-slate-300 text-zinc-600 mt-1.5 text-xs sm:text-sm leading-relaxed">
                 {explanation}
               </p>
               <div className="flex items-center gap-2 mt-2.5 flex-wrap">

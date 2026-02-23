@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n';
 import ScheduleSettings from '@/components/settings/ScheduleSettings';
@@ -91,12 +91,25 @@ export default function ProfilePage() {
   } | undefined>(undefined);
   const [hasUnsavedSchedule, setHasUnsavedSchedule] = useState(false);
   const [showScheduleWarning, setShowScheduleWarning] = useState(false);
+  const scheduleWarningTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (scheduleWarningTimeoutRef.current !== null) {
+        clearTimeout(scheduleWarningTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Load existing profile
   useEffect(() => {
     const loadProfile = async () => {
       try {
         const response = await fetch('/api/user-profile');
+        if (!response.ok) {
+          throw new Error(`Failed to load profile: ${response.status}`);
+        }
         const data = await response.json();
 
         if (data.profile) {
@@ -124,16 +137,24 @@ export default function ProfilePage() {
     days: number[];
     preferredTutor: string;
   }) => {
-    const response = await fetch('/api/user-profile', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ schedule: scheduleData }),
-    });
-    const data = await response.json();
-    if (data.success) {
-      setSchedule(scheduleData);
-    } else {
-      throw new Error('Failed to save schedule');
+    try {
+      const response = await fetch('/api/user-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schedule: scheduleData }),
+      });
+      if (!response.ok) {
+        throw new Error(`Request failed: ${response.status}`);
+      }
+      const data = await response.json();
+      if (data.success) {
+        setSchedule(scheduleData);
+      } else {
+        throw new Error('Failed to save schedule');
+      }
+    } catch (error) {
+      console.error('Failed to save schedule:', error);
+      throw error;
     }
   }, []);
 
@@ -149,8 +170,14 @@ export default function ProfilePage() {
     // Show warning if schedule has unsaved changes
     if (hasUnsavedSchedule) {
       setShowScheduleWarning(true);
-      // Auto-hide after 5 seconds
-      setTimeout(() => setShowScheduleWarning(false), 5000);
+      // Auto-hide after 5 seconds, tracked via ref for cleanup
+      if (scheduleWarningTimeoutRef.current !== null) {
+        clearTimeout(scheduleWarningTimeoutRef.current);
+      }
+      scheduleWarningTimeoutRef.current = setTimeout(() => {
+        setShowScheduleWarning(false);
+        scheduleWarningTimeoutRef.current = null;
+      }, 5000);
       return;
     }
 
@@ -170,6 +197,10 @@ export default function ProfilePage() {
           difficultyPreference,
         }),
       });
+
+      if (!response.ok) {
+        throw new Error(`Request failed: ${response.status}`);
+      }
 
       const data = await response.json();
 

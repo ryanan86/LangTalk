@@ -83,7 +83,7 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
   const strengths = sorted.slice(0, 2);
   const growthAreas = sorted.slice(-2).reverse();
 
-  const sectionBg = 'bg-neutral-50 dark:bg-[#1a1a1a]';
+  const sectionBg = 'bg-neutral-50 dark:bg-[#0a0a1a]';
 
   return (
     <>
@@ -152,7 +152,8 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
         {/* Stat Pills Grid */}
         <div className="grid grid-cols-2 gap-2.5">
           {metrics.map((metric, idx) => {
-            const color = metric.level === 'high' ? '#10b981' : metric.level === 'medium' ? '#06b6d4' : '#f59e0b';
+            // emerald-500, cyan-500, amber-500 — matches Midnight Glass palette accent tokens
+            const color = metric.level === 'high' ? 'rgb(16 185 129)' : metric.level === 'medium' ? 'rgb(6 182 212)' : 'rgb(245 158 11)';
             return (
               <div key={metric.label} className={`report-glass rounded-2xl p-3 flex items-center gap-3 report-fade-up report-fade-up-${idx + 1}`}>
                 <svg className="flex-shrink-0" width="36" height="36" viewBox="0 0 36 36">
@@ -199,7 +200,7 @@ export default function AnalysisReview({ speechMetrics, language }: AnalysisRevi
               })}
               <polygon points={dataPoly} fill="rgba(124,58,237,0.12)" stroke="rgba(6,182,212,0.7)" strokeWidth="2" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 6px rgba(6,182,212,0.25))' }} />
               {dataPoints.map((pt, i) => (
-                <circle key={`dot-${i}`} cx={pt.x} cy={pt.y} r="3.5" fill={metrics[i].level === 'high' ? '#10b981' : metrics[i].level === 'medium' ? '#06b6d4' : '#f59e0b'} stroke="rgba(255,255,255,0.8)" strokeWidth="1.5" />
+                <circle key={`dot-${i}`} cx={pt.x} cy={pt.y} r="3.5" fill={metrics[i].level === 'high' ? 'rgb(16 185 129)' : metrics[i].level === 'medium' ? 'rgb(6 182 212)' : 'rgb(245 158 11)'} stroke="rgba(255,255,255,0.8)" strokeWidth="1.5" />
               ))}
               {metrics.map((m, i) => {
                 const lp = radarPoint(i, 128);
