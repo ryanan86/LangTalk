@@ -1841,7 +1841,7 @@ function TalkContent() {
         {phase === 'review' && analysis && (
           <div className="flex-1 flex flex-col p-4 sm:p-6 dark:bg-[#020617] bg-neutral-50">
             <div className="text-center mb-4 sm:mb-6">
-              <span className="text-xs sm:text-sm dark:text-slate-500 text-zinc-400">{t.correction} {currentReviewIndex + 1} {t.of} {analysis.corrections.length}</span>
+              <span className="text-xs sm:text-sm dark:text-slate-500 text-zinc-400">{t.correction} {safeReviewIndex + 1} {t.of} {analysis.corrections.length}</span>
             </div>
 
             {analysis.corrections.length > 0 ? (
@@ -1907,7 +1907,7 @@ function TalkContent() {
         {phase === 'shadowing' && analysis && analysis.corrections.length > 0 && (
           <div className="flex-1 flex flex-col p-4 sm:p-6">
             <div className="text-center mb-4 sm:mb-6">
-              <span className="text-xs sm:text-sm text-neutral-500">{t.shadowing} {shadowingIndex + 1} {t.of} {analysis.corrections.length}</span>
+              <span className="text-xs sm:text-sm text-neutral-500">{t.shadowing} {safeShadowingIndex + 1} {t.of} {analysis.corrections.length}</span>
             </div>
 
             <div className="flex-1 flex flex-col justify-center">
