@@ -1648,7 +1648,7 @@ function HomePageContent() {
             <div className="flex gap-3 mt-4">
               <button
                 onClick={handleWebSignIn}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white dark:bg-white/10 dark:hover:bg-white/20 bg-white/80 hover:bg-white rounded-lg transition-colors"
+                className="flex-1 px-4 py-2 text-sm font-medium dark:text-white text-zinc-800 dark:bg-white/10 dark:hover:bg-white/20 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
               >
                 {language === 'ko' ? '웹 로그인 사용' : 'Use Web Sign-In'}
               </button>

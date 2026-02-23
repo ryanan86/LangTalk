@@ -2077,7 +2077,7 @@ function TalkContent() {
                     {isLoadingEval ? (
                       <div className="flex items-center justify-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
-                        <span className="ml-3 text-sm text-slate-400">
+                        <span className="ml-3 text-sm dark:text-slate-400 text-zinc-500">
                           {language === 'ko' ? 'Speaking 분석 중...' : 'Analyzing speaking metrics...'}
                         </span>
                       </div>

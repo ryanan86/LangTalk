@@ -204,8 +204,8 @@ export default function CorrectionCard({
 
         {/* --- What you meant (intended) --- */}
         {intended && intended !== original && (
-          <div className="px-4 py-3 dark:bg-white/[0.04] bg-black/[0.03] rounded-xl border border-white/[0.04]">
-            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">
+          <div className="px-4 py-3 dark:bg-white/[0.04] bg-black/[0.03] rounded-xl border dark:border-white/[0.04] border-black/[0.06]">
+            <span className="text-[10px] font-semibold dark:text-slate-500 text-zinc-600 uppercase tracking-widest">
               {isKo ? '의도한 의미' : 'What you meant'}
             </span>
             <p className="dark:text-slate-300 text-zinc-600 mt-1.5 text-sm sm:text-base">

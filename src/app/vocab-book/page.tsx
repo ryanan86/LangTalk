@@ -94,7 +94,7 @@ export default function VocabBookPage() {
     if (status === 'archived') {
       return {
         label: language === 'ko' ? '보관' : 'Archived',
-        className: 'bg-slate-500/20 text-slate-400',
+        className: 'dark:bg-slate-500/20 bg-slate-100 dark:text-slate-400 text-slate-600',
       };
     }
     return {
@@ -280,7 +280,7 @@ export default function VocabBookPage() {
                   )}
 
                   {/* Source Date */}
-                  <p className="dark:text-slate-600 text-zinc-400 text-[10px] mt-auto">{item.sourceDate}</p>
+                  <p className="dark:text-slate-400 text-zinc-500 text-[10px] mt-auto">{item.sourceDate}</p>
                 </div>
               );
             })}
