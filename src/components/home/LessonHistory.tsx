@@ -11,11 +11,34 @@ interface Lesson {
   feedbackSummary: string;
   keyCorrections: string;
   level: string;
+  language?: string;
 }
 
 interface LessonHistoryProps {
   lessonHistory: Lesson[];
   language: Language;
+}
+
+/** Format date string based on display language. Handles both ISO and legacy ko-KR formats. */
+function formatLessonDate(dateStr: string, displayLang: Language): string {
+  if (!dateStr) return '';
+  try {
+    // Try parsing as ISO first (new format)
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      const locale = displayLang === 'ko' ? 'ko-KR' : 'en-US';
+      return new Intl.DateTimeFormat(locale, {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: displayLang !== 'ko',
+      }).format(d);
+    }
+  } catch {
+    // Fall through to return raw string
+  }
+  return dateStr;
 }
 
 const tutorGradients: Record<string, string> = {
@@ -63,7 +86,7 @@ export default function LessonHistory({ lessonHistory, language }: LessonHistory
                       <p className="dark:text-white text-zinc-900 font-medium capitalize">
                         {lesson.tutor || 'Unknown'}
                       </p>
-                      <p className="dark:text-white/40 text-zinc-400 text-xs">{lesson.dateTime}</p>
+                      <p className="dark:text-white/40 text-zinc-400 text-xs">{formatLessonDate(lesson.dateTime, language)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

@@ -188,6 +188,7 @@ function HomePageContent() {
     feedbackSummary: string;
     keyCorrections: string;
     level: string;
+    language?: string;
   }>>([]);
   const [correctionsToReview, setCorrectionsToReview] = useState<number>(0);
   const [hasProfile, setHasProfile] = useState<boolean>(false);

@@ -380,6 +380,7 @@ function TalkContent() {
               level: analysis?.evaluatedGrade || '',
               levelDetails: analysis?.levelDetails || null,
               corrections: correctionsToSave,
+              language,
             }),
           });
           const historyData = await historyRes.json();

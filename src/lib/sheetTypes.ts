@@ -101,6 +101,9 @@ export interface SessionSummary {
   topics: string[]; // Topics discussed
   level?: string;
   score?: number;
+  feedbackSummary?: string;
+  keyCorrections?: string;
+  language?: string; // 'en' | 'ko' etc. - language at time of session
 }
 
 export interface CorrectionItem {

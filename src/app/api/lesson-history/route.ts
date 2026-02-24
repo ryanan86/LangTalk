@@ -52,16 +52,17 @@ export async function GET(request: Request) {
       });
     }
 
-    // Transform sessions to legacy format for backward compatibility
+    // Transform sessions for client display
     const lessons = learningData.recentSessions.map(s => ({
       dateTime: s.date,
       tutor: s.tutor || '',
       duration: s.duration,
       topicSummary: s.topics.join(', '),
-      feedbackSummary: '', // Not stored in new format
-      keyCorrections: '', // Corrections are stored separately now
+      feedbackSummary: s.feedbackSummary || '',
+      keyCorrections: s.keyCorrections || '',
       level: s.level || '',
       levelDetails: null,
+      language: s.language || '',
     }));
 
     console.log(`[${rid}] OK ${since(t0)}ms`);
@@ -101,11 +102,12 @@ export async function POST(request: NextRequest) {
       tutor,
       duration,
       topicSummary,
-      // feedbackSummary, // Not used in new format
-      // keyCorrections, // Corrections are stored separately now
+      feedbackSummary,
+      keyCorrections,
       level,
       levelDetails,
       corrections: rawCorrections, // Array of correction objects
+      language: sessionLanguage, // Language setting at time of session
     } = body;
 
     // If no Google Sheets credentials, return success for development
@@ -122,25 +124,20 @@ export async function POST(request: NextRequest) {
     // Create session summary
     const sessionId = `session_${Date.now()}`;
     const now = new Date();
-    const koreaDate = new Intl.DateTimeFormat('ko-KR', {
-      timeZone: 'Asia/Seoul',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    }).format(now);
+    // Store date in ISO format for locale-independent display on client
+    const isoDate = now.toISOString();
 
     const sessionSummary: SessionSummary = {
       id: sessionId,
-      date: koreaDate,
+      date: isoDate,
       type: 'tutoring',
       tutor: tutor || '',
       duration: duration || 0,
       topics: topicSummary ? [topicSummary] : [],
       level: level || '',
+      feedbackSummary: feedbackSummary || '',
+      keyCorrections: keyCorrections || '',
+      language: sessionLanguage || 'en',
     };
 
     // Add session to learning data
@@ -166,7 +163,7 @@ export async function POST(request: NextRequest) {
         interval: 1,
         easeFactor: 2.5,
         repetitions: 0,
-        createdAt: koreaDate,
+        createdAt: isoDate,
         fromSession: sessionId,
         status: 'active',
       }));
@@ -176,7 +173,7 @@ export async function POST(request: NextRequest) {
 
     // Update user stats (sessionCount is handled by /api/session-count)
     const statsUpdate: Record<string, unknown> = {
-      lastSessionAt: koreaDate,
+      lastSessionAt: isoDate,
     };
     if (level) statsUpdate.currentLevel = level;
     if (levelDetails) statsUpdate.levelDetails = levelDetails;
