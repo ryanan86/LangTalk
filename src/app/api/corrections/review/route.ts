@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { updateCorrectionAfterReview } from '@/lib/sheetHelper';
 import { makeRid, nowMs, since } from '@/lib/perf';
+import { correctionReviewBodySchema, parseBody } from '@/lib/apiSchemas';
 
 // POST: Process review result and update correction
 export async function POST(request: NextRequest) {
@@ -18,24 +19,11 @@ export async function POST(request: NextRequest) {
 
     const email = session.user.email;
 
-    // Parse request body
-    const body = await request.json();
-    const { correctionId, quality } = body; // quality: 0-5
-
-    if (!correctionId || quality === undefined) {
-      return NextResponse.json(
-        { success: false, error: 'Missing correctionId or quality' },
-        { status: 400 }
-      );
-    }
-
-    // Validate quality range
-    if (quality < 0 || quality > 5) {
-      return NextResponse.json(
-        { success: false, error: 'Quality must be between 0 and 5' },
-        { status: 400 }
-      );
-    }
+    // Parse and validate request body
+    const rawBody = await request.json();
+    const parsed = parseBody(correctionReviewBodySchema, rawBody);
+    if (!parsed.success) return parsed.response;
+    const { correctionId, quality } = parsed.data;
 
     // If no Google Sheets credentials, return success for development
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {

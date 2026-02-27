@@ -843,14 +843,12 @@ function TalkContent() {
 
   const connectDeepgram = async (): Promise<void> => {
     try {
-      // Fetch API key if not cached
-      if (!deepgramKeyRef.current) {
-        const res = await fetch('/api/deepgram-token');
-        if (!res.ok) return;
-        const { key } = await res.json();
-        if (!key) return;
-        deepgramKeyRef.current = key;
-      }
+      // Fetch a fresh temporary token each time (tokens expire after 60s)
+      const res = await fetch('/api/deepgram-token');
+      if (!res.ok) return;
+      const { key } = await res.json();
+      if (!key) return;
+      deepgramKeyRef.current = key;
 
       realtimeTranscriptRef.current = '';
       const apiKey = deepgramKeyRef.current!;

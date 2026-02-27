@@ -11,6 +11,7 @@ import {
 } from '@/lib/sheetHelper';
 import { SessionSummary, CorrectionItem } from '@/lib/sheetTypes';
 import { makeRid, nowMs, since } from '@/lib/perf';
+import { lessonHistoryBodySchema, parseBody } from '@/lib/apiSchemas';
 
 // GET: Retrieve lesson history for current user
 export async function GET(request: Request) {
@@ -96,8 +97,10 @@ export async function POST(request: NextRequest) {
 
     const email = session.user.email;
 
-    // Parse request body
-    const body = await request.json();
+    // Parse and validate request body
+    const rawBody = await request.json();
+    const parsed = parseBody(lessonHistoryBodySchema, rawBody);
+    if (!parsed.success) return parsed.response;
     const {
       tutor,
       duration,
@@ -106,9 +109,9 @@ export async function POST(request: NextRequest) {
       keyCorrections,
       level,
       levelDetails,
-      corrections: rawCorrections, // Array of correction objects
-      language: sessionLanguage, // Language setting at time of session
-    } = body;
+      corrections: rawCorrections,
+      language: sessionLanguage,
+    } = parsed.data;
 
     // If no Google Sheets credentials, return success for development
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {

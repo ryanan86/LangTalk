@@ -8,6 +8,7 @@ import { getPersona } from '@/lib/personas';
 import { getAgeGroup, calculateAdaptiveDifficulty } from '@/lib/speechMetrics';
 import { getUserData } from '@/lib/sheetHelper';
 import { makeRid, nowMs, since, withTimeoutAbort } from '@/lib/perf';
+import { chatBodySchema, parseBody } from '@/lib/apiSchemas';
 
 const CONVERSATION_FALLBACK_POOL = [
   "Hmm, let me think about that for a moment. Could you tell me a bit more?",
@@ -69,26 +70,13 @@ export async function POST(request: NextRequest) {
     const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.ai);
     if (rateLimitResult) return rateLimitResult;
 
-    const body = await request.json();
+    const rawBody = await request.json();
+    const parsed = parseBody(chatBodySchema, rawBody);
+    if (!parsed.success) return parsed.response;
     const {
-      messages, tutorId, mode, language = 'en', stream: useStreaming = false,
+      messages, tutorId, mode, language, stream: useStreaming,
       birthYear, userName, previousGrade, previousLevelDetails, speechMetrics: clientSpeechMetrics,
-    } = body;
-
-    // Input validation
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return NextResponse.json({ error: 'Messages array is required' }, { status: 400 });
-    }
-    if (messages.length > 100) {
-      return NextResponse.json({ error: 'Too many messages' }, { status: 400 });
-    }
-    if (!tutorId || typeof tutorId !== 'string') {
-      return NextResponse.json({ error: 'Invalid tutor ID' }, { status: 400 });
-    }
-    const allowedModes = ['interview', 'analysis', 'feedback', undefined];
-    if (mode && !allowedModes.includes(mode)) {
-      return NextResponse.json({ error: 'Invalid mode' }, { status: 400 });
-    }
+    } = parsed.data;
 
     // Calculate age if birthYear is provided
     const learnerAge = birthYear ? new Date().getFullYear() - birthYear : null;

@@ -31,7 +31,8 @@
     "openai": "^6.17.0",
     "react": "^18",
     "react-dom": "^18",
-    "web-push": "^3.6.7"
+    "web-push": "^3.6.7",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^20",

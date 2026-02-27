@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getLearningData, saveLearningData } from '@/lib/sheetHelper';
 import { makeRid, nowMs, since } from '@/lib/perf';
+import { vocabBookPostBodySchema, parseBody } from '@/lib/apiSchemas';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +31,8 @@ export async function GET(request: NextRequest) {
     const dueToday = all.filter(i => i.status === 'active' && i.nextReviewAt <= today);
     const todayItems = all.filter(i => i.sourceDate === today);
 
-    const items = (scope === 'all' ? all : scope === 'due' ? dueToday : todayItems).slice(0, limit);
+    const masteredItems = all.filter(i => i.status === 'mastered');
+    const items = (scope === 'all' ? all : scope === 'due' ? dueToday : scope === 'mastered' ? masteredItems : todayItems).slice(0, limit);
 
     console.log(`[${rid}] OK ${since(t0)}ms`);
     return NextResponse.json({
@@ -60,10 +62,10 @@ export async function POST(request: NextRequest) {
     const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
     if (rateLimitResult) return rateLimitResult;
 
-    const { items } = await request.json();
-    if (!Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ error: 'No items provided' }, { status: 400 });
-    }
+    const rawBody = await request.json();
+    const parsed = parseBody(vocabBookPostBodySchema, rawBody);
+    if (!parsed.success) return parsed.response;
+    const { items } = parsed.data;
 
     const learningData = await getLearningData(session.user.email);
     const existing = learningData?.vocabBook || [];

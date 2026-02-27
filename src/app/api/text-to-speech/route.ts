@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { makeRid, nowMs, since, withTimeoutAbort } from '@/lib/perf';
+import { recordSuccess, recordFailure, shouldCircuitBreak } from '@/lib/ttsHealth';
 
 let _openai: OpenAI | null = null;
 function getOpenAI() {
@@ -23,6 +24,8 @@ const FISH_AUDIO_VOICE_MAP: Record<string, string> = {
   nova: 'f56b971895ed4a9d8aaf90e4c4d96a61',     // Alina - BLUEY (young girl)
   alloy: '12d3a04e3dca4e49a40ee52fea6e7c0e',    // Henry - Mackenzie Bluey (young boy)
 };
+
+const FISH_AUDIO_TIMEOUT_MS = 5000;
 
 async function generateWithFishAudio(text: string, voice: string, speed?: number, timings?: Record<string, number>): Promise<ArrayBuffer> {
   const apiKey = process.env.FISH_AUDIO_API_KEY;
@@ -48,25 +51,33 @@ async function generateWithFishAudio(text: string, voice: string, speed?: number
   }
 
   const t0 = nowMs();
-  const response = await fetch('https://api.fish.audio/v1/tts', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'model': 's1',
-    },
-    body: JSON.stringify(body),
-  });
+  const ac = new AbortController();
+  const timeout = setTimeout(() => ac.abort(new Error('Fish Audio timeout after 5s')), FISH_AUDIO_TIMEOUT_MS);
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Fish Audio error:', response.status, errorText);
-    throw new Error(`Fish Audio TTS failed: ${response.status} - ${errorText}`);
+  try {
+    const response = await fetch('https://api.fish.audio/v1/tts', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'model': 's1',
+      },
+      body: JSON.stringify(body),
+      signal: ac.signal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Fish Audio error:', response.status, errorText);
+      throw new Error(`Fish Audio TTS failed: ${response.status} - ${errorText}`);
+    }
+
+    const buf = await response.arrayBuffer();
+    if (timings) timings['fish.tts.ms'] = since(t0);
+    return buf;
+  } finally {
+    clearTimeout(timeout);
   }
-
-  const buf = await response.arrayBuffer();
-  if (timings) timings['fish.tts.ms'] = since(t0);
-  return buf;
 }
 
 async function generateWithOpenAI(text: string, voice: string, timings?: Record<string, number>): Promise<ArrayBuffer> {
@@ -121,26 +132,43 @@ export async function POST(request: NextRequest) {
     // Validate speed parameter (0.5 ~ 2.0)
     const validSpeed = typeof speed === 'number' && speed >= 0.5 && speed <= 2.0 ? speed : undefined;
 
-    // TTS priority: Fish Audio -> OpenAI (fallback)
+    // TTS priority: Fish Audio -> OpenAI (fallback) with circuit breaker
     let audioBuffer: ArrayBuffer;
     let provider = 'OpenAI';
+    let circuitBroken = false;
 
     timings['text.chars'] = text.length;
 
-    if (process.env.FISH_AUDIO_API_KEY?.trim()) {
+    const fishKeyAvailable = !!process.env.FISH_AUDIO_API_KEY?.trim();
+    const fishCircuitOpen = shouldCircuitBreak('FishAudio');
+    if (fishCircuitOpen) circuitBroken = true;
+
+    if (fishKeyAvailable && !fishCircuitOpen) {
+      const fishT0 = nowMs();
       try {
         audioBuffer = await generateWithFishAudio(text, voice, validSpeed, timings);
         provider = 'FishAudio';
+        recordSuccess('FishAudio', since(fishT0));
       } catch (fishError) {
+        recordFailure('FishAudio');
         console.error('Fish Audio failed, falling back to OpenAI:', fishError);
+        const openaiT0 = nowMs();
         audioBuffer = await generateWithOpenAI(text, voice, timings);
+        recordSuccess('OpenAI', since(openaiT0));
       }
     } else {
-      audioBuffer = await generateWithOpenAI(text, voice, timings);
+      const openaiT0 = nowMs();
+      try {
+        audioBuffer = await generateWithOpenAI(text, voice, timings);
+        recordSuccess('OpenAI', since(openaiT0));
+      } catch (openaiError) {
+        recordFailure('OpenAI');
+        throw openaiError;
+      }
     }
 
     timings['total.ms'] = since(t0);
-    const metaJson = JSON.stringify({ rid, provider, timings });
+    const metaJson = JSON.stringify({ rid, provider, circuitBroken, timings });
 
     return new NextResponse(audioBuffer, {
       headers: {

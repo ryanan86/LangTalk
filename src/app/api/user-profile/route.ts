@@ -5,6 +5,7 @@ import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getUserData, updateUserFields } from '@/lib/sheetHelper';
 import { ProfileData } from '@/lib/sheetTypes';
 import { makeRid, nowMs, since } from '@/lib/perf';
+import { userProfileBodySchema, parseBody } from '@/lib/apiSchemas';
 
 // GET: Retrieve user profile
 export async function GET(request: Request) {
@@ -87,8 +88,10 @@ export async function POST(request: NextRequest) {
 
     const email = session.user.email;
 
-    // Parse request body
-    const body = await request.json();
+    // Parse and validate request body
+    const rawBody = await request.json();
+    const parsed = parseBody(userProfileBodySchema, rawBody);
+    if (!parsed.success) return parsed.response;
     const {
       profileType,
       interests,
@@ -101,7 +104,7 @@ export async function POST(request: NextRequest) {
       difficultyPreference,
       correctionLevel,
       schedule,
-    } = body;
+    } = parsed.data;
 
     // If no Google Sheets credentials, return success for development
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
@@ -127,7 +130,7 @@ export async function POST(request: NextRequest) {
     if (preferredTutors !== undefined) profileUpdate.preferredTutors = preferredTutors;
     if (difficultyPreference !== undefined) profileUpdate.difficultyPreference = difficultyPreference;
     if (correctionLevel !== undefined) profileUpdate.correctionLevel = correctionLevel;
-    if (schedule !== undefined) profileUpdate.schedule = schedule;
+    if (schedule !== undefined) profileUpdate.schedule = schedule ?? undefined;
 
     // Update user profile using helper
     const success = await updateUserFields(email, { profile: profileUpdate });
