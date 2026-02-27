@@ -19,6 +19,7 @@ import CorrectionCard from '@/components/talk/CorrectionCard';
 import { buildSessionVocabItems } from '@/lib/vocabBook';
 import { calculateLearningRank } from '@/lib/learningRank';
 import type { VocabBookItem } from '@/lib/sheetTypes';
+import type { SpeakingEvaluationResponse } from '@/app/api/speaking-evaluate/route';
 
 type Phase = 'ready' | 'recording' | 'interview' | 'analysis' | 'review' | 'shadowing' | 'summary';
 
@@ -147,8 +148,7 @@ function TalkContent() {
   const [isSavingImage, setIsSavingImage] = useState(false);
 
   // Speaking Evaluation state (algorithmic grade-level analysis)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [speakingEval, setSpeakingEval] = useState<any>(null);
+  const [speakingEval, setSpeakingEval] = useState<SpeakingEvaluationResponse['evaluation'] | null>(null);
   const [isLoadingEval, setIsLoadingEval] = useState(false);
   const [repeatedCategories, setRepeatedCategories] = useState<Set<string>>(new Set());
 
@@ -328,10 +328,7 @@ function TalkContent() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(countBody),
           });
-          const countData = await countRes.json();
-          if (countData.success) {
-            console.log('Session count incremented:', countData.newCount, 'Level:', countData.evaluatedGrade);
-          }
+          await countRes.json();
 
           // Step 2: Save lesson history WITH corrections in a single call
           // This avoids the race condition where addSession and addCorrections
@@ -383,10 +380,7 @@ function TalkContent() {
               language,
             }),
           });
-          const historyData = await historyRes.json();
-          if (historyData.success) {
-            console.log('Lesson history saved' + (correctionsToSave ? ` with ${correctionsToSave.length} corrections` : ''));
-          }
+          await historyRes.json();
 
           // Step 3: Build and save vocab book items
           try {
@@ -408,7 +402,6 @@ function TalkContent() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ items: vocabItems }),
               });
-              console.log(`Vocab book: ${vocabItems.length} items saved`);
             }
           } catch (vocabErr) {
             console.error('Vocab book save failed:', vocabErr);
@@ -612,8 +605,8 @@ function TalkContent() {
       if (recorder.state === 'recording' || recorder.state === 'paused') {
         recorder.stop();
       }
-    } catch (e) {
-      console.log('Error stopping recorder:', e);
+    } catch {
+      // ignore recorder stop errors
     }
 
     // Fallback: if onstop doesn't fire within 2 seconds (Android bug),
@@ -2096,17 +2089,17 @@ function TalkContent() {
                         {/* Primary CEFR Level */}
                         <div className="flex items-center gap-4 mb-4 p-3 dark:bg-white/[0.04] bg-black/[0.03] rounded-xl">
                           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                            <span className="text-white font-bold text-lg">{speakingEval.cefrLevel?.level ?? speakingEval.gradeLevel?.grade}</span>
+                            <span className="text-white font-bold text-lg">{speakingEval.cefrLevel?.level}</span>
                           </div>
                           <div className="flex-1">
-                            <p className="text-lg font-bold dark:text-white text-zinc-900">{speakingEval.cefrLevel?.label ?? speakingEval.gradeLevel?.usGrade}</p>
-                            <p className="text-xs dark:text-slate-400 text-zinc-500">{speakingEval.cefrLevel?.description ?? speakingEval.gradeLevel?.ukYear}</p>
+                            <p className="text-lg font-bold dark:text-white text-zinc-900">{speakingEval.cefrLevel?.label}</p>
+                            <p className="text-xs dark:text-slate-400 text-zinc-500">{speakingEval.cefrLevel?.description}</p>
                             <span className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-medium ${
-                              (speakingEval.cefrLevel?.confidence ?? speakingEval.gradeLevel?.confidence) === 'high' ? 'bg-green-100 text-green-700' :
-                              (speakingEval.cefrLevel?.confidence ?? speakingEval.gradeLevel?.confidence) === 'medium' ? 'bg-amber-100 text-amber-700' :
+                              speakingEval.cefrLevel?.confidence === 'high' ? 'bg-green-100 text-green-700' :
+                              speakingEval.cefrLevel?.confidence === 'medium' ? 'bg-amber-100 text-amber-700' :
                               'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
                             }`}>
-                              {language === 'ko' ? '신뢰도' : 'Confidence'}: {speakingEval.cefrLevel?.confidence ?? speakingEval.gradeLevel?.confidence}
+                              {language === 'ko' ? '신뢰도' : 'Confidence'}: {speakingEval.cefrLevel?.confidence}
                             </span>
                           </div>
                         </div>
@@ -2195,7 +2188,7 @@ function TalkContent() {
                                 {language === 'ko'
                                   ? `기대 학년: ${speakingEval.comparison.expectedForAge}`
                                   : `Expected: Grade ${speakingEval.comparison.expectedForAge}`}
-                                {speakingEval.comparison.gradeGap !== 0 && (
+                                {speakingEval.comparison.gradeGap != null && speakingEval.comparison.gradeGap !== 0 && (
                                   <span className={speakingEval.comparison.gradeGap > 0 ? 'text-green-600' : 'text-amber-600'}>
                                     {' '}({speakingEval.comparison.gradeGap > 0 ? '+' : ''}{speakingEval.comparison.gradeGap})
                                   </span>

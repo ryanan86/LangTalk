@@ -38,9 +38,8 @@ function IncomingCallContent() {
           .then(() => {
             audioUnlocked.current = true;
           })
-          .catch(error => {
-            console.log("Autoplay prevented. Waiting for interaction.", error);
-            // We will retry on first touch
+          .catch(() => {
+            // Autoplay prevented; will retry on first touch
           });
       }
     }

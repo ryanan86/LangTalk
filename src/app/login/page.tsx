@@ -4,6 +4,7 @@ import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useState, useCallback } from 'react';
 import TapTalkLogo from '@/components/TapTalkLogo';
+import { useLanguage } from '@/lib/i18n';
 
 // Check if running in TapTalk native app (via User-Agent)
 function isTapTalkNativeApp(): boolean {
@@ -21,12 +22,12 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/';
   const error = searchParams.get('error');
+  const { t } = useLanguage();
 
   const [nativeError, setNativeError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const fallbackToWebOAuth = useCallback(() => {
-    console.log('[TapTalk] Falling back to web OAuth');
     signIn('google', { callbackUrl });
   }, [callbackUrl]);
 
@@ -104,19 +105,19 @@ function LoginContent() {
           <div className="flex justify-center mb-3">
             <TapTalkLogo size="lg" theme="auto" />
           </div>
-          <p className="text-neutral-500 dark:text-gray-400">AI English Conversation Practice</p>
+          <p className="text-neutral-500 dark:text-gray-400">{t.aiEnglishPractice}</p>
         </div>
 
         <div className="bg-white dark:bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-neutral-200 dark:border-white/20 shadow-card dark:shadow-none">
           <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white text-center mb-6">
-            Welcome Back
+            {t.welcomeBack}
           </h2>
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/50 rounded-lg text-red-700 dark:text-red-200 text-sm text-center">
               {error === 'AccessDenied'
-                ? 'Your subscription is not active. Please contact support.'
-                : 'An error occurred. Please try again.'}
+                ? t.accessDenied
+                : t.loginError}
             </div>
           )}
 
@@ -143,7 +144,7 @@ function LoginContent() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            {isLoading ? 'Loading...' : 'Continue with Google'}
+            {isLoading ? t.loading : t.continueWithGoogle}
           </button>
 
           <div className="relative my-4">
@@ -151,7 +152,7 @@ function LoginContent() {
               <div className="w-full border-t border-neutral-200 dark:border-white/20"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white dark:bg-transparent text-neutral-400 dark:text-gray-400">or</span>
+              <span className="px-2 bg-white dark:bg-transparent text-neutral-400 dark:text-gray-400">{t.orDivider}</span>
             </div>
           </div>
 
@@ -169,7 +170,7 @@ function LoginContent() {
           </button>
 
           <p className="mt-6 text-center text-neutral-400 dark:text-gray-400 text-sm">
-            By signing in, you agree to our Terms of Service and Privacy Policy
+            {t.termsAgreement}
           </p>
         </div>
       </div>

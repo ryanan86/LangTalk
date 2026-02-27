@@ -62,18 +62,15 @@ async function initNativePush(
     if (permStatus.receive === 'prompt' || permStatus.receive === 'prompt-with-rationale') {
       const requested = await PushNotifications.requestPermissions();
       if (requested.receive !== 'granted') {
-        console.log('[TapTalk Push] Permission denied');
         return;
       }
     } else if (permStatus.receive !== 'granted') {
-      console.log('[TapTalk Push] Permission not granted:', permStatus.receive);
       return;
     }
 
     await PushNotifications.register();
 
     await PushNotifications.addListener('registration', async (token) => {
-      console.log('[TapTalk Push] FCM token received');
       registered.current = true;
 
       try {
@@ -82,7 +79,6 @@ async function initNativePush(
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ fcmToken: token.value }),
         });
-        console.log('[TapTalk Push] FCM token registered');
       } catch (err) {
         console.error('[TapTalk Push] FCM register failed:', err);
       }
@@ -115,18 +111,15 @@ async function initNativePush(
 async function initWebPush(registered: React.MutableRefObject<boolean>) {
   try {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      console.log('[TapTalk Push] Web Push not supported');
       return;
     }
 
     if (!VAPID_PUBLIC_KEY) {
-      console.log('[TapTalk Push] No VAPID key configured');
       return;
     }
 
     // Register service worker
     const registration = await navigator.serviceWorker.register('/sw.js');
-    console.log('[TapTalk Push] SW registered');
 
     // Wait for SW to be ready
     await navigator.serviceWorker.ready;
@@ -137,7 +130,6 @@ async function initWebPush(registered: React.MutableRefObject<boolean>) {
     if (!subscription) {
       // Only subscribe if permission is already granted (requested from ScheduleSettings UI)
       if (Notification.permission !== 'granted') {
-        console.log('[TapTalk Push] Web notification not yet granted, skipping auto-subscribe');
         return;
       }
 
@@ -146,7 +138,6 @@ async function initWebPush(registered: React.MutableRefObject<boolean>) {
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY).buffer as ArrayBuffer,
       });
-      console.log('[TapTalk Push] Web Push subscribed');
     }
 
     // Send subscription to server
@@ -158,7 +149,6 @@ async function initWebPush(registered: React.MutableRefObject<boolean>) {
 
     if (res.ok) {
       registered.current = true;
-      console.log('[TapTalk Push] Web Push subscription registered');
     } else {
       console.error('[TapTalk Push] Web Push server registration failed');
     }

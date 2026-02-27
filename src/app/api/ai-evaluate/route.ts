@@ -794,7 +794,7 @@ Provide comprehensive, methodology-accurate evaluation with cross-validated scor
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
       return NextResponse.json(
-        { error: 'Failed to parse evaluation', raw: content },
+        { error: 'Evaluation failed. Please try again.' },
         { status: 500 }
       );
     }
@@ -819,7 +819,7 @@ Provide comprehensive, methodology-accurate evaluation with cross-validated scor
     console.error(`[${rid}] ERR ${since(t0)}ms`, error);
     console.error('AI Evaluate error:', error);
     return NextResponse.json(
-      { error: 'Evaluation failed', details: String(error) },
+      { error: 'Evaluation failed. Please try again.' },
       { status: 500 }
     );
   }

@@ -178,6 +178,7 @@ interface Translations {
   tryAnotherDebate: string;
   nextSpeaker: string;
   skipIntro: string;
+  passedThisTurn: string;
 
   // Birth Year Selector
   selectDecade: string;
@@ -212,6 +213,14 @@ interface Translations {
   next: string;
   skip: string;
   letsStart: string;
+
+  // Login page
+  welcomeBack: string;
+  aiEnglishPractice: string;
+  accessDenied: string;
+  loginError: string;
+  orDivider: string;
+  termsAgreement: string;
 }
 
 const translations: Record<Language, Translations> = {
@@ -389,6 +398,7 @@ const translations: Record<Language, Translations> = {
     tryAnotherDebate: '다른 토론하기',
     nextSpeaker: '다음 발언자',
     skipIntro: '건너뛰기',
+    passedThisTurn: '(이번 턴 패스)',
 
     // Birth Year Selector
     selectDecade: '연대를 선택하세요',
@@ -423,6 +433,14 @@ const translations: Record<Language, Translations> = {
     next: '다음',
     skip: '건너뛰기',
     letsStart: '대화 시작하기',
+
+    // Login page
+    welcomeBack: '다시 오셨네요',
+    aiEnglishPractice: 'AI 영어 회화 연습',
+    accessDenied: '구독이 활성화되지 않았습니다. 지원팀에 문의해주세요.',
+    loginError: '오류가 발생했습니다. 다시 시도해주세요.',
+    orDivider: '또는',
+    termsAgreement: '로그인하면 서비스 약관 및 개인정보 처리방침에 동의하는 것입니다',
   },
   en: {
     // Common
@@ -598,6 +616,7 @@ const translations: Record<Language, Translations> = {
     tryAnotherDebate: 'Try Another Debate',
     nextSpeaker: 'Next Speaker',
     skipIntro: 'Skip',
+    passedThisTurn: '(Passed this turn)',
 
     // Birth Year Selector
     selectDecade: 'Select a decade',
@@ -632,6 +651,14 @@ const translations: Record<Language, Translations> = {
     next: 'Next',
     skip: 'Skip',
     letsStart: "Let's Start Talking",
+
+    // Login page
+    welcomeBack: 'Welcome Back',
+    aiEnglishPractice: 'AI English Conversation Practice',
+    accessDenied: 'Your subscription is not active. Please contact support.',
+    loginError: 'An error occurred. Please try again.',
+    orDivider: 'or',
+    termsAgreement: 'By signing in, you agree to our Terms of Service and Privacy Policy',
   },
   nl: {
     appName: 'TapTalk',
@@ -784,6 +811,7 @@ const translations: Record<Language, Translations> = {
     tryAnotherDebate: 'Nog een debat',
     nextSpeaker: 'Volgende spreker',
     skipIntro: 'Overslaan',
+    passedThisTurn: '(Deze beurt overgeslagen)',
     selectDecade: 'Selecteer een decennium',
     selectYear: 'Selecteer een jaar',
     birthYear: 'Geboortejaar',
@@ -812,6 +840,14 @@ const translations: Record<Language, Translations> = {
     next: 'Volgende',
     skip: 'Overslaan',
     letsStart: 'Laten we beginnen',
+
+    // Login page
+    welcomeBack: 'Welkom terug',
+    aiEnglishPractice: 'AI Engelse Gespreksoefening',
+    accessDenied: 'Je abonnement is niet actief. Neem contact op met support.',
+    loginError: 'Er is een fout opgetreden. Probeer het opnieuw.',
+    orDivider: 'of',
+    termsAgreement: 'Door in te loggen ga je akkoord met onze Servicevoorwaarden en het Privacybeleid',
   },
   ru: {
     appName: 'TapTalk',
@@ -964,6 +1000,7 @@ const translations: Record<Language, Translations> = {
     tryAnotherDebate: 'Другие дебаты',
     nextSpeaker: 'Следующий спикер',
     skipIntro: 'Пропустить',
+    passedThisTurn: '(Пропущен этот ход)',
     selectDecade: 'Выберите десятилетие',
     selectYear: 'Выберите год',
     birthYear: 'Год рождения',
@@ -992,6 +1029,14 @@ const translations: Record<Language, Translations> = {
     next: 'Далее',
     skip: 'Пропустить',
     letsStart: 'Начнём разговор',
+
+    // Login page
+    welcomeBack: 'С возвращением',
+    aiEnglishPractice: 'Практика английского разговора с ИИ',
+    accessDenied: 'Ваша подписка неактивна. Свяжитесь с поддержкой.',
+    loginError: 'Произошла ошибка. Попробуйте снова.',
+    orDivider: 'или',
+    termsAgreement: 'Входя в систему, вы соглашаетесь с Условиями использования и Политикой конфиденциальности',
   },
   fr: {
     appName: 'TapTalk',
@@ -1144,6 +1189,7 @@ const translations: Record<Language, Translations> = {
     tryAnotherDebate: 'Essayer un autre débat',
     nextSpeaker: 'Prochain orateur',
     skipIntro: 'Passer',
+    passedThisTurn: '(Tour passé)',
     selectDecade: 'Sélectionnez une décennie',
     selectYear: 'Sélectionnez une année',
     birthYear: 'Année de naissance',
@@ -1172,6 +1218,14 @@ const translations: Record<Language, Translations> = {
     next: 'Suivant',
     skip: 'Passer',
     letsStart: 'Commençons à parler',
+
+    // Login page
+    welcomeBack: 'Bon retour',
+    aiEnglishPractice: 'Pratique de la conversation en anglais avec IA',
+    accessDenied: "Votre abonnement n'est pas actif. Veuillez contacter le support.",
+    loginError: 'Une erreur est survenue. Veuillez réessayer.',
+    orDivider: 'ou',
+    termsAgreement: "En vous connectant, vous acceptez nos Conditions d'utilisation et notre Politique de confidentialité",
   },
   es: {
     appName: 'TapTalk',
@@ -1324,6 +1378,7 @@ const translations: Record<Language, Translations> = {
     tryAnotherDebate: 'Intentar otro debate',
     nextSpeaker: 'Siguiente orador',
     skipIntro: 'Saltar',
+    passedThisTurn: '(Turno pasado)',
     selectDecade: 'Selecciona una década',
     selectYear: 'Selecciona un año',
     birthYear: 'Año de nacimiento',
@@ -1352,6 +1407,14 @@ const translations: Record<Language, Translations> = {
     next: 'Siguiente',
     skip: 'Saltar',
     letsStart: 'Empecemos a hablar',
+
+    // Login page
+    welcomeBack: 'Bienvenido de nuevo',
+    aiEnglishPractice: 'Práctica de conversación en inglés con IA',
+    accessDenied: 'Tu suscripción no está activa. Por favor, contacta con soporte.',
+    loginError: 'Ocurrió un error. Por favor, inténtalo de nuevo.',
+    orDivider: 'o',
+    termsAgreement: 'Al iniciar sesión, aceptas nuestros Términos de servicio y Política de privacidad',
   },
   zh: {
     appName: 'TapTalk',
@@ -1504,6 +1567,7 @@ const translations: Record<Language, Translations> = {
     tryAnotherDebate: '再试一场辩论',
     nextSpeaker: '下一位发言者',
     skipIntro: '跳过',
+    passedThisTurn: '(跳过本轮)',
     selectDecade: '选择年代',
     selectYear: '选择年份',
     birthYear: '出生年份',
@@ -1532,6 +1596,14 @@ const translations: Record<Language, Translations> = {
     next: '下一步',
     skip: '跳过',
     letsStart: '开始对话吧',
+
+    // Login page
+    welcomeBack: '欢迎回来',
+    aiEnglishPractice: 'AI英语会话练习',
+    accessDenied: '您的订阅未激活。请联系支持团队。',
+    loginError: '发生错误，请重试。',
+    orDivider: '或',
+    termsAgreement: '登录即表示您同意我们的服务条款和隐私政策',
   },
   de: {
     appName: 'TapTalk',
@@ -1684,6 +1756,7 @@ const translations: Record<Language, Translations> = {
     tryAnotherDebate: 'Weitere Debatte',
     nextSpeaker: 'Nächster Redner',
     skipIntro: 'Überspringen',
+    passedThisTurn: '(Runde übersprungen)',
     selectDecade: 'Wähle ein Jahrzehnt',
     selectYear: 'Wähle ein Jahr',
     birthYear: 'Geburtsjahr',
@@ -1712,6 +1785,14 @@ const translations: Record<Language, Translations> = {
     next: 'Weiter',
     skip: 'Überspringen',
     letsStart: 'Lass uns anfangen',
+
+    // Login page
+    welcomeBack: 'Willkommen zurück',
+    aiEnglishPractice: 'KI-Englisch-Gesprächsübung',
+    accessDenied: 'Dein Abonnement ist nicht aktiv. Bitte kontaktiere den Support.',
+    loginError: 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.',
+    orDivider: 'oder',
+    termsAgreement: 'Durch die Anmeldung stimmst du unseren Nutzungsbedingungen und der Datenschutzrichtlinie zu',
   },
 };
 

@@ -82,11 +82,8 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
 
   // Request notification permission and register push subscription
   const requestNotificationPermission = useCallback(async () => {
-    console.log('[TapTalk Push] === Permission Request Start ===');
-
     // Native Capacitor: permission handled inside registerPushSubscription
     if (isNative) {
-      console.log('[TapTalk Push] Native environment detected, using Capacitor push');
       const ok = await registerPushSubscription();
       return ok;
     }
@@ -102,7 +99,6 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
     }
 
     const currentPermission = Notification.permission;
-    console.log('[TapTalk Push] Current permission:', currentPermission);
 
     // Already denied - browser won't re-prompt, user must change in settings
     if (currentPermission === 'denied') {
@@ -113,17 +109,14 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
 
     // Already granted - go straight to push registration
     if (currentPermission === 'granted') {
-      console.log('[TapTalk Push] Permission already granted, registering push...');
       const ok = await registerPushSubscription();
       return ok;
     }
 
     // Permission is 'default' - show browser prompt
-    console.log('[TapTalk Push] Requesting permission from browser...');
     try {
       const permission = await Notification.requestPermission();
       setNotifPermission(permission);
-      console.log('[TapTalk Push] Permission result:', permission);
 
       if (permission === 'granted') {
         const ok = await registerPushSubscription();
@@ -158,7 +151,6 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
       const { PushNotifications } = await import('@capacitor/push-notifications');
 
       const permStatus = await PushNotifications.checkPermissions();
-      console.log('[TapTalk Push] Native permission status:', permStatus.receive);
 
       if (permStatus.receive === 'prompt' || permStatus.receive === 'prompt-with-rationale') {
         const requested = await PushNotifications.requestPermissions();
@@ -187,7 +179,6 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
 
         PushNotifications.addListener('registration', async (token) => {
           clearTimeout(timeout);
-          console.log('[TapTalk Push] FCM token received');
 
           try {
             const res = await fetch('/api/push/register', {
@@ -204,7 +195,6 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
             }
 
             setPushStatus('success');
-            console.log('[TapTalk Push] FCM token registered');
             resolve(true);
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
@@ -254,15 +244,11 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
         console.error('[TapTalk Push] NEXT_PUBLIC_VAPID_PUBLIC_KEY is empty/undefined');
         return false;
       }
-      console.log('[TapTalk Push] VAPID key found:', vapidKey.substring(0, 10) + '...');
-
       const registration = await navigator.serviceWorker.register('/sw.js');
-      console.log('[TapTalk Push] SW registered, scope:', registration.scope);
       await navigator.serviceWorker.ready;
 
       let subscription = await registration.pushManager.getSubscription();
       if (!subscription) {
-        console.log('[TapTalk Push] No existing subscription, creating new...');
         const padding = '='.repeat((4 - (vapidKey.length % 4)) % 4);
         const base64 = (vapidKey + padding).replace(/-/g, '+').replace(/_/g, '/');
         const rawData = window.atob(base64);
@@ -273,9 +259,6 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
           userVisibleOnly: true,
           applicationServerKey: keyArray.buffer as ArrayBuffer,
         });
-        console.log('[TapTalk Push] New subscription created');
-      } else {
-        console.log('[TapTalk Push] Using existing subscription');
       }
 
       const res = await fetch('/api/push/register-web', {
@@ -293,7 +276,6 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
       }
 
       setPushStatus('success');
-      console.log('[TapTalk Push] Subscription registered successfully');
       return true;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -381,9 +363,7 @@ export default function ScheduleSettings({ language, initialSchedule, onSave, on
           onClick={async () => {
             if (!enabled) {
               // Turning ON - request notification permission (user gesture required)
-              console.log('[TapTalk Push] Toggle ON clicked, requesting permission...');
               const ok = await requestNotificationPermission();
-              console.log('[TapTalk Push] Permission + registration result:', ok);
               if (!ok) return; // Don't enable if permission denied or registration failed
             }
             setEnabled(!enabled);

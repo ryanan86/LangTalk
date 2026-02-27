@@ -23,18 +23,8 @@ function isAndroidWebView(): boolean {
   if (typeof window === 'undefined') return false;
 
   const userAgent = navigator.userAgent;
-  // Android WebView detection: has 'Android' and 'wv' in user agent, or has Capacitor bridge
   const isAndroid = /Android/i.test(userAgent);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const win = window as any;
-  const hasCapacitor = !!(win.Capacitor);
-
-  // If on Android and either has Capacitor or is in a WebView context (not standalone Chrome)
-  const isWebView = isAndroid && (hasCapacitor || !userAgent.includes('Chrome/'));
-
-  console.log('[TapTalk] isAndroidWebView check - isAndroid:', isAndroid, 'hasCapacitor:', hasCapacitor, 'result:', isWebView);
-
-  return isAndroid; // Try native sign-in for ALL Android (WebView or browser on device)
+  return isAndroid;
 }
 
 // Typewriter Effect Hook
@@ -246,22 +236,13 @@ function HomePageContent() {
   const handleGoogleSignIn = useCallback(async () => {
     // Check at runtime if we're on Android (native app or mobile browser)
     const isAndroid = isAndroidWebView();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const hasCap = !!(window as any).Capacitor;
-
-    console.log('[TapTalk] Google Sign-In - isAndroid:', isAndroid, 'hasCap:', hasCap);
-
     if (isAndroid) {
       try {
         setIsGoogleLoading(true);
         setNativeSignInError(null);
-        console.log('[TapTalk] Starting native Google Sign-In...');
-
-        console.log('[TapTalk] Starting native sign-in...');
 
         // Dynamic import for Capacitor plugin
         const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
-        console.log('[TapTalk] GoogleAuth imported, initializing...');
 
         // Initialize with Android client ID
         await GoogleAuth.initialize({
@@ -269,20 +250,17 @@ function HomePageContent() {
           scopes: ['profile', 'email'],
           grantOfflineAccess: true,
         });
-        console.log('[TapTalk] GoogleAuth initialized, signing in...');
 
         const result = await GoogleAuth.signIn();
-        console.log('[TapTalk] GoogleAuth signIn result:', JSON.stringify(result));
 
         // Sign in with NextAuth using the Google credential
-        const signInResult = await signIn('google-native', {
+        await signIn('google-native', {
           idToken: result.authentication.idToken,
           email: result.email,
           name: result.name || result.givenName,
           image: result.imageUrl,
           redirect: false,
         });
-        console.log('[TapTalk] NextAuth signIn result:', signInResult);
 
         // Reload to update session
         window.location.reload();
@@ -290,7 +268,6 @@ function HomePageContent() {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error('[TapTalk] Native Google Sign-In error:', errorMessage);
         // Auto-fallback to web OAuth (works via "wv" removal in WebView)
-        console.log('[TapTalk] Falling back to web OAuth');
         signIn('google');
         return;
       } finally {
@@ -298,7 +275,6 @@ function HomePageContent() {
       }
     } else {
       // Web (desktop): use standard NextAuth
-      console.log('[TapTalk] Using web Google Sign-In (desktop)');
       signIn('google');
     }
   }, []);
@@ -417,12 +393,6 @@ function HomePageContent() {
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         stream.getTracks().forEach(track => track.stop());
 
-        console.log('=== Mic Test Debug ===');
-        console.log('Audio chunks:', audioChunksRef.current.length);
-        console.log('Audio blob size:', audioBlob.size, 'bytes');
-        console.log('Audio blob type:', audioBlob.type);
-        console.log('MIME type used:', mimeType);
-
         if (audioBlob.size < 1000) {
           console.error('Audio blob is too small, likely no audio recorded');
           setTestResult(language === 'ko' ? '오디오가 녹음되지 않았습니다. 마이크를 확인해주세요.' : 'No audio recorded. Please check your microphone.');
@@ -436,16 +406,12 @@ function HomePageContent() {
           const formData = new FormData();
           formData.append('audio', file);
 
-          console.log('Sending to API, file size:', file.size);
-
           const response = await fetch('/api/speech-to-text', {
             method: 'POST',
             body: formData,
           });
 
-          console.log('API response status:', response.status);
           const data = await response.json();
-          console.log('API response data:', data);
 
           if (data.error) {
             setTestResult(language === 'ko' ? `오류: ${data.error}` : `Error: ${data.error}`);
