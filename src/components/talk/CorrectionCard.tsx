@@ -10,6 +10,7 @@ interface CorrectionCardProps {
   category: string;
   isRepeated?: boolean;
   correctionIndex: number;
+  correctionLevel?: 1 | 2 | 3 | 4;
 
   isPlaying?: boolean;
   onPlayCorrected?: () => void;
@@ -107,7 +108,10 @@ export default function CorrectionCard({
   onPlayCorrected,
   onPlayExplanation,
   language = 'en',
+  correctionLevel = 2,
 }: CorrectionCardProps) {
+  // Learning Moments mode for level 1-2 (softer framing)
+  const isLearningMoments = correctionLevel <= 2;
   const cardRef = useRef<HTMLDivElement>(null);
 
   // Re-trigger slide-up animation whenever the correction changes
@@ -159,10 +163,17 @@ export default function CorrectionCard({
         {/* --- Inline diff block --- */}
         <div className="correction-diff-block rounded-xl p-4 sm:p-5">
           <div className="correction-diff-label">
-            {isKo ? '교정 비교' : 'Inline diff'}
+            {isLearningMoments
+              ? (isKo ? '내가 말한 표현' : 'What you said')
+              : (isKo ? '교정 비교' : 'Inline diff')}
           </div>
 
-          {hasRealDiff ? (
+          {isLearningMoments ? (
+            /* Learning Moments: simple text, no red/green diff */
+            <p className="dark:text-slate-300 text-zinc-600 text-base sm:text-lg leading-relaxed">
+              {original}
+            </p>
+          ) : hasRealDiff ? (
             <p className="correction-diff-text leading-relaxed">
               {diffTokens.map((token, idx) => {
                 if (token.type === 'removed') {
@@ -218,7 +229,9 @@ export default function CorrectionCard({
         <div className="correction-corrected-row">
           <div className="flex-1 min-w-0">
             <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-widest block mb-1.5">
-              {isKo ? '올바른 표현' : 'Correct form'}
+              {isLearningMoments
+                ? (isKo ? '이렇게도 말할 수 있어요' : 'You could also say')
+                : (isKo ? '올바른 표현' : 'Correct form')}
             </span>
             <p className="text-base sm:text-lg text-emerald-300 font-semibold leading-snug">
               {corrected}
@@ -245,7 +258,9 @@ export default function CorrectionCard({
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
               <span className="text-[10px] font-semibold text-violet-400 uppercase tracking-widest">
-                {isKo ? '이유' : 'Why'}
+                {isLearningMoments
+                  ? (isKo ? '원어민 표현 팁' : 'Native speaker tip')
+                  : (isKo ? '이유' : 'Why')}
               </span>
               <p className="dark:text-slate-300 text-zinc-600 mt-1.5 text-xs sm:text-sm leading-relaxed">
                 {explanation}

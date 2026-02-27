@@ -82,6 +82,7 @@ export default function ProfilePage() {
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [customContext, setCustomContext] = useState('');
   const [difficultyPreference, setDifficultyPreference] = useState<string>('adaptive');
+  const [correctionLevel, setCorrectionLevel] = useState<number>(2);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [schedule, setSchedule] = useState<{
@@ -118,6 +119,7 @@ export default function ProfilePage() {
           setSelectedInterests(data.profile.interests || []);
           setCustomContext(data.profile.customContext || '');
           setDifficultyPreference(data.profile.difficultyPreference || 'adaptive');
+          setCorrectionLevel(data.profile.correctionLevel || 2);
           if (data.profile.schedule) {
             setSchedule(data.profile.schedule);
           }
@@ -196,6 +198,7 @@ export default function ProfilePage() {
           interests: selectedInterests,
           customContext,
           difficultyPreference,
+          correctionLevel,
         }),
       });
 
@@ -378,6 +381,53 @@ export default function ProfilePage() {
                 <span className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 block">
                   {language === 'ko' ? option.descKo : option.descEn}
                 </span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Correction Level */}
+        <section>
+          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
+            {language === 'ko' ? '교정 방식' : 'Correction Style'}
+          </h2>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
+            {language === 'ko'
+              ? '대화 중 교정의 강도를 설정합니다.'
+              : 'Set how actively the tutor corrects your speech.'}
+          </p>
+
+          <div className="space-y-3">
+            {[
+              { level: 1, labelEn: 'Just Chat', labelKo: '편하게 대화', descEn: 'No corrections — just natural conversation', descKo: '교정 없이 편하게 대화만' },
+              { level: 2, labelEn: 'Gentle Echo', labelKo: '살짝 알려줘', descEn: 'Tutor naturally echoes the correct form', descKo: '올바른 표현을 자연스럽게 반복' },
+              { level: 3, labelEn: 'Soft Coach', labelKo: '부드럽게 코칭', descEn: 'Gentle tips during conversation', descKo: '대화 중 부드러운 팁 제공' },
+              { level: 4, labelEn: 'Active Teach', labelKo: '적극 교정', descEn: 'Direct corrections with explanations', descKo: '직접적인 교정과 설명' },
+            ].map(option => (
+              <button
+                key={option.level}
+                onClick={() => setCorrectionLevel(option.level)}
+                className={`w-full p-4 rounded-xl border-2 transition-all text-left flex items-center gap-3 ${
+                  correctionLevel === option.level
+                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10'
+                    : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-dark-surface hover:border-neutral-300 dark:hover:border-neutral-600'
+                }`}
+              >
+                <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
+                  correctionLevel === option.level
+                    ? 'bg-primary-500 text-white'
+                    : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300'
+                }`}>
+                  {option.level}
+                </span>
+                <div>
+                  <span className="font-medium text-neutral-900 dark:text-white block text-sm">
+                    {language === 'ko' ? option.labelKo : option.labelEn}
+                  </span>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 block">
+                    {language === 'ko' ? option.descKo : option.descEn}
+                  </span>
+                </div>
               </button>
             ))}
           </div>

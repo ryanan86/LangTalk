@@ -54,6 +54,7 @@ export async function GET(request: Request) {
       nativeLanguage: userData.profile.nativeLanguage,
       preferredTutors: userData.profile.preferredTutors || [],
       difficultyPreference: userData.profile.difficultyPreference || 'adaptive',
+      correctionLevel: userData.profile.correctionLevel || 2,
       schedule: userData.profile.schedule || null,
     };
 
@@ -98,6 +99,7 @@ export async function POST(request: NextRequest) {
       nativeLanguage,
       preferredTutors,
       difficultyPreference,
+      correctionLevel,
       schedule,
     } = body;
 
@@ -124,6 +126,7 @@ export async function POST(request: NextRequest) {
     if (nativeLanguage !== undefined) profileUpdate.nativeLanguage = nativeLanguage;
     if (preferredTutors !== undefined) profileUpdate.preferredTutors = preferredTutors;
     if (difficultyPreference !== undefined) profileUpdate.difficultyPreference = difficultyPreference;
+    if (correctionLevel !== undefined) profileUpdate.correctionLevel = correctionLevel;
     if (schedule !== undefined) profileUpdate.schedule = schedule;
 
     // Update user profile using helper
@@ -151,6 +154,7 @@ export async function POST(request: NextRequest) {
         nativeLanguage,
         preferredTutors,
         difficultyPreference,
+        correctionLevel,
       },
     });
   } catch (error) {

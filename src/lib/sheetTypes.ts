@@ -30,6 +30,7 @@ export interface ProfileData {
   nativeLanguage: 'ko' | 'en' | 'other';
   preferredTutors?: string[]; // ["emma", "oliver"]
   difficultyPreference?: 'easy' | 'medium' | 'hard' | 'adaptive';
+  correctionLevel?: 1 | 2 | 3 | 4; // 1=Just Chat, 2=Gentle Echo, 3=Soft Coach, 4=Active Teach
 
   // Push Notifications
   fcmToken?: string;

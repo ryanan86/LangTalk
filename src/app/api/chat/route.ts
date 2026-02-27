@@ -103,6 +103,7 @@ export async function POST(request: NextRequest) {
     }
 
     const difficultyPreference = (userData?.profile?.difficultyPreference as 'easy' | 'medium' | 'hard' | 'adaptive') || 'adaptive';
+    const correctionLevel = (userData?.profile?.correctionLevel as 1 | 2 | 3 | 4) || 2;
 
     // Calculate age group and adaptive difficulty (with manual override)
     const ageGroup = birthYear ? getAgeGroup(birthYear) : null;
@@ -186,19 +187,36 @@ Them: "Not much"
 BAD: "Really? Nothing at all?"
 GOOD: "Same here honestly. Oh hey, have you tried that new [something]?"
 
-=== NATURAL RECAST (subtle correction) ===
-If the user makes a CLEAR grammar error, naturally echo the corrected version in your response.
-Examples:
-- User: "I goed to the store" -> You: "Oh you went to the store? Nice!"
-- User: "She don't like it" -> You: "Yeah she doesn't like that stuff huh"
-- User: "I have went there" -> You: "Oh you've been there too? Cool!"
-Rules:
-- ONLY for obvious errors (wrong tense, wrong verb form, missing article, subject-verb agreement)
-- Weave it into your natural response - NEVER say "you should say..." or "the correct way is..."
-- If the sentence has no clear error, just respond normally - do NOT force a recast
+=== CORRECTION STYLE (Level ${correctionLevel}) ===
+${correctionLevel === 1 ? `CORRECTION STYLE: Supportive Echo (Level 1 - Just Chat)
+- NEVER point out or highlight grammar errors
+- NEVER use phrases like "you should say", "the correct way is", "by the way"
+- NEVER capitalize or emphasize corrected words
+- Simply include the correct form naturally in your response
+- If user says "I goed to store", respond: "Oh cool, you went to the store? What did you get?"
+- The user should feel UNDERSTOOD, not corrected
+- Priority: conversation flow > accuracy`
+: correctionLevel === 2 ? `CORRECTION STYLE: Gentle Echo (Level 2 - Default)
+- Naturally echo the corrected form in your response
+- Slight emphasis through natural repetition: "Oh you went there?"
+- Never say "you should say" or "the correct way"
 - Max 1 recast per response
-- Do NOT recast vocabulary choices, only grammar errors
-- For kid conversations: even more subtle, just naturally mirror the correct form
+- Only for obvious grammar errors (wrong tense, verb form, articles)
+- For kid conversations: even more subtle, just naturally mirror the correct form`
+: correctionLevel === 3 ? `CORRECTION STYLE: Soft Coach (Level 3)
+- After your natural response, you MAY add one brief, encouraging note
+- Pattern: [react naturally] + "Oh btw, you could also say '[correct form]' — sounds more natural!"
+- Keep correction casual and brief, never lecture
+- Max 1 coaching note per response
+- Always follow with a conversation continuation ("anyway, so...")
+- Only for clear grammar or naturalness issues`
+: `CORRECTION STYLE: Active Teach (Level 4)
+- Correct errors explicitly but warmly
+- Pattern: [brief acknowledgment] + "Quick tip: '[correct form]' instead of '[error]'" + [continue conversation]
+- Max 2 corrections per response
+- Explain briefly why (1 sentence max)
+- Still maintain conversational tone
+- Focus on grammar errors and unnatural phrasing`}
 
 === HOW TO RESPOND ===
 
@@ -421,6 +439,19 @@ RETURN THIS EXACT JSON FORMAT (no markdown, valid JSON only):
 }
 
 BE THOROUGH: Find at least 3-5 corrections. Focus on grammar errors, unnatural phrasing, and vocabulary that doesn't fit the register. Show them how a native speaker would express the same idea IN THE SAME CONVERSATIONAL CONTEXT. Do NOT turn casual chat into essay writing.
+
+=== CORRECTION FRAMING (Level ${correctionLevel}) ===
+${correctionLevel <= 2 ? `FRAMING: "Learning Moments" (gentle tone)
+- Frame corrections as "alternative expressions" not "error corrections"
+- Use "explanation" field to describe HOW native speakers say it, not WHY the user was wrong
+- Avoid deficit language: never use "error", "mistake", "wrong", "incorrect"
+- Instead use: "alternative", "another way", "native speakers often say", "you could also try"
+- The user should feel "Oh, I learned something new" not "Oh, I made a mistake"
+- In "intended" field: describe what the user was trying to express positively` : `FRAMING: "Corrections" (instructional tone)
+- Provide clear, direct corrections with explanations
+- Use "explanation" field to explain the grammar rule or reason
+- Be specific about what's wrong and why the correction is better
+- Still be encouraging and warm, but direct about the error`}
 ${profileContext}
 === SCORING DIFFERENTIATION (CRITICAL) ===
 DO NOT cluster all scores around 60-75. Use the FULL 0-100 range with these anchors:

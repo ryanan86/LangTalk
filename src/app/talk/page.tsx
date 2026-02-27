@@ -85,6 +85,7 @@ function TalkContent() {
   const [topicPool, setTopicPool] = useState<TopicCard[]>(() => getTopicSuggestions({ count: 4 }));
   const [warmupPhrases] = useState(() => getWarmupSet());
   const [sessionCount, setSessionCount] = useState<number>(0);
+  const [correctionLevel, setCorrectionLevel] = useState<1 | 2 | 3 | 4>(2);
 
   // Conversation state
   const [messages, setMessages] = useState<Message[]>([]);
@@ -281,6 +282,13 @@ function TalkContent() {
         if (data.evaluatedGrade) setPreviousGrade(data.evaluatedGrade);
         if (data.levelDetails) setPreviousLevelDetails(data.levelDetails);
         if (typeof data.sessionCount === 'number') setSessionCount(data.sessionCount);
+      })
+      .catch(() => { /* ignore */ });
+    // Fetch correction level from user profile
+    fetch('/api/user-profile')
+      .then(res => res.json())
+      .then(data => {
+        if (data.profile?.correctionLevel) setCorrectionLevel(data.profile.correctionLevel);
       })
       .catch(() => { /* ignore */ });
   }, []);
@@ -1998,7 +2006,12 @@ function TalkContent() {
         {phase === 'review' && analysis && (
           <div className="flex-1 flex flex-col p-4 sm:p-6 dark:bg-[#020617] bg-neutral-50">
             <div className="text-center mb-4 sm:mb-6">
-              <span className="text-xs sm:text-sm dark:text-slate-500 text-zinc-400">{t.correction} {safeReviewIndex + 1} {t.of} {analysis.corrections.length}</span>
+              <span className="text-xs sm:text-sm dark:text-slate-500 text-zinc-400">
+                {correctionLevel <= 2
+                  ? (language === 'ko' ? '오늘의 표현' : "Today's Expressions")
+                  : t.correction}{' '}
+                {safeReviewIndex + 1} {t.of} {analysis.corrections.length}
+              </span>
             </div>
 
             {analysis.corrections.length > 0 ? (
@@ -2012,6 +2025,7 @@ function TalkContent() {
                     category={analysis.corrections[safeReviewIndex].category}
                     isRepeated={repeatedCategories.has(analysis.corrections[safeReviewIndex].category)}
                     correctionIndex={safeReviewIndex}
+                    correctionLevel={correctionLevel}
 
                     isPlaying={isPlaying}
                     onPlayCorrected={() => playTTS(analysis.corrections[safeReviewIndex].corrected, 0.85)}
@@ -2051,7 +2065,11 @@ function TalkContent() {
                   </svg>
                 </div>
                 <h3 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white mb-2">{language === 'ko' ? '훌륭해요!' : 'Great job!'}</h3>
-                <p className="text-neutral-600 dark:text-neutral-300 mb-6 text-sm sm:text-base">{language === 'ko' ? '주요 교정 사항이 없습니다.' : 'No major corrections needed.'}</p>
+                <p className="text-neutral-600 dark:text-neutral-300 mb-6 text-sm sm:text-base">
+                  {correctionLevel <= 2
+                    ? (language === 'ko' ? '오늘은 아주 자연스럽게 대화했어요!' : 'You spoke very naturally today!')
+                    : (language === 'ko' ? '주요 교정 사항이 없습니다.' : 'No major corrections needed.')}
+                </p>
                 <button onClick={() => setPhase('summary')} className="btn-primary text-sm sm:text-base">
                   {t.viewSummary}
                 </button>
