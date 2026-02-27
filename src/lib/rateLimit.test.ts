@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 // Mock next/server before importing the module under test
 vi.mock('next/server', () => {
@@ -116,6 +116,7 @@ describe('checkRateLimit', () => {
     const id = uniqueId();
     const config = { limit: 1, windowSeconds: 60 };
     checkRateLimit(id, config); // first OK
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = checkRateLimit(id, config) as any;
     expect(result).not.toBeNull();
     // Our mock returns { body, init } — check init.status

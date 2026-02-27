@@ -13,7 +13,7 @@ import {
   lessonHistoryBodySchema,
   correctionReviewBodySchema,
   ttsBodySchema,
-  vocabBookPostBodySchema,
+  // vocabBookPostBodySchema,
   correctionsPostBodySchema,
   parseBody,
 } from './apiSchemas';
@@ -285,6 +285,7 @@ describe('parseBody', () => {
   });
 
   it('returns 400 status on validation failure', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = parseBody(ttsBodySchema, { text: '', voice: 'alloy' }) as any;
     expect(result.success).toBe(false);
     // Our mock returns { _isMock: true, body, init }
@@ -292,6 +293,7 @@ describe('parseBody', () => {
   });
 
   it('includes error details in failure response body', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = parseBody(ttsBodySchema, {}) as any;
     expect(result.success).toBe(false);
     expect(result.response.body?.error).toBe('Validation failed');

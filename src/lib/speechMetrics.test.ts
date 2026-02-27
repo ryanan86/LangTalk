@@ -247,6 +247,7 @@ describe('getMetricLevel', () => {
   });
 
   it('returns medium for unknown metric', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(getMetricLevel('totalWords' as any, 100)).toBe('medium');
   });
 });

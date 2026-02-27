@@ -5,15 +5,15 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { personas } from '@/lib/personas';
 import { useLanguage } from '@/lib/i18n';
 import TutorAvatar, { TutorAvatarLarge } from '@/components/TutorAvatar';
-import {
-  SpeechMetrics,
-  calculateSpeechMetrics,
-} from '@/lib/speechMetrics';
+import type { SpeechMetrics } from '@/lib/speechMetrics';
 // html2canvas is dynamically imported when needed (lazy loading for ~46kB bundle savings)
 // import { useLipSync } from '@/hooks/useLipSync';
 import { useTTSPlayback } from '@/hooks/useTTSPlayback';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
+import { useDeepgramSTT } from '@/hooks/useDeepgramSTT';
+import { useConversationAI } from '@/hooks/useConversationAI';
+import { useAnalysisPhase } from '@/hooks/useAnalysisPhase';
 import CorrectionCard from '@/components/talk/CorrectionCard';
 import SummaryReport from '@/components/talk/SummaryReport';
 import StartModeSelector, { type StartMode } from '@/components/talk/StartModeSelector';
@@ -131,8 +131,6 @@ function TalkContent() {
   // Streaming state
   const [showTranscript, setShowTranscript] = useState(false);
 
-  // AbortController for cancelling AI response
-  const abortControllerRef = useRef<AbortController | null>(null);
   const isEndingSessionRef = useRef(false);
 
   // Exit confirmation modal
@@ -154,16 +152,13 @@ function TalkContent() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<Message[]>([]);
+  const conversationTimeRef = useRef(0);
 
-  // Deepgram streaming STT refs
-  const deepgramSocketRef = useRef<WebSocket | null>(null);
-  const realtimeTranscriptRef = useRef<string>('');
-  const deepgramKeyRef = useRef<string | null>(null);
+  // Deepgram streaming STT hook
+  const { connectDeepgram, closeDeepgram, sendToDeepgram, realtimeTranscriptRef } = useDeepgramSTT();
   const [isSavingImage, setIsSavingImage] = useState(false);
 
   // ========== Recording Hook ==========
-  // Deepgram functions are defined later in this file but are referenced inside
-  // callback closures, which are only invoked at runtime (not at hook initialization time).
 
   const {
     startRecording,
@@ -196,13 +191,55 @@ function TalkContent() {
       setPhase('interview');
       setIsProcessing(true);
     },
-    connectDeepgram: (...args) => connectDeepgram(...args),
-    sendToDeepgram: (...args) => sendToDeepgram(...args),
-    closeDeepgram: () => closeDeepgram(),
+    connectDeepgram,
+    sendToDeepgram,
+    closeDeepgram,
     realtimeTranscriptRef,
     aiFinishedSpeakingTimeRef,
     responseTimesRef,
     userSpeakingTimeRef,
+  });
+
+  // Conversation AI hook (streaming SSE response)
+  const { getAIResponse, abortControllerRef } = useConversationAI({
+    tutorId,
+    queueTTS,
+    extractCompleteSentences,
+    clearQueue,
+    playTTS,
+    audioQueueRef,
+    isPlayingQueueRef,
+    setMessages,
+    setStreamingText,
+    setIsProcessing,
+    setIsPlaying,
+    setShowTranscript,
+    isEndingSessionRef,
+  });
+
+  // Analysis phase hook (end-of-session analysis with retry)
+  const { getAnalysis } = useAnalysisPhase({
+    isEndingSessionRef,
+    abortControllerRef,
+    audioRef,
+    audioQueueRef,
+    isPlayingQueueRef,
+    userSpeakingTimeRef,
+    responseTimesRef,
+    getMessages: useCallback(() => messagesRef.current, []),
+    getConversationTime: useCallback(() => conversationTimeRef.current, []),
+    tutorId,
+    language,
+    birthYear,
+    userName,
+    previousGrade,
+    previousLevelDetails,
+    setIsPlaying,
+    setIsProcessing,
+    setStreamingText,
+    setPhase,
+    setSpeechMetrics,
+    setAnalysis,
   });
 
   // Speaking Evaluation state (algorithmic grade-level analysis)
@@ -336,10 +373,13 @@ function TalkContent() {
       .catch(() => { /* ignore */ });
   }, []);
 
-  // Keep messagesRef in sync with messages state
+  // Keep refs in sync with state
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+  useEffect(() => {
+    conversationTimeRef.current = conversationTime;
+  }, [conversationTime]);
 
   // Auto-scroll messages
   useEffect(() => {
@@ -616,77 +656,6 @@ function TalkContent() {
     }
   };
 
-  // ========== Deepgram Streaming STT ==========
-
-  const connectDeepgram = async (): Promise<void> => {
-    try {
-      // Fetch a fresh temporary token each time (tokens expire after 60s)
-      const res = await fetch('/api/deepgram-token');
-      if (!res.ok) return;
-      const { key } = await res.json();
-      if (!key) return;
-      deepgramKeyRef.current = key;
-
-      realtimeTranscriptRef.current = '';
-      const apiKey = deepgramKeyRef.current!;
-
-      const socket = new WebSocket(
-        'wss://api.deepgram.com/v1/listen?model=nova-2&language=en&smart_format=true&punctuate=true&interim_results=false&endpointing=300',
-        ['token', apiKey]
-      );
-
-      socket.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === 'Results' && data.is_final) {
-            const transcript = data.channel?.alternatives?.[0]?.transcript;
-            if (transcript) {
-              realtimeTranscriptRef.current += (realtimeTranscriptRef.current ? ' ' : '') + transcript;
-            }
-          }
-        } catch { /* ignore parse errors */ }
-      };
-
-      socket.onerror = () => {
-        console.warn('Deepgram WebSocket error - will fallback to Whisper');
-      };
-
-      deepgramSocketRef.current = socket;
-
-      // Wait for connection to open (max 3 seconds)
-      await new Promise<void>((resolve) => {
-        const timeout = setTimeout(resolve, 3000);
-        socket.onopen = () => {
-          clearTimeout(timeout);
-          resolve();
-        };
-      });
-    } catch {
-      console.warn('Deepgram connection failed - will use Whisper fallback');
-    }
-  };
-
-  const closeDeepgram = () => {
-    const socket = deepgramSocketRef.current;
-    if (socket) {
-      try {
-        if (socket.readyState === WebSocket.OPEN) {
-          // Send close signal to Deepgram
-          socket.send(JSON.stringify({ type: 'CloseStream' }));
-        }
-        socket.close();
-      } catch { /* ignore */ }
-      deepgramSocketRef.current = null;
-    }
-  };
-
-  const sendToDeepgram = (data: Blob) => {
-    const socket = deepgramSocketRef.current;
-    if (socket?.readyState === WebSocket.OPEN) {
-      socket.send(data);
-    }
-  };
-
   const processAudioWithText = async (text: string, isInitial: boolean) => {
     setIsProcessing(true);
     try {
@@ -710,291 +679,6 @@ function TalkContent() {
       if (isInitial && !isEndingSessionRef.current) setPhase('interview');
     } finally {
       if (!isEndingSessionRef.current) setIsProcessing(false);
-    }
-  };
-
-  // ========== AI Functions ==========
-
-  const getAIResponse = async (currentMessages: Message[]) => {
-    setIsProcessing(true);
-
-    // Reset streaming state
-    setStreamingText('');
-    setShowTranscript(false); // Hide text by default for listening practice
-    clearQueue();
-
-    // Create AbortController for this request
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    try {
-      const MAX_MESSAGES = 10;
-      let messagesToSend = currentMessages;
-
-      if (currentMessages.length > MAX_MESSAGES) {
-        const firstMessage = currentMessages[0];
-        const recentMessages = currentMessages.slice(-MAX_MESSAGES + 1);
-        messagesToSend = [firstMessage, ...recentMessages];
-      }
-
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: messagesToSend,
-          tutorId,
-          mode: 'interview',
-          stream: true,
-        }),
-        signal: controller.signal,
-      });
-
-      // Check if response is streaming (SSE)
-      const contentType = response.headers.get('content-type');
-
-      if (contentType?.includes('text/event-stream')) {
-        // Process streaming response
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        let fullResponse = '';
-        let textBuffer = '';
-
-        if (reader) {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-
-            // Process SSE events
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || '';
-
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const data = line.slice(6);
-
-                if (data === '[DONE]') {
-                  // Stream complete - add any remaining text
-                  if (textBuffer.trim()) {
-                    queueTTS(textBuffer.trim());
-                  }
-                  continue;
-                }
-
-                try {
-                  const parsed = JSON.parse(data);
-                  if (parsed.text) {
-                    fullResponse += parsed.text;
-                    textBuffer += parsed.text;
-                    setStreamingText(fullResponse);
-
-                    // Extract and queue complete sentences
-                    const { sentences, remaining } = extractCompleteSentences(textBuffer);
-                    for (const sentence of sentences) {
-                      queueTTS(sentence);
-                    }
-                    textBuffer = remaining;
-                  }
-                } catch {
-                  // Ignore parse errors
-                }
-              }
-            }
-          }
-        }
-
-        // Add completed message to conversation
-        if (fullResponse) {
-          const assistantMessage: Message = { role: 'assistant', content: fullResponse };
-          setMessages(prev => [...prev, assistantMessage]);
-        }
-
-        // Wait for all audio to finish playing (max 30 seconds)
-        const audioWaitStart = Date.now();
-        while ((isPlayingQueueRef.current || audioQueueRef.current.length > 0) && !isEndingSessionRef.current) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          if (Date.now() - audioWaitStart > 30000) {
-            console.warn('Audio queue wait timeout - forcing continue');
-            audioQueueRef.current = [];
-            isPlayingQueueRef.current = false;
-            setIsPlaying(false);
-            break;
-          }
-        }
-
-        setStreamingText('');
-      } else {
-        // Fallback to non-streaming response
-        const data = await response.json();
-
-        if (data.message) {
-          const assistantMessage: Message = { role: 'assistant', content: data.message };
-          setMessages(prev => [...prev, assistantMessage]);
-          await playTTS(data.message);
-        }
-      }
-    } catch (error) {
-      if (!isEndingSessionRef.current) {
-        console.error('AI response error:', error);
-      }
-    } finally {
-      // Don't override isProcessing if session is ending (getAnalysis sets its own state)
-      if (!isEndingSessionRef.current) {
-        setIsProcessing(false);
-      }
-    }
-  };
-
-  const getAnalysis = async () => {
-    // Prevent race conditions with concurrent async operations
-    isEndingSessionRef.current = true;
-
-    // Abort any in-progress AI response
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
-
-    // Stop any playing audio immediately
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-    audioQueueRef.current = [];
-    isPlayingQueueRef.current = false;
-    setIsPlaying(false);
-    setIsProcessing(false);
-    setStreamingText('');
-
-    setPhase('analysis');
-    setIsProcessing(true);
-
-    // Calculate speech metrics from user messages
-    const userMessages = messages.filter(m => m.role === 'user').map(m => m.content);
-    const totalSpeakingTime = userSpeakingTimeRef.current > 0
-      ? userSpeakingTimeRef.current
-      : conversationTime * 0.4; // Estimate 40% of conversation time is user speaking
-
-    // Pre-calculate speech metrics for adaptive difficulty
-    const preMetrics = calculateSpeechMetrics(
-      userMessages,
-      totalSpeakingTime,
-      responseTimesRef.current,
-      0
-    );
-
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: messages,
-          tutorId,
-          mode: 'analysis',
-          language: language,
-          birthYear: birthYear,
-          userName: userName,
-          previousGrade: previousGrade,
-          previousLevelDetails: previousLevelDetails,
-          speechMetrics: {
-            avgSentenceLength: preMetrics.avgSentenceLength,
-            vocabularyDiversity: preMetrics.vocabularyDiversity,
-            complexSentenceRatio: preMetrics.complexSentenceRatio,
-            wordsPerMinute: preMetrics.wordsPerMinute,
-          },
-        }),
-      });
-      const data = await response.json();
-
-      if (data.analysis) {
-        // Calculate metrics with grammar error count from AI analysis
-        const grammarErrors = data.analysis.corrections?.length || 0;
-        const metrics = calculateSpeechMetrics(
-          userMessages,
-          totalSpeakingTime,
-          responseTimesRef.current,
-          grammarErrors
-        );
-        setSpeechMetrics(metrics);
-
-        setAnalysis(data.analysis);
-        // If there are corrections, go to review; otherwise go to summary
-        if (data.analysis.corrections && data.analysis.corrections.length > 0) {
-          setPhase('review');
-        } else {
-          setPhase('summary');
-        }
-      } else if (data.parseError) {
-        // Analysis JSON parsing failed on server - retry once
-        console.warn('Analysis parse error, retrying...');
-        try {
-          const retryResponse = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              messages: messages,
-              tutorId,
-              mode: 'analysis',
-              language: language,
-              birthYear: birthYear,
-              userName: userName,
-              previousGrade: previousGrade,
-              previousLevelDetails: previousLevelDetails,
-              speechMetrics: {
-                avgSentenceLength: preMetrics.avgSentenceLength,
-                vocabularyDiversity: preMetrics.vocabularyDiversity,
-                complexSentenceRatio: preMetrics.complexSentenceRatio,
-                wordsPerMinute: preMetrics.wordsPerMinute,
-              },
-            }),
-          });
-          const retryData = await retryResponse.json();
-
-          if (retryData.analysis) {
-            const grammarErrors = retryData.analysis.corrections?.length || 0;
-            const metrics = calculateSpeechMetrics(
-              userMessages,
-              totalSpeakingTime,
-              responseTimesRef.current,
-              grammarErrors
-            );
-            setSpeechMetrics(metrics);
-            setAnalysis(retryData.analysis);
-            if (retryData.analysis.corrections && retryData.analysis.corrections.length > 0) {
-              setPhase('review');
-            } else {
-              setPhase('summary');
-            }
-          } else {
-            // Retry also failed - go to summary with basic metrics
-            const metrics = calculateSpeechMetrics(userMessages, totalSpeakingTime, responseTimesRef.current, 0);
-            setSpeechMetrics(metrics);
-            setPhase('summary');
-          }
-        } catch {
-          const metrics = calculateSpeechMetrics(userMessages, totalSpeakingTime, responseTimesRef.current, 0);
-          setSpeechMetrics(metrics);
-          setPhase('summary');
-        }
-      } else {
-        console.error('Analysis parsing failed');
-        // Still calculate basic metrics even if AI analysis fails
-        const metrics = calculateSpeechMetrics(
-          userMessages,
-          totalSpeakingTime,
-          responseTimesRef.current,
-          0
-        );
-        setSpeechMetrics(metrics);
-        setPhase('summary');
-      }
-    } catch (error) {
-      console.error('Analysis error:', error);
-      setPhase('summary');
-    } finally {
-      setIsProcessing(false);
     }
   };
 
