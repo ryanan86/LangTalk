@@ -68,6 +68,10 @@ export function useSessionPersistence(options: {
 
   const hasSavedSessionRef = useRef(false);
 
+  // Stable ref for callback — avoids dependency churn in useEffect
+  const onVocabSavedRef = useRef(onVocabSaved);
+  onVocabSavedRef.current = onVocabSaved;
+
   // Increment session count and store evaluated level when session is completed (summary phase)
   // IMPORTANT: API calls are chained sequentially to avoid race conditions on shared
   // Google Sheets rows (LearningData and Users). Previously, parallel fire-and-forget
@@ -159,7 +163,7 @@ export function useSessionPersistence(options: {
               })),
               sourceSessionId: `${tutorId}-${Date.now()}`,
             });
-            onVocabSaved?.(vocabItems);
+            onVocabSavedRef.current?.(vocabItems);
 
             if (vocabItems.length > 0) {
               await fetch('/api/vocab-book', {
@@ -178,8 +182,7 @@ export function useSessionPersistence(options: {
 
       saveSessionData();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, analysis, messages, tutorId, conversationTime, birthYear, previousGrade, previousLevelDetails, speechMetrics]);
+  }, [phase, analysis, messages, tutorId, conversationTime, birthYear, previousGrade, previousLevelDetails, speechMetrics, language]);
 
   const resetSaved = () => {
     hasSavedSessionRef.current = false;

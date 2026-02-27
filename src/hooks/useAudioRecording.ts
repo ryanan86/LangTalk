@@ -31,7 +31,6 @@ export function useAudioRecording(options: UseAudioRecordingOptions): UseAudioRe
     onInitialRecordingComplete,
     onReplyRecordingComplete,
     onRecordingStarted,
-    onStopRecordingStart,
     connectDeepgram,
     sendToDeepgram,
     closeDeepgram,
@@ -40,6 +39,10 @@ export function useAudioRecording(options: UseAudioRecordingOptions): UseAudioRe
     responseTimesRef,
     userSpeakingTimeRef,
   } = options;
+
+  // Stable ref for callback options — avoids stale closures in useCallback([])
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
 
   const [isRecordingReply, setIsRecordingReply] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30);
@@ -100,8 +103,10 @@ export function useAudioRecording(options: UseAudioRecordingOptions): UseAudioRe
     const recorder = mediaRecorderRef.current;
     if (!recorder) return;
 
+    const opts = optionsRef.current;
+
     // Notify parent to transition phase/state immediately for instant visual feedback
-    if (onStopRecordingStart) onStopRecordingStart();
+    if (opts.onStopRecordingStart) opts.onStopRecordingStart();
 
     try {
       if (recorder.state === 'recording' || recorder.state === 'paused') {
@@ -122,15 +127,14 @@ export function useAudioRecording(options: UseAudioRecordingOptions): UseAudioRe
           recorder.stream?.getTracks().forEach(track => track.stop());
         } catch { /* ignore */ }
         // Close Deepgram
-        closeDeepgram();
-        const dgTranscript = realtimeTranscriptRef.current.trim();
+        opts.closeDeepgram();
+        const dgTranscript = opts.realtimeTranscriptRef.current.trim();
         const mimeType = recorder.mimeType || 'audio/webm';
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
 
-        onInitialRecordingComplete(audioBlob, dgTranscript);
+        opts.onInitialRecordingComplete(audioBlob, dgTranscript);
       }
     }, 2000);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const recordReply = async () => {

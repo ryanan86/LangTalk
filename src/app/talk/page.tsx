@@ -90,6 +90,11 @@ function TalkContent() {
     audioQueueRef, isPlayingQueueRef,
   } = tts;
 
+  // Stable ref for playTTS — avoids useEffect dependency churn since playTTS
+  // is not memoised inside the hook and creates a new reference each render.
+  const playTTSRef = useRef(playTTS);
+  playTTSRef.current = playTTS;
+
   // Phase management
   const [phase, setPhase] = useState<Phase>('ready');
 
@@ -394,7 +399,7 @@ function TalkContent() {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [phase, timeLeft]);
+  }, [phase, timeLeft, setTimeLeft]);
 
   // Timer for conversation (counts up)
   useEffect(() => {
@@ -432,7 +437,7 @@ function TalkContent() {
       if (!hasPlayedReviewIntro) {
         const correction = analysis.corrections[0];
         const introMessage = `Let me help you improve. You said: "${correction.original}". A better way to say this is: "${correction.corrected}".`;
-        playTTS(introMessage);
+        playTTSRef.current(introMessage);
         setHasPlayedReviewIntro(true);
         setLastPlayedReviewIndex(0);
       }
@@ -441,11 +446,10 @@ function TalkContent() {
         const clampedIndex = Math.min(currentReviewIndex, analysis.corrections.length - 1);
         const correction = analysis.corrections[clampedIndex];
         const feedbackMessage = `You said: "${correction.original}". Try saying: "${correction.corrected}".`;
-        playTTS(feedbackMessage);
+        playTTSRef.current(feedbackMessage);
         setLastPlayedReviewIndex(currentReviewIndex);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, analysis, currentReviewIndex, hasPlayedReviewIntro, lastPlayedReviewIndex, isPlaying]);
 
   // Detect repeated mistake categories when entering review or summary phase
@@ -470,7 +474,6 @@ function TalkContent() {
         })
         .catch(err => console.error('Repeat detection error:', err));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, analysis]);
 
   // Fetch speaking evaluation when entering review phase
@@ -498,8 +501,7 @@ function TalkContent() {
         .catch(err => console.error('Speaking evaluation error:', err))
         .finally(() => setIsLoadingEval(false));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, messages, birthYear, language]);
+  }, [phase, messages, birthYear, language, speakingEval, isLoadingEval]);
 
   // Auto-play summary feedback
   useEffect(() => {
@@ -507,28 +509,40 @@ function TalkContent() {
       // Small delay to let the UI render first
       const timer = setTimeout(() => {
         const summaryMessage = analysis.encouragement;
-        playTTS(summaryMessage);
+        playTTSRef.current(summaryMessage);
       }, 800);
       return () => clearTimeout(timer);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
+  }, [phase, analysis]);
+
+  // Handle tutor-first mode: play opener then let user respond
+  const handleTutorIntroComplete = useCallback(async () => {
+    const opener = getRandomOpener(tutorId);
+    // Add tutor's opener as first assistant message
+    const assistantMessage: Message = { role: 'assistant', content: opener.text };
+    setMessages([assistantMessage]);
+    // Play the opener via TTS
+    setPhase('interview');
+    setConversationTime(0);
+    await playTTSRef.current(opener.text);
+  }, [tutorId]);
+
+  // Handle warmup complete: transition to tutor-first conversation
+  const handleWarmupComplete = useCallback(async () => {
+    const opener = getRandomOpener(tutorId);
+    const assistantMessage: Message = { role: 'assistant', content: opener.text };
+    setMessages([assistantMessage]);
+    setPhase('interview');
+    setConversationTime(0);
+    await playTTSRef.current(opener.text);
+  }, [tutorId]);
 
   // Trigger tutor-first intro when entering tutor-intro phase
   useEffect(() => {
     if (phase === 'tutor-intro') {
       handleTutorIntroComplete();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
-
-  // Pre-cache filler audio when interview starts
-  useEffect(() => {
-    if (phase === 'interview' && persona) {
-      // filler pre-caching disabled - contextual filler approach planned
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, persona]);
+  }, [phase, handleTutorIntroComplete]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -566,30 +580,6 @@ function TalkContent() {
     setSelectedTopic(topic);
     startRecording();
   };
-
-  // Handle tutor-first mode: play opener then let user respond
-  const handleTutorIntroComplete = useCallback(async () => {
-    const opener = getRandomOpener(tutorId);
-    // Add tutor's opener as first assistant message
-    const assistantMessage: Message = { role: 'assistant', content: opener.text };
-    setMessages([assistantMessage]);
-    // Play the opener via TTS
-    setPhase('interview');
-    setConversationTime(0);
-    await playTTS(opener.text);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tutorId]);
-
-  // Handle warmup complete: transition to tutor-first conversation
-  const handleWarmupComplete = useCallback(async () => {
-    const opener = getRandomOpener(tutorId);
-    const assistantMessage: Message = { role: 'assistant', content: opener.text };
-    setMessages([assistantMessage]);
-    setPhase('interview');
-    setConversationTime(0);
-    await playTTS(opener.text);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tutorId]);
 
   // Get phase display text
   const getPhaseText = () => {
