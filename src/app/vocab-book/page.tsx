@@ -135,7 +135,7 @@ export default function VocabBookPage() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+      <main id="main-content" className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 space-y-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="dark:bg-white/[0.04] bg-black/[0.03] rounded-2xl p-4 border dark:border-white/[0.06] border-black/[0.08]">

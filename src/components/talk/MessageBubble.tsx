@@ -40,7 +40,11 @@ export default function MessageBubble({
 
   return (
     <div
-      className={`flex w-full animate-fade-in ${isUser ? 'justify-end' : 'justify-start'}`}
+      className={`flex w-full ${
+        isUser
+          ? 'justify-end motion-safe:animate-slide-in-right'
+          : 'justify-start motion-safe:animate-slide-in-left'
+      }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

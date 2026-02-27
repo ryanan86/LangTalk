@@ -1144,6 +1144,12 @@ html, body {
   animation: correction-slide-up 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .correction-card-enter {
+    animation: none;
+  }
+}
+
 /* Inline diff block container */
 .correction-diff-block {
   background: rgba(0, 0, 0, 0.04);

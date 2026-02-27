@@ -253,7 +253,7 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8">
+      <main id="main-content" className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8">
         {/* Notice */}
         <div className="p-4 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl">
           <p className="text-sm text-blue-800 dark:text-blue-300">

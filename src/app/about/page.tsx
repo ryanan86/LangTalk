@@ -135,7 +135,7 @@ export default function AboutPage() {
         </div>
       </header>
 
-      <main className="relative z-10">
+      <main id="main-content" className="relative z-10">
         {/* Hero Section */}
         <section className="pt-16 pb-12">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">

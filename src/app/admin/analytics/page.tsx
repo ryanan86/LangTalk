@@ -70,7 +70,7 @@ export default function AnalyticsPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-4 space-y-6">
+      <main id="main-content" className="max-w-7xl mx-auto p-4 space-y-6">
         {/* GA Status */}
         {!GA_MEASUREMENT_ID ? (
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">

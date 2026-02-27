@@ -39,8 +39,8 @@ export default function TutorCard({
   return (
     <button
       onClick={onSelect}
-      className={`group relative text-center transition-all duration-300 ${
-        isSelected ? 'scale-[1.02]' : 'hover:scale-[1.02]'
+      className={`group relative text-center transition-all duration-300 motion-safe:transition-transform motion-safe:duration-200 ${
+        isSelected ? 'scale-[1.02]' : 'hover:scale-[1.02] hover:-translate-y-0.5'
       }`}
     >
       {/* Card Container */}

@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 function FlagSvg({ country }: { country: 'US' | 'UK' }) {
   if (country === 'US') {
     return (
-      <svg viewBox="0 0 24 16" className="w-4 h-3 rounded-sm overflow-hidden">
+      <svg viewBox="0 0 24 16" className="w-4 h-3 rounded-sm overflow-hidden" aria-hidden="true">
         <rect width="24" height="16" fill="#B22234" />
         <rect y="1.23" width="24" height="1.23" fill="white" />
         <rect y="3.69" width="24" height="1.23" fill="white" />
@@ -18,7 +18,7 @@ function FlagSvg({ country }: { country: 'US' | 'UK' }) {
     );
   }
   return (
-    <svg viewBox="0 0 24 16" className="w-4 h-3 rounded-sm overflow-hidden">
+    <svg viewBox="0 0 24 16" className="w-4 h-3 rounded-sm overflow-hidden" aria-hidden="true">
       <rect width="24" height="16" fill="#012169" />
       <path d="M0 0L24 16M24 0L0 16" stroke="white" strokeWidth="2.4" />
       <path d="M0 0L24 16M24 0L0 16" stroke="#C8102E" strokeWidth="1.2" />

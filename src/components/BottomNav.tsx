@@ -84,6 +84,14 @@ const labelMap = {
   profile: 'navProfile' as const,
 };
 
+const ariaLabelMap = {
+  home: 'Home',
+  talk: 'Talk - Start conversation',
+  review: 'Review',
+  vocab: 'Vocabulary book',
+  profile: 'Profile',
+};
+
 export default function BottomNav({ hidden }: BottomNavProps) {
   const pathname = usePathname();
   const { t } = useLanguage();
@@ -92,6 +100,7 @@ export default function BottomNav({ hidden }: BottomNavProps) {
 
   return (
     <nav
+      aria-label="Main navigation"
       className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl border-t border-neutral-200 dark:border-neutral-800 transition-transform duration-300"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
@@ -107,6 +116,8 @@ export default function BottomNav({ hidden }: BottomNavProps) {
             <Link
               key={tab.key}
               href={tab.href}
+              aria-label={ariaLabelMap[tab.key]}
+              aria-current={isActive ? 'page' : undefined}
               className={`
                 relative flex flex-col items-center justify-center gap-0.5
                 min-w-[56px] min-h-[56px] py-2 px-1
@@ -123,6 +134,7 @@ export default function BottomNav({ hidden }: BottomNavProps) {
               {/* Talk button special styling */}
               {isTalk ? (
                 <span
+                  aria-hidden="true"
                   className={`
                     flex items-center justify-center w-12 h-12 rounded-full
                     transition-all duration-200
@@ -136,6 +148,7 @@ export default function BottomNav({ hidden }: BottomNavProps) {
                 </span>
               ) : (
                 <span
+                  aria-hidden="true"
                   className={`
                     transition-colors duration-200
                     ${isActive

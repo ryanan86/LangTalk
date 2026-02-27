@@ -63,7 +63,7 @@ function buildTurnOrder(
 
 function DebateContent() {
   const router = useRouter();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
 
   // Core state
   const [phase, setPhase] = useState<DebatePhase>('preparation');
@@ -482,7 +482,7 @@ function DebateContent() {
       const currentTurn = turnList[turnIndexRef.current];
       const newMsg: DebateMessage = {
         role: 'user',
-        content: '(Passed this turn)',
+        content: t.passedThisTurn,
         speakerId: 'user',
         speakerName: user.name,
         team: user.team,
@@ -635,7 +635,7 @@ function DebateContent() {
       </header>
 
       {/* ===== MAIN CONTENT ===== */}
-      <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
+      <main id="main-content" className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
 
         {/* ========== PREPARATION PHASE ========== */}
         {phase === 'preparation' && topic && (

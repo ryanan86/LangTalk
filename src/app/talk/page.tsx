@@ -813,11 +813,11 @@ function TalkContent() {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col max-w-3xl mx-auto w-full">
+      <main id="main-content" className="flex-1 flex flex-col max-w-3xl mx-auto w-full">
 
         {/* ========== READY PHASE ========== */}
         {phase === 'ready' && (
-          <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 pb-32 sm:pb-8 text-center" style={{ paddingBottom: 'max(8rem, calc(2rem + env(safe-area-inset-bottom)))' }}>
+          <div className="motion-safe:animate-fade-in flex-1 flex flex-col items-center justify-center p-4 sm:p-8 pb-32 sm:pb-8 text-center" style={{ paddingBottom: 'max(8rem, calc(2rem + env(safe-area-inset-bottom)))' }}>
             <div className="mb-4 sm:mb-6 animate-bounce-soft">
               <TutorAvatar
                 tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
@@ -870,6 +870,7 @@ function TalkContent() {
 
         {/* ========== MODE SELECT PHASE ========== */}
         {phase === 'mode-select' && (
+          <div className="motion-safe:animate-slide-up flex-1 flex flex-col">
           <StartModeSelector
             tutorId={tutorId}
             tutorName={persona.name}
@@ -877,16 +878,19 @@ function TalkContent() {
             onSelect={handleStartModeSelect}
             onBack={() => setPhase('ready')}
           />
+          </div>
         )}
 
         {/* ========== TOPIC SELECT PHASE ========== */}
         {phase === 'topic-select' && (
+          <div className="motion-safe:animate-slide-up flex-1 flex flex-col">
           <TopicSelector
             topics={topicPool}
             onSelect={handleTopicSelect}
             onBack={() => setPhase('mode-select')}
             onShuffle={() => setTopicPool(shuffleTopics([...topicPool]))}
           />
+          </div>
         )}
 
         {/* ========== WARMUP PHASE ========== */}
@@ -930,7 +934,7 @@ function TalkContent() {
 
         {/* ========== RECORDING PHASE - Dark Premium UI ========== */}
         {phase === 'recording' && (
-          <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 relative">
+          <div className="motion-safe:animate-scale-in flex-1 flex flex-col items-center justify-center p-4 sm:p-8 relative">
             {/* Ambient Glow */}
             <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[300px] h-[300px] rounded-full bg-primary-500/10 blur-3xl" />
 
@@ -1004,7 +1008,7 @@ function TalkContent() {
 
         {/* ========== INTERVIEW PHASE - Premium Dark UI ========== */}
         {phase === 'interview' && (
-          <>
+          <div className="motion-safe:animate-scale-in flex-1 flex flex-col">
             {/* Ambient Background Glow */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
               <div
@@ -1033,7 +1037,7 @@ function TalkContent() {
                 }
               />
 
-              <div className="text-center mt-6 mb-8">
+              <div className="text-center mt-6 mb-8" aria-live="polite" aria-atomic="true">
                 {/* Show transcript toggle button when AI is speaking */}
                 {(streamingText || isPlaying) && (
                   <div className="mb-4 px-4">
@@ -1152,12 +1156,12 @@ function TalkContent() {
                 </div>
               </div>
             </div>
-          </>
+          </div>
         )}
 
         {/* ========== ANALYSIS PHASE ========== */}
         {phase === 'analysis' && (
-          <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
+          <div className="motion-safe:animate-fade-in-up flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
             <TutorAvatar
               tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
               size="lg"
@@ -1174,7 +1178,7 @@ function TalkContent() {
 
         {/* ========== REVIEW PHASE ========== */}
         {phase === 'review' && analysis && (
-          <div className="flex-1 flex flex-col p-4 sm:p-6 dark:bg-[#020617] bg-neutral-50">
+          <div className="motion-safe:animate-slide-up flex-1 flex flex-col p-4 sm:p-6 dark:bg-[#020617] bg-neutral-50">
             <div className="text-center mb-4 sm:mb-6">
               <span className="text-xs sm:text-sm dark:text-slate-500 text-zinc-400">
                 {correctionLevel <= 2
@@ -1290,25 +1294,27 @@ function TalkContent() {
 
         {/* ========== SUMMARY PHASE ========== */}
         {phase === 'summary' && (
-          <SummaryReport
-            analysis={analysis}
-            speechMetrics={speechMetrics}
-            speakingEval={speakingEval}
-            isLoadingEval={isLoadingEval}
-            repeatedCategories={repeatedCategories}
-            sessionVocab={sessionVocab}
-            birthYear={birthYear}
-            userName={userName}
-            tutorId={tutorId}
-            persona={persona}
-            language={language}
-            t={t}
-            summaryRef={summaryRef}
-            isSavingImage={isSavingImage}
-            saveAsImage={saveAsImage}
-            onBackHome={() => router.push('/')}
-            onPracticeAgain={resetSession}
-          />
+          <div className="motion-safe:animate-fade-in flex-1 flex flex-col">
+            <SummaryReport
+              analysis={analysis}
+              speechMetrics={speechMetrics}
+              speakingEval={speakingEval}
+              isLoadingEval={isLoadingEval}
+              repeatedCategories={repeatedCategories}
+              sessionVocab={sessionVocab}
+              birthYear={birthYear}
+              userName={userName}
+              tutorId={tutorId}
+              persona={persona}
+              language={language}
+              t={t}
+              summaryRef={summaryRef}
+              isSavingImage={isSavingImage}
+              saveAsImage={saveAsImage}
+              onBackHome={() => router.push('/')}
+              onPracticeAgain={resetSession}
+            />
+          </div>
         )}
       </main>
 

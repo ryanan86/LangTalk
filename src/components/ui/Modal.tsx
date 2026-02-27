@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import { cn } from '@/lib/cn';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -34,6 +34,9 @@ const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
     },
     ref
   ) => {
+    const panelRef = useRef<HTMLDivElement>(null);
+    const triggerRef = useRef<Element | null>(null);
+
     // Body scroll lock
     useEffect(() => {
       if (open) {
@@ -44,10 +47,44 @@ const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
       };
     }, [open]);
 
-    // Escape key handler
+    // Save trigger element and auto-focus first focusable element when opening
+    useEffect(() => {
+      if (open) {
+        triggerRef.current = document.activeElement;
+        const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+        const first = panelRef.current?.querySelector<HTMLElement>(FOCUSABLE);
+        first?.focus();
+      } else if (triggerRef.current instanceof HTMLElement) {
+        triggerRef.current.focus();
+        triggerRef.current = null;
+      }
+    }, [open]);
+
+    // Focus trap + Escape key handler
     const handleKeyDown = useCallback(
       (e: KeyboardEvent) => {
-        if (e.key === 'Escape') onClose();
+        if (e.key === 'Escape') {
+          onClose();
+          return;
+        }
+        if (e.key === 'Tab' && panelRef.current) {
+          const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+          const focusable = Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
+          if (focusable.length === 0) return;
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+          if (e.shiftKey) {
+            if (document.activeElement === first) {
+              e.preventDefault();
+              last.focus();
+            }
+          } else {
+            if (document.activeElement === last) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        }
       },
       [onClose]
     );
@@ -65,6 +102,7 @@ const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
 
     return (
       <div
+        ref={panelRef}
         className="fixed inset-0 z-50 flex items-center justify-center p-4"
         role="dialog"
         aria-modal="true"

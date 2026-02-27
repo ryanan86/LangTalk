@@ -705,7 +705,7 @@ function HomePageContent() {
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10">
+      <main id="main-content" className="relative z-10">
         {/* Fullscreen Tutor Video Hero - Mobile only, non-logged-in */}
         {!session && (
           <section

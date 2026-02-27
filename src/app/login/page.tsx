@@ -105,7 +105,7 @@ function LoginContent() {
           <div className="flex justify-center mb-3">
             <TapTalkLogo size="lg" theme="auto" />
           </div>
-          <p className="text-neutral-500 dark:text-gray-400">{t.aiEnglishPractice}</p>
+          <p className="text-neutral-500 dark:text-neutral-400">{t.aiEnglishPractice}</p>
         </div>
 
         <div className="bg-white dark:bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-neutral-200 dark:border-white/20 shadow-card dark:shadow-none">
@@ -124,7 +124,7 @@ function LoginContent() {
           <button
             onClick={handleGoogleSignIn}
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-3 bg-white dark:bg-white hover:bg-gray-50 dark:hover:bg-gray-100 text-gray-800 font-medium py-3 px-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 border border-neutral-200 dark:border-transparent"
+            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-neutral-50 text-neutral-800 font-medium py-3 px-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 border border-neutral-200 dark:border-transparent"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -152,7 +152,7 @@ function LoginContent() {
               <div className="w-full border-t border-neutral-200 dark:border-white/20"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white dark:bg-transparent text-neutral-400 dark:text-gray-400">{t.orDivider}</span>
+              <span className="px-2 bg-white dark:bg-transparent text-neutral-400 dark:text-neutral-400">{t.orDivider}</span>
             </div>
           </div>
 
@@ -169,7 +169,7 @@ function LoginContent() {
             카카오로 계속하기
           </button>
 
-          <p className="mt-6 text-center text-neutral-400 dark:text-gray-400 text-sm">
+          <p className="mt-6 text-center text-neutral-400 dark:text-neutral-400 text-sm">
             {t.termsAgreement}
           </p>
         </div>

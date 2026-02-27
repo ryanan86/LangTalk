@@ -297,7 +297,7 @@ export default function ReviewPage() {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col max-w-2xl mx-auto w-full p-4">
+      <main id="main-content" className="flex-1 flex flex-col max-w-2xl mx-auto w-full p-4">
         <div className="flex-1 flex flex-col justify-center">
           {/* Card */}
           <div className={`rounded-2xl shadow-lg dark:shadow-none p-6 mb-6 ${

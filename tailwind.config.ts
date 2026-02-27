@@ -79,9 +79,14 @@ const config: Config = {
         'pulse-ring': 'pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'fade-in': 'fade-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         'fade-in-up': 'fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'fade-in-delay-1': 'fade-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both',
+        'fade-in-delay-2': 'fade-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both',
+        'fade-in-delay-3': 'fade-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both',
         'slide-up': 'slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         'slide-down': 'slide-down 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         'scale-in': 'scale-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+        'slide-in-left': 'slide-in-left 0.3s cubic-bezier(0.16, 1, 0.3, 1) both',
+        'slide-in-right': 'slide-in-right 0.3s cubic-bezier(0.16, 1, 0.3, 1) both',
         'bounce-soft': 'bounce-soft 2s ease-in-out infinite',
         'shimmer': 'shimmer 2s linear infinite',
         'glow': 'glow 2s ease-in-out infinite',
@@ -123,6 +128,14 @@ const config: Config = {
         'glow': {
           '0%, 100%': { opacity: '0.6' },
           '50%': { opacity: '1' },
+        },
+        'slide-in-left': {
+          '0%': { opacity: '0', transform: 'translateX(-16px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        'slide-in-right': {
+          '0%': { opacity: '0', transform: 'translateX(16px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
         },
       },
       boxShadow: {

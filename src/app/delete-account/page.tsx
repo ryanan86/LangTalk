@@ -7,11 +7,11 @@ export default function DeleteAccountPage() {
   const { language } = useLanguage();
 
   return (
-    <div className="min-h-screen bg-neutral-50 py-12 px-4">
-      <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-sm p-8">
+    <div className="min-h-screen bg-neutral-50 dark:bg-dark-bg py-12 px-4">
+      <div className="max-w-2xl mx-auto bg-white dark:bg-dark-surface rounded-xl shadow-sm dark:shadow-none p-8">
         <Link
           href="/"
-          className="text-blue-600 hover:underline mb-6 inline-block"
+          className="text-blue-600 dark:text-blue-400 hover:underline mb-6 inline-block"
         >
           {language === 'ko' ? '← 홈으로' : '← Back to Home'}
         </Link>
@@ -21,7 +21,7 @@ export default function DeleteAccountPage() {
         </h1>
 
         {language === 'ko' ? (
-          <div className="space-y-6 text-neutral-700">
+          <div className="space-y-6 text-neutral-700 dark:text-neutral-300">
             <section>
               <h2 className="text-xl font-semibold mb-3">계정 삭제 안내</h2>
               <p className="leading-relaxed">
@@ -30,7 +30,7 @@ export default function DeleteAccountPage() {
               </p>
             </section>
 
-            <section className="bg-blue-50 p-6 rounded-lg">
+            <section className="bg-blue-50 dark:bg-blue-500/10 p-6 rounded-lg">
               <h3 className="font-semibold mb-2">삭제 요청 방법</h3>
               <p className="mb-3">아래 이메일로 다음 정보를 보내주세요:</p>
               <ul className="list-disc pl-6 space-y-1 mb-4">
@@ -65,15 +65,15 @@ export default function DeleteAccountPage() {
               </ul>
             </section>
 
-            <section className="bg-yellow-50 p-4 rounded-lg">
-              <p className="text-yellow-800 text-sm">
+            <section className="bg-yellow-50 dark:bg-yellow-500/10 p-4 rounded-lg">
+              <p className="text-yellow-800 dark:text-yellow-300 text-sm">
                 <strong>참고:</strong> 법적 의무에 따라 일부 데이터(결제 기록 등)는
                 관련 법령에서 정한 기간 동안 보관될 수 있습니다.
               </p>
             </section>
           </div>
         ) : (
-          <div className="space-y-6 text-neutral-700">
+          <div className="space-y-6 text-neutral-700 dark:text-neutral-300">
             <section>
               <h2 className="text-xl font-semibold mb-3">Account Deletion Information</h2>
               <p className="leading-relaxed">
@@ -82,7 +82,7 @@ export default function DeleteAccountPage() {
               </p>
             </section>
 
-            <section className="bg-blue-50 p-6 rounded-lg">
+            <section className="bg-blue-50 dark:bg-blue-500/10 p-6 rounded-lg">
               <h3 className="font-semibold mb-2">How to Request Deletion</h3>
               <p className="mb-3">Send an email with the following information:</p>
               <ul className="list-disc pl-6 space-y-1 mb-4">
@@ -117,8 +117,8 @@ export default function DeleteAccountPage() {
               </ul>
             </section>
 
-            <section className="bg-yellow-50 p-4 rounded-lg">
-              <p className="text-yellow-800 text-sm">
+            <section className="bg-yellow-50 dark:bg-yellow-500/10 p-4 rounded-lg">
+              <p className="text-yellow-800 dark:text-yellow-300 text-sm">
                 <strong>Note:</strong> Some data (such as payment records) may be retained
                 for the period required by applicable laws.
               </p>
@@ -126,8 +126,8 @@ export default function DeleteAccountPage() {
           </div>
         )}
 
-        <div className="mt-8 pt-6 border-t border-neutral-200">
-          <Link href="/privacy" className="text-blue-600 hover:underline">
+        <div className="mt-8 pt-6 border-t border-neutral-200 dark:border-neutral-700">
+          <Link href="/privacy" className="text-blue-600 dark:text-blue-400 hover:underline">
             {language === 'ko' ? '개인정보처리방침 보기' : 'View Privacy Policy'}
           </Link>
         </div>
