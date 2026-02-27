@@ -1415,6 +1415,7 @@ function TalkContent() {
               saveAsImage={saveAsImage}
               onBackHome={() => router.push('/')}
               onPracticeAgain={resetSession}
+              conversationTime={conversationTime}
             />
           </div>
         )}

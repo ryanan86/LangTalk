@@ -1,4 +1,3 @@
-import { randomUUID } from 'crypto';
 import { VocabBookItem } from './sheetTypes';
 
 const STOP_WORDS = new Set([
@@ -97,7 +96,7 @@ export function buildSessionVocabItems(input: {
     const baseProficiency = isFromCorrection ? 20 : Math.min(60, 30 + count * 5);
 
     return {
-      id: randomUUID(),
+      id: globalThis.crypto.randomUUID(),
       term,
       sourceSentence: sampleSentence.get(term),
       sourceSessionId: input.sourceSessionId,

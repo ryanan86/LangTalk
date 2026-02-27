@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Language } from '@/lib/i18n';
 import type { Persona } from '@/lib/personas';
@@ -11,6 +11,7 @@ import { calculateLearningRank } from '@/lib/learningRank';
 import TutorAvatar from '@/components/TutorAvatar';
 import TapTalkLogo from '@/components/TapTalkLogo';
 import AnalysisReview from '@/components/AnalysisReview';
+import ShareableReportCard from '@/components/talk/ShareableReportCard';
 
 interface LevelDetails {
   grammar: number;
@@ -63,6 +64,7 @@ export interface SummaryReportProps {
   saveAsImage: () => void;
   onBackHome: () => void;
   onPracticeAgain: () => void;
+  conversationTime?: number;
 }
 
 export default function SummaryReport({
@@ -83,16 +85,78 @@ export default function SummaryReport({
   saveAsImage,
   onBackHome,
   onPracticeAgain,
+  conversationTime = 0,
 }: SummaryReportProps) {
   const router = useRouter();
+  const shareCardRef = useRef<HTMLDivElement>(null);
+  const [isSharingReport, setIsSharingReport] = useState(false);
+
+  const shareReport = async () => {
+    if (!shareCardRef.current) return;
+    setIsSharingReport(true);
+    try {
+      await document.fonts.ready;
+      const { default: html2canvas } = await import('html2canvas');
+      const canvas = await html2canvas(shareCardRef.current, {
+        backgroundColor: null,
+        scale: 2, // 540×960 × 2 = 1080×1920
+        useCORS: true,
+        logging: false,
+        allowTaint: true,
+      });
+      const dataUrl = canvas.toDataURL('image/png');
+      const date = new Date().toISOString().split('T')[0];
+      const fileName = `taptalk-story-${date}.png`;
+
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        const blob = await (await fetch(dataUrl)).blob();
+        const file = new File([blob], fileName, { type: 'image/png' });
+        try {
+          await navigator.share({ files: [file], title: 'My TapTalk Report' });
+          return;
+        } catch {
+          // fall through to download
+        }
+      }
+
+      // Fallback: download
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Failed to share report:', error);
+    } finally {
+      setIsSharingReport(false);
+    }
+  };
 
   return (
     <div className="flex-1 overflow-y-auto dark:bg-[#020617] bg-neutral-50">
-      {/* Save as Image Button */}
-      <div className="sticky top-0 z-10 flex justify-end p-4 bg-gradient-to-b dark:from-[#020617] from-neutral-50 dark:via-[#020617]/80 via-neutral-50/80 to-transparent">
+      {/* Action Buttons: Share Report + Save Image */}
+      <div className="sticky top-0 z-10 flex justify-end gap-2 p-4 bg-gradient-to-b dark:from-[#020617] from-neutral-50 dark:via-[#020617]/80 via-neutral-50/80 to-transparent">
+        {/* Share Report Card (Instagram Story format) */}
+        <button
+          onClick={shareReport}
+          disabled={isSharingReport || isSavingImage}
+          className="flex items-center gap-2 px-4 py-2.5 text-sm report-glass rounded-xl dark:text-white/70 text-zinc-600 dark:hover:text-white hover:text-zinc-900 dark:hover:bg-white/10 hover:bg-black/[0.06] transition-all disabled:opacity-50"
+        >
+          {isSharingReport ? (
+            <div className="w-4 h-4 border-2 dark:border-white/40 border-zinc-400/60 border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+          )}
+          {language === 'ko' ? '카드 공유' : 'Share Card'}
+        </button>
+
+        {/* Save full report as image */}
         <button
           onClick={saveAsImage}
-          disabled={isSavingImage}
+          disabled={isSavingImage || isSharingReport}
           className="flex items-center gap-2 px-4 py-2.5 text-sm report-glass rounded-xl dark:text-white/70 text-zinc-600 dark:hover:text-white hover:text-zinc-900 dark:hover:bg-white/10 hover:bg-black/[0.06] transition-all disabled:opacity-50"
         >
           {isSavingImage ? (
@@ -105,6 +169,18 @@ export default function SummaryReport({
           {language === 'ko' ? '이미지 저장' : 'Save Image'}
         </button>
       </div>
+
+      {/* Hidden shareable card — rendered off-screen, captured by html2canvas */}
+      <ShareableReportCard
+        ref={shareCardRef}
+        analysis={analysis}
+        tutorId={tutorId}
+        persona={persona}
+        speechMetrics={speechMetrics}
+        conversationTime={conversationTime}
+        language={language}
+        userName={userName}
+      />
 
       {/* Report Content - for image capture */}
       <div ref={summaryRef} className="overflow-hidden px-4 pb-4 space-y-1">
@@ -645,6 +721,36 @@ export default function SummaryReport({
           {t.practiceAgain}
         </button>
       </div>
+
+      {/* Share Story Button */}
+      <div className="mt-4 px-0">
+        <button
+          onClick={shareReport}
+          disabled={isSharingReport}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl report-glass dark:text-white/70 text-zinc-600 dark:hover:text-white hover:text-zinc-900 dark:hover:bg-white/10 hover:bg-black/[0.06] transition-all text-sm font-medium disabled:opacity-50"
+        >
+          {isSharingReport ? (
+            <div className="w-4 h-4 border-2 dark:border-white/40 border-zinc-400/60 border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+          )}
+          {language === 'ko' ? '스토리로 공유하기' : 'Share as Story'}
+        </button>
+      </div>
+
+      {/* Off-screen shareable report card for html2canvas capture */}
+      <ShareableReportCard
+        ref={shareCardRef}
+        analysis={analysis}
+        tutorId={tutorId}
+        persona={persona}
+        speechMetrics={speechMetrics}
+        conversationTime={conversationTime}
+        language={language}
+        userName={userName}
+      />
     </div>
   );
 }
