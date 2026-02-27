@@ -8,18 +8,17 @@ import TutorAvatar, { TutorAvatarLarge } from '@/components/TutorAvatar';
 import {
   SpeechMetrics,
   calculateSpeechMetrics,
-  getAgeGroup,
-  calculateAdaptiveDifficulty,
 } from '@/lib/speechMetrics';
 // html2canvas is dynamically imported when needed (lazy loading for ~46kB bundle savings)
 // import { useLipSync } from '@/hooks/useLipSync';
 import { useTTSPlayback } from '@/hooks/useTTSPlayback';
+import { useAudioRecording } from '@/hooks/useAudioRecording';
+import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import CorrectionCard from '@/components/talk/CorrectionCard';
 import SummaryReport from '@/components/talk/SummaryReport';
 import StartModeSelector, { type StartMode } from '@/components/talk/StartModeSelector';
 import TopicSelector from '@/components/talk/TopicSelector';
 import WarmupUI from '@/components/talk/WarmupUI';
-import { buildSessionVocabItems } from '@/lib/vocabBook';
 import { getRandomOpener } from '@/lib/tutorOpeners';
 import { getTopicSuggestions, shuffleTopics, type TopicCard } from '@/lib/topicSuggestions';
 import { getWarmupSet } from '@/lib/warmupPhrases';
@@ -93,7 +92,6 @@ function TalkContent() {
 
   // Phase management
   const [phase, setPhase] = useState<Phase>('ready');
-  const [timeLeft, setTimeLeft] = useState(30);
 
   // First Utterance Scaffolding state
   const [, setStartMode] = useState<StartMode | null>(null);
@@ -110,7 +108,6 @@ function TalkContent() {
 
   // Processing states
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isRecordingReply, setIsRecordingReply] = useState(false);
 
   // Lip-sync disabled - was causing face image split glitch on mobile
 
@@ -153,12 +150,9 @@ function TalkContent() {
   const [sessionVocab, setSessionVocab] = useState<VocabBookItem[]>([]);
 
   // Refs
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
-  const hasSavedSessionRef = useRef(false);
   const messagesRef = useRef<Message[]>([]);
 
   // Deepgram streaming STT refs
@@ -166,6 +160,50 @@ function TalkContent() {
   const realtimeTranscriptRef = useRef<string>('');
   const deepgramKeyRef = useRef<string | null>(null);
   const [isSavingImage, setIsSavingImage] = useState(false);
+
+  // ========== Recording Hook ==========
+  // Deepgram functions are defined later in this file but are referenced inside
+  // callback closures, which are only invoked at runtime (not at hook initialization time).
+
+  const {
+    startRecording,
+    stopRecording,
+    recordReply,
+    isRecordingReply,
+    timeLeft,
+    setTimeLeft,
+  } = useAudioRecording({
+    onInitialRecordingComplete: (audioBlob, transcript) => {
+      if (transcript) {
+        processAudioWithText(transcript, true);
+      } else {
+        processAudio(audioBlob, true);
+      }
+    },
+    onReplyRecordingComplete: (audioBlob, transcript) => {
+      if (transcript) {
+        processAudioWithText(transcript, false);
+      } else {
+        processAudio(audioBlob, false);
+      }
+    },
+    onRecordingStarted: () => {
+      setPhase('recording');
+    },
+    onStopRecordingStart: () => {
+      // Immediately transition to interview phase with processing state
+      // so user gets instant visual feedback
+      setPhase('interview');
+      setIsProcessing(true);
+    },
+    connectDeepgram: (...args) => connectDeepgram(...args),
+    sendToDeepgram: (...args) => sendToDeepgram(...args),
+    closeDeepgram: () => closeDeepgram(),
+    realtimeTranscriptRef,
+    aiFinishedSpeakingTimeRef,
+    responseTimesRef,
+    userSpeakingTimeRef,
+  });
 
   // Speaking Evaluation state (algorithmic grade-level analysis)
   const [speakingEval, setSpeakingEval] = useState<SpeakingEvaluationResponse['evaluation'] | null>(null);
@@ -331,118 +369,21 @@ function TalkContent() {
     };
   }, [phase]);
 
-  // Increment session count and store evaluated level when session is completed (summary phase)
-  // IMPORTANT: API calls are chained sequentially to avoid race conditions on shared
-  // Google Sheets rows (LearningData and Users). Previously, parallel fire-and-forget
-  // calls caused data loss (last-write-wins on the same row).
-  useEffect(() => {
-    if (phase === 'summary') {
-      if (hasSavedSessionRef.current) return;
-      hasSavedSessionRef.current = true;
-      const saveSessionData = async () => {
-        try {
-          // Step 1: Increment session count first (updates Users + Subscriptions sheets)
-          // Must complete before lesson-history to avoid overwriting sessionCount
-          const countBody: { evaluatedGrade?: string; levelDetails?: LevelDetails } = {};
-          if (analysis?.evaluatedGrade) {
-            countBody.evaluatedGrade = analysis.evaluatedGrade;
-          }
-          if (analysis?.levelDetails) {
-            countBody.levelDetails = analysis.levelDetails;
-          }
-
-          const countRes = await fetch('/api/session-count', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(countBody),
-          });
-          await countRes.json();
-
-          // Step 2: Save lesson history WITH corrections in a single call
-          // This avoids the race condition where addSession and addCorrections
-          // would read-modify-write the same LearningData row concurrently
-          const userMessages = messages.filter(m => m.role === 'user');
-          const topicSummary = userMessages.length > 0
-            ? userMessages.slice(0, 3).map(m => m.content.slice(0, 50)).join(' / ')
-            : 'Free conversation';
-
-          const feedbackSummary = analysis
-            ? `${analysis.overallLevel}. ${analysis.encouragement.slice(0, 100)}`
-            : '';
-
-          const keyCorrections = analysis?.corrections
-            ?.slice(0, 5)
-            .map(c => `${c.original} -> ${c.corrected}`)
-            .join('; ') || '';
-
-          // Prepare corrections to include in the same request
-          let correctionsToSave;
-          if (analysis?.corrections && analysis.corrections.length > 0) {
-            const ageGroup = birthYear ? getAgeGroup(birthYear) : null;
-            const adaptiveDifficulty = ageGroup
-              ? calculateAdaptiveDifficulty(ageGroup, previousGrade, previousLevelDetails, speechMetrics)
-              : null;
-            const correctionDifficulty = adaptiveDifficulty?.difficulty ?? 3;
-
-            correctionsToSave = analysis.corrections.map(c => ({
-              original: c.original,
-              corrected: c.corrected,
-              explanation: c.explanation,
-              category: c.category || 'general',
-              difficulty: correctionDifficulty,
-            }));
-          }
-
-          const historyRes = await fetch('/api/lesson-history', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              tutor: tutorId,
-              duration: Math.floor(conversationTime / 60),
-              topicSummary,
-              feedbackSummary,
-              keyCorrections,
-              level: analysis?.evaluatedGrade || '',
-              levelDetails: analysis?.levelDetails || null,
-              corrections: correctionsToSave,
-              language,
-            }),
-          });
-          await historyRes.json();
-
-          // Step 3: Build and save vocab book items
-          try {
-            const userUtterances = messages.filter(m => m.role === 'user').map(m => m.content);
-            const vocabItems = buildSessionVocabItems({
-              userUtterances,
-              corrections: analysis?.corrections?.map(c => ({
-                original: c.original,
-                corrected: c.corrected,
-                category: c.category,
-              })),
-              sourceSessionId: `${tutorId}-${Date.now()}`,
-            });
-            setSessionVocab(vocabItems);
-
-            if (vocabItems.length > 0) {
-              await fetch('/api/vocab-book', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ items: vocabItems }),
-              });
-            }
-          } catch (vocabErr) {
-            console.error('Vocab book save failed:', vocabErr);
-          }
-        } catch (err) {
-          console.error('Failed to save session data:', err);
-        }
-      };
-
-      saveSessionData();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, analysis, messages, tutorId, conversationTime, birthYear, previousGrade, previousLevelDetails, speechMetrics]);
+  // Session persistence: save session count, lesson history, and vocab book when summary phase is reached
+  const { resetSaved: resetSessionSaved } = useSessionPersistence({
+    phase,
+    analysis,
+    messages,
+    conversationTime,
+    tutorId,
+    language,
+    birthYear,
+    previousGrade,
+    previousLevelDetails,
+    speechMetrics,
+    correctionLevel,
+    onVocabSaved: setSessionVocab,
+  });
 
   // Auto-play voice feedback for review phase
   useEffect(() => {
@@ -625,175 +566,6 @@ function TalkContent() {
       case 'shadowing': return t.phaseShadowing;
       case 'summary': return t.phaseComplete;
       default: return '';
-    }
-  };
-
-  // ========== Recording Functions ==========
-
-  const initialRecordingStoppedRef = useRef(false);
-
-  const startRecording = async () => {
-    initialRecordingStoppedRef.current = false;
-    try {
-      // Start mic and Deepgram connection in parallel
-      const [stream] = await Promise.all([
-        navigator.mediaDevices.getUserMedia({ audio: true }),
-        connectDeepgram(),
-      ]);
-
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/webm')
-          ? 'audio/webm'
-          : 'audio/mp4';
-
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-          sendToDeepgram(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = async () => {
-        if (initialRecordingStoppedRef.current) return;
-        initialRecordingStoppedRef.current = true;
-        stream.getTracks().forEach(track => track.stop());
-
-        // Close Deepgram and grab transcript
-        closeDeepgram();
-        const dgTranscript = realtimeTranscriptRef.current.trim();
-
-        if (dgTranscript) {
-          // Deepgram success - skip Whisper entirely
-          await processAudioWithText(dgTranscript, true);
-        } else {
-          // Fallback to Whisper
-          const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-          await processAudio(audioBlob, true);
-        }
-      };
-
-      mediaRecorder.start(250); // 250ms chunks for real-time streaming
-      setPhase('recording');
-      setTimeLeft(0);
-    } catch (error) {
-      console.error('Microphone error:', error);
-      alert(language === 'ko' ? '마이크 접근을 허용해주세요.' : 'Please allow microphone access.');
-    }
-  };
-
-  const stopRecording = useCallback(() => {
-    const recorder = mediaRecorderRef.current;
-    if (!recorder) return;
-
-    // Immediately transition to interview phase with processing state
-    // so user gets instant visual feedback
-    setPhase('interview');
-    setIsProcessing(true);
-
-    try {
-      if (recorder.state === 'recording' || recorder.state === 'paused') {
-        recorder.stop();
-      }
-    } catch {
-      // ignore recorder stop errors
-    }
-
-    // Fallback: if onstop doesn't fire within 2 seconds (Android bug),
-    // force stop tracks and proceed
-    setTimeout(() => {
-      if (!initialRecordingStoppedRef.current) {
-        console.warn('onstop did not fire, forcing fallback');
-        initialRecordingStoppedRef.current = true;
-        // Stop all media tracks
-        try {
-          recorder.stream?.getTracks().forEach(track => track.stop());
-        } catch { /* ignore */ }
-        // Close Deepgram
-        closeDeepgram();
-        const dgTranscript = realtimeTranscriptRef.current.trim();
-
-        if (dgTranscript) {
-          processAudioWithText(dgTranscript, true);
-        } else {
-          const mimeType = recorder.mimeType || 'audio/webm';
-          const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-          processAudio(audioBlob, true);
-        }
-      }
-    }, 2000);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const recordReply = async () => {
-    if (isRecordingReply) {
-      stopRecording();
-      setIsRecordingReply(false);
-      return;
-    }
-
-    // Calculate response time (time since AI finished speaking)
-    if (aiFinishedSpeakingTimeRef.current > 0) {
-      const responseTime = (Date.now() - aiFinishedSpeakingTimeRef.current) / 1000;
-      responseTimesRef.current.push(responseTime);
-    }
-
-    // Track user speaking start time
-    const speakingStartTime = Date.now();
-
-    try {
-      // Start mic and Deepgram connection in parallel
-      const [stream] = await Promise.all([
-        navigator.mediaDevices.getUserMedia({ audio: true }),
-        connectDeepgram(),
-      ]);
-
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/webm')
-          ? 'audio/webm'
-          : 'audio/mp4';
-
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-      setIsRecordingReply(true);
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-          sendToDeepgram(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = async () => {
-        setIsRecordingReply(false);
-        // Track user speaking time
-        const speakingDuration = (Date.now() - speakingStartTime) / 1000;
-        userSpeakingTimeRef.current += speakingDuration;
-
-        stream.getTracks().forEach(track => track.stop());
-
-        // Close Deepgram and grab transcript
-        closeDeepgram();
-        const dgTranscript = realtimeTranscriptRef.current.trim();
-
-        if (dgTranscript) {
-          await processAudioWithText(dgTranscript, false);
-        } else {
-          const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-          await processAudio(audioBlob, false);
-        }
-      };
-
-      mediaRecorder.start(250); // 250ms chunks for real-time streaming
-    } catch (error) {
-      console.error('Recording error:', error);
-      setIsRecordingReply(false);
     }
   };
 
@@ -1251,7 +1023,7 @@ function TalkContent() {
 
   const resetSession = () => {
     isEndingSessionRef.current = false;
-    hasSavedSessionRef.current = false;
+    resetSessionSaved();
     setMessages([]);
     setConversationTime(0);
     setAnalysis(null);
