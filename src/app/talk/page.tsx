@@ -16,6 +16,10 @@ import { useConversationAI } from '@/hooks/useConversationAI';
 import { useAnalysisPhase } from '@/hooks/useAnalysisPhase';
 import CorrectionCard from '@/components/talk/CorrectionCard';
 import SummaryReport from '@/components/talk/SummaryReport';
+import LevelUpModal from '@/components/gamification/LevelUpModal';
+import AchievementToast from '@/components/gamification/AchievementToast';
+import { calculateXP, checkLevelUp, checkAchievements, calculateLevel, createDefaultGamificationState } from '@/lib/gamification';
+import type { Achievement } from '@/lib/gamification';
 import StartModeSelector, { type StartMode } from '@/components/talk/StartModeSelector';
 import TopicSelector from '@/components/talk/TopicSelector';
 import WarmupUI from '@/components/talk/WarmupUI';
@@ -162,6 +166,14 @@ function TalkContent() {
   // Deepgram streaming STT hook
   const { connectDeepgram, closeDeepgram, sendToDeepgram, realtimeTranscriptRef } = useDeepgramSTT();
   const [isSavingImage, setIsSavingImage] = useState(false);
+
+  // Gamification state
+  const [earnedXP, setEarnedXP] = useState(0);
+  const [showLevelUp, setShowLevelUp] = useState(false);
+  const [levelUpData, setLevelUpData] = useState<{ previousLevel: number; newLevel: number }>({ previousLevel: 1, newLevel: 1 });
+  const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
+  const [currentAchievementIndex, setCurrentAchievementIndex] = useState(0);
+  const gamificationTriggeredRef = useRef(false);
 
   // ========== Recording Hook ==========
 
@@ -515,6 +527,63 @@ function TalkContent() {
     }
   }, [phase, analysis]);
 
+  // Gamification: calculate XP, check achievements, check level-up on session completion
+  useEffect(() => {
+    if (phase !== 'summary' || !analysis || gamificationTriggeredRef.current) return;
+    gamificationTriggeredRef.current = true;
+
+    // Load existing gamification state from localStorage
+    const stored = localStorage.getItem('taptalk-gamification-state');
+    const existingState = stored ? JSON.parse(stored) : createDefaultGamificationState();
+
+    // Calculate XP earned this session
+    let xpGained = calculateXP('session_complete');
+    const hasPerfect = analysis.corrections.length === 0;
+    if (hasPerfect) {
+      xpGained += calculateXP('no_corrections');
+    }
+    if (existingState.streakDays > 1) {
+      xpGained += calculateXP('streak_bonus', { streakDays: existingState.streakDays });
+    }
+
+    setEarnedXP(xpGained);
+
+    // Check level-up
+    const levelResult = checkLevelUp(existingState.totalXP, xpGained);
+    if (levelResult.leveled) {
+      setLevelUpData({ previousLevel: levelResult.previousLevel, newLevel: levelResult.newLevel });
+      setTimeout(() => setShowLevelUp(true), 1500);
+    }
+
+    // Build updated state for achievement checking
+    const updatedState = {
+      ...existingState,
+      totalXP: existingState.totalXP + xpGained,
+      level: calculateLevel(existingState.totalXP + xpGained),
+      sessionsCompleted: existingState.sessionsCompleted + 1,
+      perfectSessions: hasPerfect ? existingState.perfectSessions + 1 : existingState.perfectSessions,
+      tutorsUsed: existingState.tutorsUsed.includes(tutorId)
+        ? existingState.tutorsUsed
+        : [...existingState.tutorsUsed, tutorId],
+    };
+
+    // Check new achievements
+    const unlocked = checkAchievements(updatedState);
+    if (unlocked.length > 0) {
+      updatedState.unlockedAchievements = [
+        ...updatedState.unlockedAchievements,
+        ...unlocked.map((a: Achievement) => a.id),
+      ];
+      setNewAchievements(unlocked);
+      setCurrentAchievementIndex(0);
+    }
+
+    // Save updated state and XP to localStorage
+    localStorage.setItem('taptalk-gamification-state', JSON.stringify(updatedState));
+    const prevXP = parseInt(localStorage.getItem('taptalk-user-xp') || '0', 10);
+    localStorage.setItem('taptalk-user-xp', String(prevXP + xpGained));
+  }, [phase, analysis, tutorId]);
+
   // Handle tutor-first mode: play opener then let user respond
   const handleTutorIntroComplete = useCallback(async () => {
     const opener = getRandomOpener(tutorId);
@@ -697,6 +766,7 @@ function TalkContent() {
 
   const resetSession = () => {
     isEndingSessionRef.current = false;
+    gamificationTriggeredRef.current = false;
     resetSessionSaved();
     setMessages([]);
     setConversationTime(0);
@@ -714,6 +784,10 @@ function TalkContent() {
     setStartMode(null);
     setSelectedTopic(null);
     setTopicPool(getTopicSuggestions({ count: 4 }));
+    setEarnedXP(0);
+    setShowLevelUp(false);
+    setNewAchievements([]);
+    setCurrentAchievementIndex(0);
     setPhase('ready');
   };
 
@@ -729,6 +803,7 @@ function TalkContent() {
 
   // Dynamic theme based on phase
   const isDarkPhase = phase === 'interview' || phase === 'recording' || phase === 'tutor-intro';
+  const accentColor = persona.accentColor;
 
   // Safe array index clamping to prevent out-of-bounds crash if array shrinks
   const safeReviewIndex = analysis
@@ -765,6 +840,10 @@ function TalkContent() {
           </button>
 
           <div className="flex items-center gap-2">
+            <div
+              className="w-2 h-2 rounded-full flex-shrink-0"
+              style={{ backgroundColor: accentColor.primary }}
+            />
             <div>
               <h2 className={`font-semibold text-sm sm:text-base ${isDarkPhase ? 'dark:text-white text-zinc-900' : 'text-neutral-900'}`}>
                 {persona.name}
@@ -802,9 +881,10 @@ function TalkContent() {
                   key={step}
                   className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
                     filled
-                      ? 'bg-primary-500'
+                      ? ''
                       : isDarkPhase ? 'bg-white/10' : 'bg-neutral-200 dark:bg-neutral-700'
                   }`}
+                  style={filled ? { backgroundColor: accentColor.primary } : undefined}
                 />
               );
             })}
@@ -907,7 +987,10 @@ function TalkContent() {
         {/* ========== TUTOR INTRO PHASE ========== */}
         {phase === 'tutor-intro' && (
           <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 relative">
-            <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[300px] h-[300px] rounded-full bg-primary-500/10 blur-3xl" />
+            <div
+              className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[300px] h-[300px] rounded-full blur-3xl"
+              style={{ backgroundColor: accentColor.glow }}
+            />
             <div className="relative z-10 text-center">
               <TutorAvatarLarge
                 tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
@@ -936,7 +1019,10 @@ function TalkContent() {
         {phase === 'recording' && (
           <div className="motion-safe:animate-scale-in flex-1 flex flex-col items-center justify-center p-4 sm:p-8 relative">
             {/* Ambient Glow */}
-            <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[300px] h-[300px] rounded-full bg-primary-500/10 blur-3xl" />
+            <div
+              className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[300px] h-[300px] rounded-full blur-3xl"
+              style={{ backgroundColor: accentColor.glow }}
+            />
 
             <div className="relative mb-8 sm:mb-10 z-10">
               {/* Timer Ring */}
@@ -945,7 +1031,7 @@ function TalkContent() {
                   <circle cx="50" cy="50" r="45" stroke="rgba(255,255,255,0.1)" />
                   <circle
                     cx="50" cy="50" r="45"
-                    stroke={timeLeft >= 30 ? '#22C55E' : '#7C3AED'}
+                    stroke={timeLeft >= 30 ? '#22C55E' : accentColor.primary}
                     strokeDasharray={`${Math.min(timeLeft / 30, 1) * 283} 283`}
                     className="transition-all duration-300"
                   />
@@ -963,9 +1049,10 @@ function TalkContent() {
               {[1,2,3,4,5,4,3,2,1].map((h, i) => (
                 <div
                   key={i}
-                  className="w-1 bg-primary-400 rounded-full animate-pulse"
+                  className="w-1 rounded-full animate-pulse"
                   style={{
                     height: `${h * 8}px`,
+                    backgroundColor: accentColor.primary,
                     animationDelay: `${i * 0.05}s`,
                     animationDuration: '0.6s'
                   }}
@@ -978,7 +1065,7 @@ function TalkContent() {
                 <p className="text-white/80 mb-2 text-base sm:text-lg font-medium relative z-10">
                   {language === 'ko' ? selectedTopic.titleKo : selectedTopic.titleEn}
                 </p>
-                <p className="text-primary-400 text-sm sm:text-base mb-2 relative z-10 font-mono">
+                <p className="text-sm sm:text-base mb-2 relative z-10 font-mono" style={{ color: accentColor.primary }}>
                   &ldquo;{selectedTopic.starterHint}&rdquo;
                 </p>
                 <p className="text-white/40 text-xs sm:text-sm mb-8 relative z-10">
@@ -1016,8 +1103,8 @@ function TalkContent() {
                 style={{
                   background: `radial-gradient(circle, ${
                     isRecordingReply ? 'rgba(239,68,68,0.4)' :
-                    isPlaying ? 'rgba(124,58,237,0.4)' :
-                    'rgba(124,58,237,0.2)'
+                    isPlaying ? accentColor.glow.replace('0.2)', '0.4)') :
+                    accentColor.glow
                   } 0%, transparent 70%)`,
                   transition: 'background 0.5s ease',
                 }}
@@ -1045,7 +1132,7 @@ function TalkContent() {
                       <div className="dark:bg-white/5 bg-black/[0.03] backdrop-blur-xl rounded-2xl p-4 border dark:border-white/10 border-black/[0.08] max-w-sm mx-auto">
                         <p className="dark:text-white/90 text-zinc-900 text-sm sm:text-base leading-relaxed">
                           {streamingText || messages[messages.length - 1]?.content}
-                          {streamingText && <span className="inline-block w-1.5 h-4 bg-primary-400 ml-0.5 animate-pulse" />}
+                          {streamingText && <span className="inline-block w-1.5 h-4 ml-0.5 animate-pulse" style={{ backgroundColor: accentColor.primary }} />}
                         </p>
                         <button
                           onClick={() => setShowTranscript(false)}
@@ -1076,7 +1163,7 @@ function TalkContent() {
                   <div className="flex flex-col items-center">
                     <div className="flex gap-2 mb-3">
                       {[1,2,3].map(i => (
-                        <div key={i} className="w-2 h-2 bg-primary-400 rounded-full animate-pulse" style={{ animationDelay: `${i * 0.15}s` }} />
+                        <div key={i} className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: accentColor.primary, animationDelay: `${i * 0.15}s` }} />
                       ))}
                     </div>
                     <p className="dark:text-white/50 text-zinc-400 text-sm sm:text-base">{t.thinking}</p>
@@ -1122,8 +1209,16 @@ function TalkContent() {
                         ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 recording-active'
                         : isProcessing || isPlaying
                           ? 'dark:bg-white/5 bg-black/[0.03] dark:text-white/30 text-zinc-400 cursor-not-allowed'
-                          : 'bg-primary-600 text-white hover:bg-primary-500 shadow-lg shadow-primary-500/20 hover:shadow-primary-500/30 hover:-translate-y-0.5'
+                          : 'text-white shadow-lg hover:-translate-y-0.5'
                     }`}
+                    style={
+                      !isRecordingReply && !(isProcessing || isPlaying)
+                        ? {
+                            backgroundColor: accentColor.primary,
+                            boxShadow: `0 10px 15px -3px ${accentColor.glow}, 0 4px 6px -4px ${accentColor.glow}`,
+                          }
+                        : undefined
+                    }
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
@@ -1295,6 +1390,13 @@ function TalkContent() {
         {/* ========== SUMMARY PHASE ========== */}
         {phase === 'summary' && (
           <div className="motion-safe:animate-fade-in flex-1 flex flex-col">
+            {earnedXP > 0 && (
+              <div className="flex justify-center pt-3">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20 text-xs font-semibold text-violet-700 dark:text-violet-300">
+                  +{earnedXP} XP
+                </span>
+              </div>
+            )}
             <SummaryReport
               analysis={analysis}
               speechMetrics={speechMetrics}
@@ -1317,6 +1419,24 @@ function TalkContent() {
           </div>
         )}
       </main>
+
+      {/* Gamification: Level Up Modal */}
+      <LevelUpModal
+        isOpen={showLevelUp}
+        level={levelUpData.newLevel}
+        previousLevel={levelUpData.previousLevel}
+        onClose={() => setShowLevelUp(false)}
+      />
+
+      {/* Gamification: Achievement Toast Queue */}
+      {newAchievements.length > 0 && currentAchievementIndex < newAchievements.length && (
+        <AchievementToast
+          key={newAchievements[currentAchievementIndex].id}
+          achievement={newAchievements[currentAchievementIndex]}
+          language={language === 'ko' ? 'ko' : 'en'}
+          onDismiss={() => setCurrentAchievementIndex(i => i + 1)}
+        />
+      )}
 
       {/* Exit Session Confirmation Modal */}
       {showExitConfirm && (
