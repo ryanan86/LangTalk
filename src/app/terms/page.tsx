@@ -1,10 +1,11 @@
-"use client";
-
-import { useLanguage } from "@/lib/i18n";
+import { cookies } from "next/headers";
 import Link from "next/link";
 
+type Language = 'ko' | 'en' | 'nl' | 'ru' | 'fr' | 'es' | 'zh' | 'de';
+
 export default function TermsPage() {
-  const { language } = useLanguage();
+  const cookieStore = cookies();
+  const language = (cookieStore.get('lang')?.value || 'en') as Language;
 
   return (
     <div className="min-h-screen bg-neutral-50 py-12 px-4">

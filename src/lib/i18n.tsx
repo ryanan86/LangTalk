@@ -221,6 +221,13 @@ interface Translations {
   loginError: string;
   orDivider: string;
   termsAgreement: string;
+
+  // Bottom Navigation
+  navHome: string;
+  navTalk: string;
+  navReview: string;
+  navVocab: string;
+  navProfile: string;
 }
 
 const translations: Record<Language, Translations> = {
@@ -441,6 +448,13 @@ const translations: Record<Language, Translations> = {
     loginError: '오류가 발생했습니다. 다시 시도해주세요.',
     orDivider: '또는',
     termsAgreement: '로그인하면 서비스 약관 및 개인정보 처리방침에 동의하는 것입니다',
+
+    // Bottom Navigation
+    navHome: '홈',
+    navTalk: '대화',
+    navReview: '복습',
+    navVocab: '단어장',
+    navProfile: '프로필',
   },
   en: {
     // Common
@@ -659,6 +673,13 @@ const translations: Record<Language, Translations> = {
     loginError: 'An error occurred. Please try again.',
     orDivider: 'or',
     termsAgreement: 'By signing in, you agree to our Terms of Service and Privacy Policy',
+
+    // Bottom Navigation
+    navHome: 'Home',
+    navTalk: 'Talk',
+    navReview: 'Review',
+    navVocab: 'Vocab',
+    navProfile: 'Profile',
   },
   nl: {
     appName: 'TapTalk',
@@ -848,6 +869,13 @@ const translations: Record<Language, Translations> = {
     loginError: 'Er is een fout opgetreden. Probeer het opnieuw.',
     orDivider: 'of',
     termsAgreement: 'Door in te loggen ga je akkoord met onze Servicevoorwaarden en het Privacybeleid',
+
+    // Bottom Navigation
+    navHome: 'Home',
+    navTalk: 'Praten',
+    navReview: 'Herhalen',
+    navVocab: 'Woorden',
+    navProfile: 'Profiel',
   },
   ru: {
     appName: 'TapTalk',
@@ -1037,6 +1065,13 @@ const translations: Record<Language, Translations> = {
     loginError: 'Произошла ошибка. Попробуйте снова.',
     orDivider: 'или',
     termsAgreement: 'Входя в систему, вы соглашаетесь с Условиями использования и Политикой конфиденциальности',
+
+    // Bottom Navigation
+    navHome: 'Главная',
+    navTalk: 'Разговор',
+    navReview: 'Повтор',
+    navVocab: 'Словарь',
+    navProfile: 'Профиль',
   },
   fr: {
     appName: 'TapTalk',
@@ -1226,6 +1261,13 @@ const translations: Record<Language, Translations> = {
     loginError: 'Une erreur est survenue. Veuillez réessayer.',
     orDivider: 'ou',
     termsAgreement: "En vous connectant, vous acceptez nos Conditions d'utilisation et notre Politique de confidentialité",
+
+    // Bottom Navigation
+    navHome: 'Accueil',
+    navTalk: 'Parler',
+    navReview: 'Revoir',
+    navVocab: 'Vocab',
+    navProfile: 'Profil',
   },
   es: {
     appName: 'TapTalk',
@@ -1415,6 +1457,13 @@ const translations: Record<Language, Translations> = {
     loginError: 'Ocurrió un error. Por favor, inténtalo de nuevo.',
     orDivider: 'o',
     termsAgreement: 'Al iniciar sesión, aceptas nuestros Términos de servicio y Política de privacidad',
+
+    // Bottom Navigation
+    navHome: 'Inicio',
+    navTalk: 'Hablar',
+    navReview: 'Repasar',
+    navVocab: 'Vocab',
+    navProfile: 'Perfil',
   },
   zh: {
     appName: 'TapTalk',
@@ -1604,6 +1653,13 @@ const translations: Record<Language, Translations> = {
     loginError: '发生错误，请重试。',
     orDivider: '或',
     termsAgreement: '登录即表示您同意我们的服务条款和隐私政策',
+
+    // Bottom Navigation
+    navHome: '首页',
+    navTalk: '对话',
+    navReview: '复习',
+    navVocab: '词汇',
+    navProfile: '我的',
   },
   de: {
     appName: 'TapTalk',
@@ -1793,6 +1849,13 @@ const translations: Record<Language, Translations> = {
     loginError: 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.',
     orDivider: 'oder',
     termsAgreement: 'Durch die Anmeldung stimmst du unseren Nutzungsbedingungen und der Datenschutzrichtlinie zu',
+
+    // Bottom Navigation
+    navHome: 'Start',
+    navTalk: 'Sprechen',
+    navReview: 'Wiederholen',
+    navVocab: 'Vokabeln',
+    navProfile: 'Profil',
   },
 };
 

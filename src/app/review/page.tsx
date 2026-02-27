@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n';
+import BottomNav from '@/components/BottomNav';
 
 interface Correction {
   correctionId: string;
@@ -253,6 +254,8 @@ export default function ReviewPage() {
             {language === 'ko' ? '홈으로' : 'Back to Home'}
           </button>
         </main>
+        <div className="h-20" />
+        <BottomNav />
       </div>
     );
   }
@@ -488,6 +491,9 @@ export default function ReviewPage() {
           </div>
         )}
       </main>
+      {/* Bottom nav spacer */}
+      <div className="h-20" />
+      <BottomNav />
     </div>
   );
 }

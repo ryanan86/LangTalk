@@ -16,6 +16,7 @@ import LessonHistory from '@/components/home/LessonHistory';
 import XPBar from '@/components/gamification/XPBar';
 import DailyChallengeCard from '@/components/gamification/DailyChallengeCard';
 import OnboardingFlow from '@/components/onboarding/OnboardingFlow';
+import BottomNav from '@/components/BottomNav';
 import { getTodayChallenge } from '@/lib/dailyChallenges';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 // Helper function to check if running in Android WebView (Capacitor app)
@@ -1629,6 +1630,10 @@ function HomePageContent() {
           </div>
         </div>
       )}
+
+      {/* Bottom nav spacer */}
+      <div className="h-20" />
+      <BottomNav />
     </div>
   );
 }

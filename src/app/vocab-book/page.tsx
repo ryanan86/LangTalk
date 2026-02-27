@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n';
+import BottomNav from '@/components/BottomNav';
 
 interface VocabBookItem {
   id: string;
@@ -287,6 +288,9 @@ export default function VocabBookPage() {
           </div>
         )}
       </main>
+      {/* Bottom nav spacer */}
+      <div className="h-20" />
+      <BottomNav />
     </div>
   );
 }

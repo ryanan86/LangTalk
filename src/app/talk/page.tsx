@@ -16,12 +16,19 @@ import TapTalkLogo from '@/components/TapTalkLogo';
 // import { useLipSync } from '@/hooks/useLipSync';
 import AnalysisReview from '@/components/AnalysisReview';
 import CorrectionCard from '@/components/talk/CorrectionCard';
+import StartModeSelector, { type StartMode } from '@/components/talk/StartModeSelector';
+import TopicSelector from '@/components/talk/TopicSelector';
+import WarmupUI from '@/components/talk/WarmupUI';
 import { buildSessionVocabItems } from '@/lib/vocabBook';
 import { calculateLearningRank } from '@/lib/learningRank';
+import { getRandomOpener } from '@/lib/tutorOpeners';
+import { getTopicSuggestions, shuffleTopics, type TopicCard } from '@/lib/topicSuggestions';
+import { getWarmupSet } from '@/lib/warmupPhrases';
 import type { VocabBookItem } from '@/lib/sheetTypes';
 import type { SpeakingEvaluationResponse } from '@/app/api/speaking-evaluate/route';
 
-type Phase = 'ready' | 'recording' | 'interview' | 'analysis' | 'review' | 'shadowing' | 'summary';
+type Phase = 'ready' | 'mode-select' | 'topic-select' | 'warmup' | 'tutor-intro'
+           | 'recording' | 'interview' | 'analysis' | 'review' | 'shadowing' | 'summary';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -71,6 +78,13 @@ function TalkContent() {
   // Phase management
   const [phase, setPhase] = useState<Phase>('ready');
   const [timeLeft, setTimeLeft] = useState(30);
+
+  // First Utterance Scaffolding state
+  const [, setStartMode] = useState<StartMode | null>(null);
+  const [selectedTopic, setSelectedTopic] = useState<TopicCard | null>(null);
+  const [topicPool, setTopicPool] = useState<TopicCard[]>(() => getTopicSuggestions({ count: 4 }));
+  const [warmupPhrases] = useState(() => getWarmupSet());
+  const [sessionCount, setSessionCount] = useState<number>(0);
 
   // Conversation state
   const [messages, setMessages] = useState<Message[]>([]);
@@ -215,8 +229,8 @@ function TalkContent() {
     }
   };
 
-  // Check if session is actively in progress (not ready or summary)
-  const isSessionActive = phase !== 'ready' && phase !== 'summary';
+  // Check if session is actively in progress (not ready, mode-select, or summary)
+  const isSessionActive = phase !== 'ready' && phase !== 'summary' && phase !== 'mode-select' && phase !== 'topic-select' && phase !== 'warmup' && phase !== 'tutor-intro';
 
   // Lip-sync disabled - was causing face image split glitch on mobile
   // useEffect(() => {
@@ -259,13 +273,14 @@ function TalkContent() {
     };
   }, [isSessionActive]);
 
-  // Fetch previous session data for adaptive difficulty
+  // Fetch previous session data for adaptive difficulty & session count
   useEffect(() => {
     fetch('/api/session-count')
       .then(res => res.json())
       .then(data => {
         if (data.evaluatedGrade) setPreviousGrade(data.evaluatedGrade);
         if (data.levelDetails) setPreviousLevelDetails(data.levelDetails);
+        if (typeof data.sessionCount === 'number') setSessionCount(data.sessionCount);
       })
       .catch(() => { /* ignore */ });
   }, []);
@@ -505,6 +520,14 @@ function TalkContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
+  // Trigger tutor-first intro when entering tutor-intro phase
+  useEffect(() => {
+    if (phase === 'tutor-intro') {
+      handleTutorIntroComplete();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
   // Pre-cache filler audio when interview starts
   useEffect(() => {
     if (phase === 'interview' && persona) {
@@ -520,10 +543,68 @@ function TalkContent() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Determine recommended start mode based on session count
+  const recommendedMode: StartMode = sessionCount <= 3 ? 'tutor-first' : sessionCount <= 8 ? 'topic-guided' : 'free-talk';
+
+  // Handle start mode selection from StartModeSelector
+  const handleStartModeSelect = (mode: StartMode) => {
+    setStartMode(mode);
+    switch (mode) {
+      case 'free-talk':
+        // Go directly to recording (existing flow)
+        startRecording();
+        break;
+      case 'topic-guided':
+        setTopicPool(getTopicSuggestions({ count: 4 }));
+        setPhase('topic-select');
+        break;
+      case 'tutor-first':
+        setPhase('tutor-intro');
+        break;
+      case 'warmup':
+        setPhase('warmup');
+        break;
+    }
+  };
+
+  // Handle topic selection → start recording with topic context
+  const handleTopicSelect = (topic: TopicCard) => {
+    setSelectedTopic(topic);
+    startRecording();
+  };
+
+  // Handle tutor-first mode: play opener then let user respond
+  const handleTutorIntroComplete = useCallback(async () => {
+    const opener = getRandomOpener(tutorId);
+    // Add tutor's opener as first assistant message
+    const assistantMessage: Message = { role: 'assistant', content: opener.text };
+    setMessages([assistantMessage]);
+    // Play the opener via TTS
+    setPhase('interview');
+    setConversationTime(0);
+    await playTTS(opener.text);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tutorId]);
+
+  // Handle warmup complete: transition to tutor-first conversation
+  const handleWarmupComplete = useCallback(async () => {
+    const opener = getRandomOpener(tutorId);
+    const assistantMessage: Message = { role: 'assistant', content: opener.text };
+    setMessages([assistantMessage]);
+    setPhase('interview');
+    setConversationTime(0);
+    await playTTS(opener.text);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tutorId]);
+
   // Get phase display text
   const getPhaseText = () => {
     switch (phase) {
       case 'ready': return t.phaseReady;
+      case 'mode-select': return language === 'ko' ? '시작 모드 선택' : 'Choose Start Mode';
+      case 'topic-select': return language === 'ko' ? '주제 선택' : 'Pick a Topic';
+      case 'warmup': return language === 'ko' ? '워밍업' : 'Warm Up';
+      case 'tutor-intro': return language === 'ko' ? '튜터가 시작 중...' : 'Tutor Starting...';
       case 'recording': return t.phaseFreeTalk;
       case 'interview': return `${t.phaseConversation} ${formatTime(conversationTime)} / ${formatTime(maxConversationTime)}`;
       case 'analysis': return t.phaseAnalyzing;
@@ -1452,6 +1533,9 @@ function TalkContent() {
     setHasPlayedReviewIntro(false);
     setLastPlayedReviewIndex(-1);
     setIsSavingImage(false);
+    setStartMode(null);
+    setSelectedTopic(null);
+    setTopicPool(getTopicSuggestions({ count: 4 }));
     setPhase('ready');
   };
 
@@ -1466,7 +1550,7 @@ function TalkContent() {
   }
 
   // Dynamic theme based on phase
-  const isDarkPhase = phase === 'interview' || phase === 'recording';
+  const isDarkPhase = phase === 'interview' || phase === 'recording' || phase === 'tutor-intro';
 
   // Safe array index clamping to prevent out-of-bounds crash if array shrinks
   const safeReviewIndex = analysis
@@ -1529,16 +1613,23 @@ function TalkContent() {
       }`}>
         <div className="max-w-3xl mx-auto">
           <div className="flex gap-1.5">
-            {['recording', 'interview', 'review', 'shadowing', 'summary'].map((step, idx) => (
-              <div
-                key={step}
-                className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                  ['ready', 'recording', 'interview', 'analysis', 'review', 'shadowing', 'summary'].indexOf(phase) > idx
-                    ? 'bg-primary-500'
-                    : isDarkPhase ? 'bg-white/10' : 'bg-neutral-200 dark:bg-neutral-700'
-                }`}
-              />
-            ))}
+            {['start', 'conversation', 'review', 'shadowing', 'summary'].map((step, idx) => {
+              const phaseOrder = ['ready', 'mode-select', 'topic-select', 'warmup', 'tutor-intro', 'recording', 'interview', 'analysis', 'review', 'shadowing', 'summary'];
+              const currentIdx = phaseOrder.indexOf(phase);
+              // Map progress bar segments to phase ranges
+              const stepThresholds = [4, 6, 7, 8, 9]; // tutor-intro, interview, analysis, review, shadowing
+              const filled = currentIdx >= stepThresholds[idx];
+              return (
+                <div
+                  key={step}
+                  className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                    filled
+                      ? 'bg-primary-500'
+                      : isDarkPhase ? 'bg-white/10' : 'bg-neutral-200 dark:bg-neutral-700'
+                  }`}
+                />
+              );
+            })}
           </div>
         </div>
       </div>
@@ -1599,6 +1690,66 @@ function TalkContent() {
           </div>
         )}
 
+        {/* ========== MODE SELECT PHASE ========== */}
+        {phase === 'mode-select' && (
+          <StartModeSelector
+            tutorId={tutorId}
+            tutorName={persona.name}
+            recommendedMode={recommendedMode}
+            onSelect={handleStartModeSelect}
+            onBack={() => setPhase('ready')}
+          />
+        )}
+
+        {/* ========== TOPIC SELECT PHASE ========== */}
+        {phase === 'topic-select' && (
+          <TopicSelector
+            topics={topicPool}
+            onSelect={handleTopicSelect}
+            onBack={() => setPhase('mode-select')}
+            onShuffle={() => setTopicPool(shuffleTopics([...topicPool]))}
+          />
+        )}
+
+        {/* ========== WARMUP PHASE ========== */}
+        {phase === 'warmup' && (
+          <WarmupUI
+            phrases={warmupPhrases}
+            onComplete={handleWarmupComplete}
+            onBack={() => setPhase('mode-select')}
+            onPlayPhrase={(text) => playTTS(text, 0.85)}
+            isPlaying={isPlaying}
+          />
+        )}
+
+        {/* ========== TUTOR INTRO PHASE ========== */}
+        {phase === 'tutor-intro' && (
+          <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 relative">
+            <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[300px] h-[300px] rounded-full bg-primary-500/10 blur-3xl" />
+            <div className="relative z-10 text-center">
+              <TutorAvatarLarge
+                tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
+                speaking={true}
+                mouthOpen={0}
+                status="speaking"
+              />
+              <p className="text-white/80 mt-6 mb-2 text-base sm:text-lg font-medium">
+                {language === 'ko'
+                  ? `${persona.name}님이 말을 걸고 있어요...`
+                  : `${persona.name} is starting the conversation...`}
+              </p>
+              <p className="text-white/40 text-xs sm:text-sm">
+                {language === 'ko' ? '잠시 기다려주세요' : 'Please wait a moment'}
+              </p>
+              <div className="flex gap-2 justify-center mt-4">
+                <div className="loading-dot" />
+                <div className="loading-dot" />
+                <div className="loading-dot" />
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ========== RECORDING PHASE - Dark Premium UI ========== */}
         {phase === 'recording' && (
           <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 relative">
@@ -1640,7 +1791,19 @@ function TalkContent() {
               ))}
             </div>
 
-            {timeLeft < 30 ? (
+            {selectedTopic ? (
+              <>
+                <p className="text-white/80 mb-2 text-base sm:text-lg font-medium relative z-10">
+                  {language === 'ko' ? selectedTopic.titleKo : selectedTopic.titleEn}
+                </p>
+                <p className="text-primary-400 text-sm sm:text-base mb-2 relative z-10 font-mono">
+                  &ldquo;{selectedTopic.starterHint}&rdquo;
+                </p>
+                <p className="text-white/40 text-xs sm:text-sm mb-8 relative z-10">
+                  {language === 'ko' ? '이 힌트로 시작해보세요!' : 'Try starting with this hint!'}
+                </p>
+              </>
+            ) : timeLeft < 30 ? (
               <>
                 <p className="text-white/80 mb-2 text-base sm:text-lg font-medium relative z-10">{t.speakFreely}</p>
                 <p className="text-white/40 text-xs sm:text-sm mb-8 relative z-10">{t.keepGoing30}</p>
@@ -2661,7 +2824,7 @@ function TalkContent() {
               <button
                 onClick={() => {
                   setShowUserInfoModal(false);
-                  startRecording();
+                  setPhase('mode-select');
                 }}
                 disabled={!birthYear}
                 className={`w-full py-4 rounded-xl font-semibold text-white transition-all ${

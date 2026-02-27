@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n';
 import ScheduleSettings from '@/components/settings/ScheduleSettings';
+import BottomNav from '@/components/BottomNav';
 
 interface ProfileType {
   id: string;
@@ -443,6 +444,9 @@ export default function ProfilePage() {
           )}
         </div>
       </main>
+      {/* Bottom nav spacer */}
+      <div className="h-20" />
+      <BottomNav />
     </div>
   );
 }
