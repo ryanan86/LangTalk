@@ -19,13 +19,15 @@ import OnboardingFlow from '@/components/onboarding/OnboardingFlow';
 import BottomNav from '@/components/BottomNav';
 import { getTodayChallenge } from '@/lib/dailyChallenges';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
-// Helper function to check if running in Android WebView (Capacitor app)
-function isAndroidWebView(): boolean {
+// Helper function to check if running in native Capacitor app (iOS or Android)
+function isNativeApp(): boolean {
   if (typeof window === 'undefined') return false;
+  return navigator.userAgent.includes('TapTalkNative');
+}
 
-  const userAgent = navigator.userAgent;
-  const isAndroid = /Android/i.test(userAgent);
-  return isAndroid;
+function isIOSDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+  return /iPad|iPhone|iPod/i.test(navigator.userAgent);
 }
 
 // Typewriter Effect Hook
@@ -163,7 +165,7 @@ function HomePageContent() {
   const [isSubscribed, setIsSubscribed] = useState<boolean | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const [expiryDate, setExpiryDate] = useState<string | null>(null);
-  const [checkingSubscription, setCheckingSubscription] = useState(false);
+  const [checkingSubscription, setCheckingSubscription] = useState(true);
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [signupMessage, setSignupMessage] = useState<string | null>(null);
   const [sessionCount, setSessionCount] = useState<number>(0);
@@ -201,7 +203,7 @@ function HomePageContent() {
   // Animation states
   const [mounted, setMounted] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
 
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -233,13 +235,12 @@ function HomePageContent() {
     { personaIdx: 4, start: 35.64, end: 43.52 },   // Alina (personas[4])
   ]);
 
-  // Handle Google Sign-In (native for Android, web for browser)
+  // Handle Google Sign-In (native for iOS/Android, web for browser)
   const handleGoogleSignIn = useCallback(async () => {
-    // Check at runtime if we're on Android (native app or mobile browser)
-    const isAndroid = isAndroidWebView();
-    if (isAndroid) {
+    const isNative = isNativeApp();
+    if (isNative) {
       try {
-        setIsGoogleLoading(true);
+        setIsAuthLoading(true);
         setNativeSignInError(null);
 
         // Dynamic import for Capacitor plugin
@@ -272,7 +273,7 @@ function HomePageContent() {
         signIn('google');
         return;
       } finally {
-        setIsGoogleLoading(false);
+        setIsAuthLoading(false);
       }
     } else {
       // Web (desktop): use standard NextAuth
@@ -284,6 +285,46 @@ function HomePageContent() {
   const handleWebSignIn = useCallback(() => {
     setNativeSignInError(null);
     signIn('google');
+  }, []);
+
+  // Handle Apple Sign-In (native for iOS, web for browser)
+  const handleAppleSignIn = useCallback(async () => {
+    const isNative = isNativeApp();
+    if (isNative && isIOSDevice()) {
+      try {
+        setIsAuthLoading(true);
+        const { SignInWithApple } = await import('@capacitor-community/apple-sign-in');
+        const result = await SignInWithApple.authorize({
+          clientId: 'com.taptalk.app',
+          redirectURI: 'https://taptalk.xyz',
+          scopes: 'email name',
+        });
+
+        const response = result.response;
+        const signInResult = await signIn('apple-native', {
+          identityToken: response.identityToken,
+          email: response.email || '',
+          name: response.givenName ? `${response.givenName} ${response.familyName || ''}`.trim() : '',
+          userId: response.user,
+          redirect: false,
+        });
+
+        if (signInResult?.ok) {
+          window.location.reload();
+        } else {
+          setNativeSignInError('Apple Sign-In failed. Please try again.');
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error('[TapTalk] Apple Sign-In error:', errorMessage);
+        setNativeSignInError(errorMessage);
+      } finally {
+        setIsAuthLoading(false);
+      }
+    } else {
+      // Web: use NextAuth Apple provider (if configured)
+      signIn('apple');
+    }
   }, []);
 
   // Typewriter texts
@@ -412,6 +453,9 @@ function HomePageContent() {
             body: formData,
           });
 
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
           const data = await response.json();
 
           if (data.error) {
@@ -459,6 +503,10 @@ function HomePageContent() {
     try {
       // Fetch subscription data first (other calls may depend on it)
       const res = await fetch('/api/check-subscription', { signal });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(errText || `HTTP ${res.status}`);
+      }
       const data = await res.json();
       setIsSubscribed(data.subscribed);
       setSubscriptionStatus(data.status || (data.subscribed ? 'active' : 'not_found'));
@@ -471,9 +519,18 @@ function HomePageContent() {
 
       // Fetch independent data in parallel
       const [historyResult, correctionsResult, profileResult] = await Promise.allSettled([
-        fetch('/api/lesson-history', { signal }).then((r) => r.json()),
-        fetch('/api/corrections?due=true&limit=100', { signal }).then((r) => r.json()),
-        fetch('/api/user-profile', { signal }).then((r) => r.json()),
+        fetch('/api/lesson-history', { signal }).then(async (r) => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.json();
+        }),
+        fetch('/api/corrections?due=true&limit=100', { signal }).then(async (r) => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.json();
+        }),
+        fetch('/api/user-profile', { signal }).then(async (r) => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.json();
+        }),
       ]);
 
       if (historyResult.status === 'fulfilled' && historyResult.value.lessons) {
@@ -522,6 +579,9 @@ function HomePageContent() {
     setSignupMessage(null);
     try {
       const res = await fetch('/api/beta-signup', { method: 'POST' });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
       const data = await res.json();
       if (data.success) {
         setSignupMessage(data.message);
@@ -641,7 +701,7 @@ function HomePageContent() {
                   {session.user?.image && (
                     <a
                       href="/profile"
-                      title={language === 'ko' ? '프로필 설정' : 'Profile Settings'}
+                      aria-label={language === 'ko' ? '프로필 설정' : 'Profile Settings'}
                       className="relative z-10 flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 -m-1 rounded-full"
                     >
                       <Image
@@ -657,7 +717,7 @@ function HomePageContent() {
                   <button
                     onClick={() => signOut()}
                     className="p-1.5 sm:p-2 rounded-lg hover:bg-surface-hover transition-colors"
-                    title={t.signOut}
+                    aria-label={t.signOut}
                   >
                     <svg className="w-4 h-4 sm:w-5 sm:h-5 text-theme-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -673,7 +733,7 @@ function HomePageContent() {
                   >
                     {language === 'ko' ? '로그인' : 'Login'}
                   </a>
-                  {/* Desktop: Google + Kakao buttons */}
+                  {/* Desktop: Google + Kakao buttons (Apple only in native app) */}
                   <div className="hidden sm:flex items-center gap-3">
                     <button
                       onClick={handleGoogleSignIn}
@@ -803,7 +863,7 @@ function HomePageContent() {
             if (session) {
               document.getElementById('tutor-selection')?.scrollIntoView({ behavior: 'smooth' });
             } else {
-              signIn('google');
+              router.push('/login');
             }
           }}
         />
@@ -905,17 +965,17 @@ function HomePageContent() {
           <section className={`pb-6 transition-[opacity,transform] duration-700 delay-100 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
             <div className="max-w-6xl mx-auto px-4 sm:px-6">
               <div className="flex justify-center">
-                <div className="inline-flex p-1.5 rounded-2xl bg-surface border border-theme">
+                <div className="inline-flex p-1.5 rounded-2xl bg-surface border border-theme overflow-hidden">
                   <button
                     onClick={() => setActiveTab('talk')}
-                    className={`px-6 sm:px-8 py-3 rounded-xl font-medium transition-all ${
+                    className={`flex-1 min-w-0 px-5 sm:px-8 py-3 rounded-xl font-medium transition-all whitespace-nowrap ${
                       activeTab === 'talk'
                         ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25'
                         : 'text-theme-muted hover:text-theme-primary'
                     }`}
                   >
-                    <span className="flex items-center gap-2">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                       </svg>
                       Talk
@@ -923,19 +983,19 @@ function HomePageContent() {
                   </button>
                   <button
                     onClick={() => setActiveTab('debate')}
-                    className={`px-6 sm:px-8 py-3 rounded-xl font-medium transition-all relative ${
+                    className={`flex-1 min-w-0 px-5 sm:px-8 py-3 rounded-xl font-medium transition-all relative whitespace-nowrap ${
                       activeTab === 'debate'
                         ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25'
                         : 'text-theme-muted hover:text-theme-primary'
                     }`}
                   >
-                    <span className="flex items-center gap-2">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
                       </svg>
                       Debate
                       {!canAccessDebate && (
-                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 ml-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
                       )}
@@ -965,7 +1025,8 @@ function HomePageContent() {
                   <div className="flex flex-col gap-3">
                     <button
                       onClick={handleGoogleSignIn}
-                      className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white text-black font-medium hover:bg-white/90 transition-all hover:scale-105"
+                      disabled={isAuthLoading}
+                      className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white text-black font-medium hover:bg-white/90 transition-all hover:scale-105 border border-neutral-200 disabled:opacity-50"
                     >
                       <svg className="w-5 h-5" viewBox="0 0 24 24">
                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -977,7 +1038,8 @@ function HomePageContent() {
                     </button>
                     <button
                       onClick={() => signIn('kakao')}
-                      className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#FEE500] text-[#191919] font-medium hover:bg-[#FDD800] transition-all hover:scale-105"
+                      disabled={isAuthLoading}
+                      className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#FEE500] text-[#191919] font-medium hover:bg-[#FDD800] transition-all hover:scale-105 disabled:opacity-50"
                     >
                       <svg className="w-5 h-5" viewBox="0 0 24 24">
                         <path fill="#191919" d="M12 3C6.477 3 2 6.463 2 10.691c0 2.72 1.8 5.108 4.5 6.454-.144.522-.926 3.36-.962 3.587 0 0-.02.166.088.229.108.063.235.014.235.014.31-.043 3.59-2.357 4.156-2.759.647.09 1.314.138 1.983.138 5.523 0 10-3.463 10-7.663S17.523 3 12 3z"/>

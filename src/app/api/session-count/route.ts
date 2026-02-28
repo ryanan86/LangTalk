@@ -23,10 +23,10 @@ export async function GET(request: Request) {
 
     const email = session.user.email;
 
-    // If no Google Sheets credentials, return default for development
+    // Require Google Sheets credentials
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
-      console.log('No Google Sheets credentials, returning default session count');
-      return NextResponse.json({ sessionCount: 5, canDebate: true, email });
+      console.error('No Google Sheets credentials configured');
+      return NextResponse.json({ error: 'Service unavailable: missing credentials' }, { status: 503 });
     }
 
     const auth = new google.auth.GoogleAuth({
@@ -41,8 +41,8 @@ export async function GET(request: Request) {
 
     const spreadsheetId = process.env.GOOGLE_SUBSCRIPTION_SHEET_ID;
     if (!spreadsheetId) {
-      console.log('No spreadsheet ID configured');
-      return NextResponse.json({ sessionCount: 5, canDebate: true, email });
+      console.error('No spreadsheet ID configured');
+      return NextResponse.json({ error: 'Service unavailable: missing spreadsheet ID' }, { status: 503 });
     }
 
     // Read the subscription sheet
@@ -84,7 +84,7 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error('Session count retrieval error:', error);
-    return NextResponse.json({ sessionCount: 0, canDebate: false, error: 'Failed to retrieve session count' });
+    return NextResponse.json({ sessionCount: 0, canDebate: false, error: 'Failed to retrieve session count' }, { status: 500 });
   }
 }
 
@@ -103,21 +103,25 @@ export async function POST(request: NextRequest) {
 
     const email = session.user.email;
 
-    // Parse request body for evaluated level
+    // Parse request body once for all downstream use
     let evaluatedGrade: string | null = null;
     let levelDetails: { grammar: number; vocabulary: number; fluency: number; comprehension: number } | null = null;
+    let tutorId: string | undefined;
+    let correctionsCount: number | undefined;
     try {
       const body = await request.json();
       evaluatedGrade = body.evaluatedGrade || null;
       levelDetails = body.levelDetails || null;
+      tutorId = body.tutorId;
+      correctionsCount = body.correctionsCount;
     } catch {
       // No body provided, just increment session count
     }
 
-    // If no Google Sheets credentials, return success for development
+    // Require Google Sheets credentials
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
-      console.log('No Google Sheets credentials, skipping session count increment');
-      return NextResponse.json({ success: true, newCount: 5, evaluatedGrade });
+      console.error('No Google Sheets credentials configured');
+      return NextResponse.json({ error: 'Service unavailable: missing credentials' }, { status: 503 });
     }
 
     const auth = new google.auth.GoogleAuth({
@@ -132,8 +136,8 @@ export async function POST(request: NextRequest) {
 
     const spreadsheetId = process.env.GOOGLE_SUBSCRIPTION_SHEET_ID;
     if (!spreadsheetId) {
-      console.log('No spreadsheet ID configured');
-      return NextResponse.json({ success: true, newCount: 1, evaluatedGrade });
+      console.error('No spreadsheet ID configured');
+      return NextResponse.json({ error: 'Service unavailable: missing spreadsheet ID' }, { status: 503 });
     }
 
     // Read the subscription sheet to find the user
@@ -200,18 +204,6 @@ export async function POST(request: NextRequest) {
       // Calculate XP for this session
       xpEarned += calculateXP('session_complete');
       if (newCount === 1) xpEarned += calculateXP('first_session');
-
-      // Parse body for additional gamification data
-      let tutorId: string | undefined;
-      let correctionsCount: number | undefined;
-      try {
-        const bodyText = await request.text();
-        if (bodyText) {
-          const bodyData = JSON.parse(bodyText);
-          tutorId = bodyData.tutorId;
-          correctionsCount = bodyData.correctionsCount;
-        }
-      } catch { /* body already consumed or empty */ }
 
       // No corrections bonus
       if (correctionsCount === 0) {

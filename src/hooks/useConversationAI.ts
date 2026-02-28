@@ -83,6 +83,12 @@ export function useConversationAI({
         signal: controller.signal,
       });
 
+      if (!response.ok) {
+        console.error('Chat API error:', response.status);
+        setIsProcessing(false);
+        return;
+      }
+
       // Check if response is streaming (SSE)
       const contentType = response.headers.get('content-type');
 

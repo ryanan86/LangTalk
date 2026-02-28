@@ -10,6 +10,7 @@ import {
 } from '@/lib/sheetHelper';
 import { CorrectionItem } from '@/lib/sheetTypes';
 import { makeRid, nowMs, since } from '@/lib/perf';
+import { correctionsPostBodySchema, parseBody } from '@/lib/apiSchemas';
 
 // GET: Retrieve corrections for review (due today or earlier)
 export async function GET(request: NextRequest) {
@@ -111,7 +112,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error(`[${rid}] ERR ${since(t0)}ms`, error);
     console.error('Corrections retrieval error:', error);
-    return NextResponse.json({ corrections: [], error: 'Failed to retrieve corrections' });
+    return NextResponse.json({ corrections: [], error: 'Failed to retrieve corrections' }, { status: 500 });
   }
 }
 
@@ -133,9 +134,11 @@ export async function POST(request: NextRequest) {
 
     const email = session.user.email;
 
-    // Parse request body - can be single correction or array
-    const body = await request.json();
-    const rawCorrections = Array.isArray(body) ? body : [body];
+    // Parse and validate request body - can be single correction or array
+    const rawBody = await request.json();
+    const parsed = parseBody(correctionsPostBodySchema, rawBody);
+    if (!parsed.success) return parsed.response;
+    const rawCorrections = Array.isArray(parsed.data) ? parsed.data : [parsed.data];
 
     // If no Google Sheets credentials, return success for development
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
@@ -167,12 +170,7 @@ export async function POST(request: NextRequest) {
     const nextReviewStr = nextReviewAt.toISOString().split('T')[0];
 
     // Prepare correction items
-    const correctionItems: CorrectionItem[] = rawCorrections.map((c: {
-      original?: string;
-      corrected?: string;
-      explanation?: string;
-      category?: string;
-    }) => ({
+    const correctionItems: CorrectionItem[] = rawCorrections.map((c) => ({
       id: randomUUID(),
       original: c.original || '',
       corrected: c.corrected || '',

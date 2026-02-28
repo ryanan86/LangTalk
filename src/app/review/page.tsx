@@ -62,6 +62,7 @@ export default function ReviewPage() {
     const loadCorrections = async () => {
       try {
         const response = await fetch('/api/corrections?due=true&limit=20');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         setCorrections(data.corrections || []);
       } catch (error) {
@@ -85,6 +86,10 @@ export default function ReviewPage() {
         body: JSON.stringify({ text, voice: 'shimmer', ...(speed && { speed }) }),
       });
 
+      if (!response.ok) {
+        console.error('TTS error:', response.status);
+        return;
+      }
       const audioBlob = await response.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
 
@@ -146,6 +151,9 @@ export default function ReviewPage() {
             method: 'POST',
             body: formData,
           });
+          if (!sttResponse.ok) {
+            throw new Error(`HTTP ${sttResponse.status}`);
+          }
           const sttData = await sttResponse.json();
           setPracticeResult(sttData.text?.trim() || '');
         } catch (error) {
@@ -174,7 +182,7 @@ export default function ReviewPage() {
     setIsSubmitting(true);
 
     try {
-      await fetch('/api/corrections/review', {
+      const reviewRes = await fetch('/api/corrections/review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -182,6 +190,11 @@ export default function ReviewPage() {
           quality,
         }),
       });
+
+      if (!reviewRes.ok) {
+        console.error('SRS review submission failed:', reviewRes.status);
+        return;
+      }
 
       setCompletedCount(prev => prev + 1);
 

@@ -194,7 +194,7 @@ function IncomingCallContent() {
                 className="flex flex-col items-center gap-2 group"
               >
                  <div className="w-14 h-14 rounded-full bg-white/20 dark:bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 transition-transform active:scale-95">
-                    <svg className="w-6 h-6 text-slate-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg aria-hidden="true" className="w-6 h-6 text-slate-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                  </div>
@@ -209,7 +209,7 @@ function IncomingCallContent() {
                 className="flex flex-col items-center gap-2 group"
               >
                  <div className="w-14 h-14 rounded-full bg-white/20 dark:bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 transition-transform active:scale-95">
-                    <svg className="w-6 h-6 text-slate-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg aria-hidden="true" className="w-6 h-6 text-slate-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                  </div>

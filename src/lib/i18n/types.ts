@@ -8,6 +8,7 @@ export interface Translations {
   loading: string;
   continueWithGoogle: string;
   continueWithKakao: string;
+  continueWithApple: string;
 
   // Home page
   heroTitle: string;

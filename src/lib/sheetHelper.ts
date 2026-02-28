@@ -58,6 +58,30 @@ function getKoreaTime(): string {
   }).format(new Date());
 }
 
+// Retry wrapper for transient Google Sheets API failures
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries = 2,
+  baseDelayMs = 500,
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error: unknown) {
+      lastError = error;
+      const status = (error as { code?: number })?.code;
+      // Only retry on transient errors (429, 5xx, network)
+      if (status && status < 429 && status !== 408) throw error;
+      if (attempt < maxRetries) {
+        const delay = baseDelayMs * Math.pow(2, attempt);
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+  }
+  throw lastError;
+}
+
 // ============================================
 // User Data Operations
 // ============================================
@@ -71,10 +95,12 @@ export async function getUserData(email: string): Promise<UserRow | null> {
   if (!spreadsheetId) return null;
 
   try {
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: 'Users!A:E',
-    });
+    const response = await withRetry(() =>
+      sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: 'Users!A:E',
+      })
+    );
 
     const rows = response.data.values || [];
     for (let i = 1; i < rows.length; i++) {
@@ -91,7 +117,7 @@ export async function getUserData(email: string): Promise<UserRow | null> {
     }
     return null;
   } catch (error) {
-    console.error('getUserData error:', error);
+    console.error('getUserData error after retries:', error);
     return null;
   }
 }
@@ -207,10 +233,12 @@ export async function getLearningData(email: string): Promise<LearningDataRow | 
   if (!spreadsheetId) return null;
 
   try {
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: 'LearningData!A:G',
-    });
+    const response = await withRetry(() =>
+      sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: 'LearningData!A:G',
+      })
+    );
 
     const rows = response.data.values || [];
     for (let i = 1; i < rows.length; i++) {
@@ -229,7 +257,7 @@ export async function getLearningData(email: string): Promise<LearningDataRow | 
     }
     return null;
   } catch (error) {
-    console.error('getLearningData error:', error);
+    console.error('getLearningData error after retries:', error);
     return null;
   }
 }

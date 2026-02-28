@@ -457,8 +457,14 @@ async function seedDebateTopics(
   }
 }
 
-// GET endpoint for status check
+// GET endpoint for status check (admin only)
 export async function GET() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.email || !ADMIN_EMAILS.includes(session.user.email)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   return NextResponse.json({
     message: 'Sheet setup API',
     actions: ['create_sheets', 'migrate_data', 'seed_topics'],

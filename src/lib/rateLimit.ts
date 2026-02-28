@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+// NOTE: This in-memory rate limiter is per-process only.
+// In serverless environments (Vercel), each function instance has its own store.
+// For production, replace with a distributed store (e.g., Upstash Redis).
 interface RateLimitEntry {
   count: number;
   resetAt: number;

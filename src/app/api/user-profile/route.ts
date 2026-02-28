@@ -64,7 +64,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error(`[${rid}] ERR ${since(t0)}ms`, error);
     console.error('User profile retrieval error:', error);
-    return NextResponse.json({ profile: null, error: 'Failed to retrieve profile' });
+    return NextResponse.json({ profile: null, error: 'Failed to retrieve profile' }, { status: 500 });
   }
 }
 

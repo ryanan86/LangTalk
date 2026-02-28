@@ -373,8 +373,12 @@ function TalkContent() {
 
   // Fetch previous session data for adaptive difficulty & session count
   useEffect(() => {
-    fetch('/api/session-count')
-      .then(res => res.json())
+    const controller = new AbortController();
+    fetch('/api/session-count', { signal: controller.signal })
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then(data => {
         if (data.evaluatedGrade) setPreviousGrade(data.evaluatedGrade);
         if (data.levelDetails) setPreviousLevelDetails(data.levelDetails);
@@ -382,12 +386,16 @@ function TalkContent() {
       })
       .catch(() => { /* ignore */ });
     // Fetch correction level from user profile
-    fetch('/api/user-profile')
-      .then(res => res.json())
+    fetch('/api/user-profile', { signal: controller.signal })
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then(data => {
         if (data.profile?.correctionLevel) setCorrectionLevel(data.profile.correctionLevel);
       })
       .catch(() => { /* ignore */ });
+    return () => controller.abort();
   }, []);
 
   // Keep refs in sync with state
@@ -468,7 +476,10 @@ function TalkContent() {
   useEffect(() => {
     if ((phase === 'review' || phase === 'summary') && analysis?.corrections?.length) {
       fetch('/api/corrections?due=false&limit=100')
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
         .then(data => {
           if (data.corrections?.length) {
             const catCounts: Record<string, number> = {};
@@ -504,7 +515,10 @@ function TalkContent() {
           language,
         }),
       })
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
         .then(data => {
           if (data.success && data.evaluation) {
             setSpeakingEval(data.evaluation);
@@ -533,7 +547,8 @@ function TalkContent() {
     gamificationTriggeredRef.current = true;
 
     // Load existing gamification state from localStorage
-    const stored = localStorage.getItem('taptalk-gamification-state');
+    let stored: string | null = null;
+    try { stored = localStorage.getItem('taptalk-gamification-state'); } catch { /* Safari private mode */ }
     const existingState = stored ? JSON.parse(stored) : createDefaultGamificationState();
 
     // Calculate XP earned this session
@@ -579,9 +594,10 @@ function TalkContent() {
     }
 
     // Save updated state and XP to localStorage
-    localStorage.setItem('taptalk-gamification-state', JSON.stringify(updatedState));
-    const prevXP = parseInt(localStorage.getItem('taptalk-user-xp') || '0', 10);
-    localStorage.setItem('taptalk-user-xp', String(prevXP + xpGained));
+    try { localStorage.setItem('taptalk-gamification-state', JSON.stringify(updatedState)); } catch { /* Safari private mode */ }
+    let prevXP = 0;
+    try { prevXP = parseInt(localStorage.getItem('taptalk-user-xp') || '0', 10); } catch { /* Safari private mode */ }
+    try { localStorage.setItem('taptalk-user-xp', String(prevXP + xpGained)); } catch { /* Safari private mode */ }
   }, [phase, analysis, tutorId]);
 
   // Handle tutor-first mode: play opener then let user respond
@@ -682,6 +698,11 @@ function TalkContent() {
         method: 'POST',
         body: formData,
       });
+      if (!sttResponse.ok) {
+        console.error('STT error:', sttResponse.status);
+        setIsProcessing(false);
+        return;
+      }
       const sttData = await sttResponse.json();
 
       if (sttData.text && sttData.text.trim()) {
@@ -1511,7 +1532,7 @@ function TalkContent() {
             <div className="p-6 space-y-5">
               {/* English Name */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   {language === 'ko' ? '영문 이름' : 'English Name'}
                 </label>
                 <input
@@ -1519,13 +1540,13 @@ function TalkContent() {
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
                   placeholder={language === 'ko' ? '예: Emma, James' : 'e.g. Emma, James'}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 focus:border-indigo-500 focus:ring-0 transition-colors text-neutral-900 placeholder-neutral-400"
+                  className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 focus:border-indigo-500 focus:ring-0 transition-colors text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 dark:bg-neutral-800"
                 />
               </div>
 
               {/* Birth Year - 2-Step Selector */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   {t.birthYear}
                 </label>
 

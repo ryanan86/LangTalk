@@ -189,6 +189,11 @@ export function useAnalysisPhase({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
       });
+      if (!response.ok) {
+        console.error('Analysis API error:', response.status);
+        fallbackToSummary();
+        return;
+      }
       const data = await response.json();
 
       if (data.analysis) {
@@ -202,6 +207,11 @@ export function useAnalysisPhase({
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(requestBody),
           });
+          if (!retryResponse.ok) {
+            console.error('Analysis retry API error:', retryResponse.status);
+            fallbackToSummary();
+            return;
+          }
           const retryData = await retryResponse.json();
 
           if (retryData.analysis) {

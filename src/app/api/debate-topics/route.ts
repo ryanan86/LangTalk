@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error(`[${rid}] ERR ${since(t0)}ms`, error);
     console.error('Debate topics error:', error);
-    return NextResponse.json({ topics: [], error: 'Failed to get topics' });
+    return NextResponse.json({ topics: [], error: 'Failed to get topics' }, { status: 500 });
   }
 }
 

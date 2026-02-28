@@ -116,7 +116,7 @@ export default function VocabBookPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-[#0a0a1a] flex flex-col">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex flex-col">
       {/* Header */}
       <header className="dark:bg-white/[0.04] bg-black/[0.03] backdrop-blur-md border-b dark:border-white/[0.06] border-black/[0.08] px-4 sm:px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center gap-3">
@@ -241,10 +241,10 @@ export default function VocabBookPage() {
                 >
                   {/* Term & Status */}
                   <div className="flex items-start justify-between gap-2">
-                    <p className="dark:text-white text-zinc-900 font-semibold text-base leading-tight break-all">
+                    <p className="dark:text-white text-zinc-900 font-semibold text-base leading-tight break-words">
                       {item.term}
                     </p>
-                    <span className={`flex-shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full ${badge.className}`}>
+                    <span className={`flex-shrink-0 text-2xs font-medium px-2 py-0.5 rounded-full ${badge.className}`}>
                       {badge.label}
                     </span>
                   </div>
@@ -281,7 +281,7 @@ export default function VocabBookPage() {
                   )}
 
                   {/* Source Date */}
-                  <p className="dark:text-slate-400 text-zinc-500 text-[10px] mt-auto">{item.sourceDate}</p>
+                  <p className="dark:text-slate-400 text-zinc-500 text-2xs mt-auto">{item.sourceDate}</p>
                 </div>
               );
             })}

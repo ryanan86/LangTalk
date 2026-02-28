@@ -75,7 +75,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error(`[${rid}] ERR ${since(t0)}ms`, error);
     console.error('Lesson history retrieval error:', error);
-    return NextResponse.json({ lessons: [], error: 'Failed to retrieve lesson history' });
+    return NextResponse.json({ lessons: [], error: 'Failed to retrieve lesson history' }, { status: 500 });
   }
 }
 

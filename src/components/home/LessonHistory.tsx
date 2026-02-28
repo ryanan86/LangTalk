@@ -73,6 +73,7 @@ export default function LessonHistory({ lessonHistory, language }: LessonHistory
               {/* Main row - always visible */}
               <button
                 onClick={() => setExpandedIdx(isExpanded ? null : idx)}
+                aria-expanded={isExpanded}
                 className="w-full p-4 text-left"
               >
                 <div className="flex items-center justify-between mb-2">

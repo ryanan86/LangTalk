@@ -74,11 +74,14 @@ async function initNativePush(
       registered.current = true;
 
       try {
-        await fetch('/api/push/register', {
+        const regRes = await fetch('/api/push/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ fcmToken: token.value }),
         });
+        if (!regRes.ok) {
+          console.error('[TapTalk Push] FCM register failed:', regRes.status);
+        }
       } catch (err) {
         console.error('[TapTalk Push] FCM register failed:', err);
       }

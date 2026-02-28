@@ -153,6 +153,7 @@ function DebateContent() {
       let selectedTopic: DebateTopic;
       try {
         const response = await fetch('/api/debate-topics');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         if (data.topics?.length > 0) {
           const randomIndex = Math.floor(Math.random() * data.topics.length);
@@ -310,6 +311,10 @@ function DebateContent() {
           language,
         }),
       });
+      if (!response.ok) {
+        console.error('AI debate-chat failed:', response.status);
+        return;
+      }
       const data = await response.json();
 
       if (data.message) {
@@ -361,6 +366,12 @@ function DebateContent() {
           body: JSON.stringify({ text, voice }),
         });
 
+        if (!response.ok) {
+          console.error('TTS error:', response.status);
+          setIsPlaying(false);
+          resolve();
+          return;
+        }
         const audioBlob = await response.blob();
         const audioUrl = URL.createObjectURL(audioBlob);
 
@@ -442,6 +453,12 @@ function DebateContent() {
         method: 'POST',
         body: formData,
       });
+      if (!sttResponse.ok) {
+        console.error('STT error:', sttResponse.status);
+        setIsProcessing(false);
+        setIsUserTurn(true);
+        return;
+      }
       const sttData = await sttResponse.json();
 
       if (sttData.text?.trim()) {
@@ -506,6 +523,11 @@ function DebateContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: messagesRef.current, topic, userTeam, language }),
       });
+      if (!response.ok) {
+        console.error('Debate analysis failed:', response.status);
+        setPhase('result');
+        return;
+      }
       const data = await response.json();
 
       if (data.analysis) {

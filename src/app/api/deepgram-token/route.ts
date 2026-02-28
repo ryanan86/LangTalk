@@ -26,7 +26,7 @@ function checkRateLimit(userId: string): boolean {
 }
 
 // Creates a temporary scoped Deepgram API key (60s TTL)
-// Requires DEEPGRAM_PROJECT_ID env var. Falls back to raw key if not set.
+// Requires DEEPGRAM_PROJECT_ID env var. Returns 503 if not configured.
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -46,11 +46,8 @@ export async function GET() {
 
     const projectId = process.env.DEEPGRAM_PROJECT_ID;
     if (!projectId) {
-      console.warn(
-        '[deepgram-token] DEEPGRAM_PROJECT_ID not set — falling back to raw API key. ' +
-        'Set DEEPGRAM_PROJECT_ID to enable temporary scoped tokens.'
-      );
-      return NextResponse.json({ key: apiKey });
+      console.error('[deepgram-token] DEEPGRAM_PROJECT_ID not set — cannot create scoped token');
+      return NextResponse.json({ error: 'Speech service not configured' }, { status: 503 });
     }
 
     // Create a temporary scoped key via Deepgram REST API
@@ -73,9 +70,7 @@ export async function GET() {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('[deepgram-token] Failed to create temp key:', response.status, errorText);
-      // Fall back to raw key on API failure
-      console.warn('[deepgram-token] Falling back to raw API key');
-      return NextResponse.json({ key: apiKey });
+      return NextResponse.json({ error: 'Failed to create speech token' }, { status: 503 });
     }
 
     const data = await response.json();
@@ -83,7 +78,7 @@ export async function GET() {
 
     if (!tempKey) {
       console.error('[deepgram-token] No key in response:', data);
-      return NextResponse.json({ key: apiKey });
+      return NextResponse.json({ error: 'Invalid token response' }, { status: 503 });
     }
 
     return NextResponse.json({ key: tempKey });

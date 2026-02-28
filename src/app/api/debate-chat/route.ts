@@ -49,6 +49,17 @@ export async function POST(request: NextRequest) {
       language = 'en',
     }: DebateChatRequest = await request.json();
 
+    // Allowlist validation to prevent prompt injection
+    const VALID_PHASES: readonly string[] = ['opening', 'rebuttal', 'closing', 'qa'];
+    const VALID_TEAMS: readonly string[] = ['pro', 'con', 'moderator'];
+
+    if (!VALID_PHASES.includes(phase)) {
+      return NextResponse.json({ error: 'Invalid phase' }, { status: 400 });
+    }
+    if (!VALID_TEAMS.includes(speakerTeam)) {
+      return NextResponse.json({ error: 'Invalid speakerTeam' }, { status: 400 });
+    }
+
     const isKorean = language === 'ko';
 
     const persona = getDebatePersona(currentSpeakerId);

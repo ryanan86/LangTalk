@@ -10,8 +10,8 @@ interface BottomNavProps {
 
 const tabs = [
   { key: 'home' as const, href: '/' },
-  { key: 'talk' as const, href: '/talk' },
   { key: 'review' as const, href: '/review' },
+  { key: 'talk' as const, href: '/talk' },
   { key: 'vocab' as const, href: '/vocab-book' },
   { key: 'profile' as const, href: '/profile' },
 ];

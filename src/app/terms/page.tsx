@@ -8,11 +8,11 @@ export default function TermsPage() {
   const language = (cookieStore.get('lang')?.value || 'en') as Language;
 
   return (
-    <div className="min-h-screen bg-neutral-50 py-12 px-4">
-      <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-sm p-8">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 py-12 px-4">
+      <div className="max-w-3xl mx-auto bg-white dark:bg-neutral-900 rounded-xl shadow-sm p-8">
         <Link
           href="/"
-          className="text-blue-600 hover:underline mb-6 inline-block"
+          className="text-blue-600 dark:text-blue-400 hover:underline mb-6 inline-block"
         >
           {language === 'ko' ? '← 홈으로' : '← Back to Home'}
         </Link>
@@ -23,7 +23,7 @@ export default function TermsPage() {
 
         {language === 'ko' ? (
           <div className="prose prose-neutral max-w-none space-y-6">
-            <p className="text-neutral-600">
+            <p className="text-neutral-600 dark:text-neutral-400">
               최종 수정일: 2025년 2월 7일
             </p>
 
@@ -91,7 +91,7 @@ export default function TermsPage() {
           </div>
         ) : (
           <div className="prose prose-neutral max-w-none space-y-6">
-            <p className="text-neutral-600">
+            <p className="text-neutral-600 dark:text-neutral-400">
               Last updated: February 7, 2025
             </p>
 
@@ -159,8 +159,8 @@ export default function TermsPage() {
           </div>
         )}
 
-        <div className="mt-12 pt-6 border-t border-neutral-200">
-          <Link href="/privacy" className="text-blue-600 hover:underline">
+        <div className="mt-12 pt-6 border-t border-neutral-200 dark:border-neutral-700">
+          <Link href="/privacy" className="text-blue-600 dark:text-blue-400 hover:underline">
             {language === 'ko' ? '개인정보처리방침 보기' : 'View Privacy Policy'}
           </Link>
         </div>

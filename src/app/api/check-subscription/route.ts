@@ -16,15 +16,15 @@ export async function GET(_request: NextRequest) {
 
     const email = session.user.email;
 
-    // If no Google Sheets credentials, allow all (for development)
+    // If no Google Sheets credentials, fail closed (deny access)
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
-      console.log('No Google Sheets credentials, allowing access for development');
-      return NextResponse.json({ subscribed: true, email });
+      console.error('[check-subscription] Google Sheets credentials not configured');
+      return NextResponse.json({ subscribed: false, status: 'error', reason: 'Service configuration error' }, { status: 503 });
     }
 
     if (!process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
-      console.log('No spreadsheet ID configured, allowing access');
-      return NextResponse.json({ subscribed: true, email });
+      console.error('[check-subscription] Spreadsheet ID not configured');
+      return NextResponse.json({ subscribed: false, status: 'error', reason: 'Service configuration error' }, { status: 503 });
     }
 
     // Get user data using optimized helper (single API call)

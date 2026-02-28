@@ -29,7 +29,7 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: true,
     captureInput: true,
-    webContentsDebuggingEnabled: true, // Enable for debugging
+    webContentsDebuggingEnabled: false, // Must be false for App Store submission
     appendUserAgent: 'TapTalkNative', // For detecting native app in web code
   },
   ios: {

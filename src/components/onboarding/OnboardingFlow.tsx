@@ -144,7 +144,7 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
   const handleComplete = async () => {
     // Save onboarding data
     try {
-      await fetch('/api/user-profile', {
+      const res = await fetch('/api/user-profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -152,11 +152,16 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
           interests: selectedInterests,
         }),
       });
+      if (!res.ok) {
+        console.error('Failed to save profile during onboarding:', res.status);
+        return;
+      }
     } catch (error) {
       console.error('Failed to save profile during onboarding:', error);
+      return;
     }
 
-    // Mark onboarding as complete
+    // Mark onboarding as complete (only after successful save)
     localStorage.setItem(STORAGE_KEY, 'true');
 
     // If a tutor was selected, save it

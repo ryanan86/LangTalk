@@ -84,6 +84,13 @@ export default function MicTestStep({ onComplete, onSkip, language }: MicTestSte
             body: formData,
           });
 
+          if (!response.ok) {
+            setTestResult(
+              language === 'ko' ? `오류: HTTP ${response.status}` : `Error: HTTP ${response.status}`
+            );
+            setTestStatus('error');
+            return;
+          }
           const data = await response.json();
 
           if (data.error) {

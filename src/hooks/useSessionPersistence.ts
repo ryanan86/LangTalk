@@ -97,7 +97,11 @@ export function useSessionPersistence(options: {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(countBody),
           });
-          await countRes.json();
+          if (!countRes.ok) {
+            console.error('session-count save failed:', countRes.status);
+          } else {
+            await countRes.json();
+          }
 
           // Step 2: Save lesson history WITH corrections in a single call
           // This avoids the race condition where addSession and addCorrections
@@ -149,7 +153,11 @@ export function useSessionPersistence(options: {
               language,
             }),
           });
-          await historyRes.json();
+          if (!historyRes.ok) {
+            console.error('lesson-history save failed:', historyRes.status);
+          } else {
+            await historyRes.json();
+          }
 
           // Step 3: Build and save vocab book items
           try {
@@ -166,11 +174,14 @@ export function useSessionPersistence(options: {
             onVocabSavedRef.current?.(vocabItems);
 
             if (vocabItems.length > 0) {
-              await fetch('/api/vocab-book', {
+              const vocabRes = await fetch('/api/vocab-book', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ items: vocabItems }),
               });
+              if (!vocabRes.ok) {
+                console.error(`Vocab book save failed: HTTP ${vocabRes.status}`);
+              }
             }
           } catch (vocabErr) {
             console.error('Vocab book save failed:', vocabErr);
