@@ -25,11 +25,6 @@ function isNativeApp(): boolean {
   return navigator.userAgent.includes('TapTalkNative');
 }
 
-function isIOSDevice(): boolean {
-  if (typeof window === 'undefined') return false;
-  return /iPad|iPhone|iPod/i.test(navigator.userAgent);
-}
-
 // Typewriter Effect Hook
 function useTypewriter(texts: string[], typingSpeed = 80, deletingSpeed = 40, pauseTime = 2000) {
   const [displayText, setDisplayText] = useState('');
@@ -285,46 +280,6 @@ function HomePageContent() {
   const handleWebSignIn = useCallback(() => {
     setNativeSignInError(null);
     signIn('google');
-  }, []);
-
-  // Handle Apple Sign-In (native for iOS, web for browser)
-  const handleAppleSignIn = useCallback(async () => {
-    const isNative = isNativeApp();
-    if (isNative && isIOSDevice()) {
-      try {
-        setIsAuthLoading(true);
-        const { SignInWithApple } = await import('@capacitor-community/apple-sign-in');
-        const result = await SignInWithApple.authorize({
-          clientId: 'com.taptalk.app',
-          redirectURI: 'https://taptalk.xyz',
-          scopes: 'email name',
-        });
-
-        const response = result.response;
-        const signInResult = await signIn('apple-native', {
-          identityToken: response.identityToken,
-          email: response.email || '',
-          name: response.givenName ? `${response.givenName} ${response.familyName || ''}`.trim() : '',
-          userId: response.user,
-          redirect: false,
-        });
-
-        if (signInResult?.ok) {
-          window.location.reload();
-        } else {
-          setNativeSignInError('Apple Sign-In failed. Please try again.');
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error('[TapTalk] Apple Sign-In error:', errorMessage);
-        setNativeSignInError(errorMessage);
-      } finally {
-        setIsAuthLoading(false);
-      }
-    } else {
-      // Web: use NextAuth Apple provider (if configured)
-      signIn('apple');
-    }
   }, []);
 
   // Typewriter texts
