@@ -11,6 +11,7 @@ import {
 import { CorrectionItem } from '@/lib/sheetTypes';
 import { makeRid, nowMs, since } from '@/lib/perf';
 import { correctionsPostBodySchema, parseBody } from '@/lib/apiSchemas';
+import { useSupabase } from '@/lib/dataBackend';
 
 // GET: Retrieve corrections for review (due today or earlier)
 export async function GET(request: NextRequest) {
@@ -34,14 +35,16 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
     // If no Google Sheets credentials, return empty for development
-    if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
-      console.log('No Google Sheets credentials, returning empty corrections');
-      return NextResponse.json({ corrections: [], count: 0, email });
-    }
+    if (!useSupabase) {
+      if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
+        console.log('No Google Sheets credentials, returning empty corrections');
+        return NextResponse.json({ corrections: [], count: 0, email });
+      }
 
-    if (!process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
-      console.log('No spreadsheet ID configured');
-      return NextResponse.json({ corrections: [], count: 0, email });
+      if (!process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
+        console.log('No spreadsheet ID configured');
+        return NextResponse.json({ corrections: [], count: 0, email });
+      }
     }
 
     let corrections: CorrectionItem[];
@@ -141,14 +144,16 @@ export async function POST(request: NextRequest) {
     const rawCorrections = Array.isArray(parsed.data) ? parsed.data : [parsed.data];
 
     // If no Google Sheets credentials, return success for development
-    if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
-      console.log('No Google Sheets credentials, skipping corrections save');
-      return NextResponse.json({ success: true, message: 'Development mode - not saved' });
-    }
+    if (!useSupabase) {
+      if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
+        console.log('No Google Sheets credentials, skipping corrections save');
+        return NextResponse.json({ success: true, message: 'Development mode - not saved' });
+      }
 
-    if (!process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
-      console.log('No spreadsheet ID configured');
-      return NextResponse.json({ success: true, message: 'No spreadsheet configured' });
+      if (!process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
+        console.log('No spreadsheet ID configured');
+        return NextResponse.json({ success: true, message: 'No spreadsheet configured' });
+      }
     }
 
     // Create timestamp in Korea timezone

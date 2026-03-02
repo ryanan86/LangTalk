@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { updateCorrectionAfterReview } from '@/lib/dataHelper';
 import { makeRid, nowMs, since } from '@/lib/perf';
 import { correctionReviewBodySchema, parseBody } from '@/lib/apiSchemas';
+import { useSupabase } from '@/lib/dataBackend';
 
 // POST: Process review result and update correction
 export async function POST(request: NextRequest) {
@@ -26,14 +27,16 @@ export async function POST(request: NextRequest) {
     const { correctionId, quality } = parsed.data;
 
     // If no Google Sheets credentials, return success for development
-    if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
-      console.log('No Google Sheets credentials, skipping review update');
-      return NextResponse.json({ success: true, message: 'Development mode - not saved' });
-    }
+    if (!useSupabase) {
+      if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
+        console.log('No Google Sheets credentials, skipping review update');
+        return NextResponse.json({ success: true, message: 'Development mode - not saved' });
+      }
 
-    if (!process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
-      console.log('No spreadsheet ID configured');
-      return NextResponse.json({ success: true, message: 'No spreadsheet configured' });
+      if (!process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
+        console.log('No spreadsheet ID configured');
+        return NextResponse.json({ success: true, message: 'No spreadsheet configured' });
+      }
     }
 
     // Update correction using optimized helper (SM-2 algorithm)

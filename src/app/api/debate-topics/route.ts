@@ -8,6 +8,7 @@ import {
   generateTopicFromContext,
 } from '@/lib/debateTopicsV2';
 import { makeRid, nowMs, since } from '@/lib/perf';
+import { useSupabase } from '@/lib/dataBackend';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,9 +35,9 @@ export async function GET(request: NextRequest) {
     let userData = null;
     let learningData = null;
 
-    if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
+    if (useSupabase || (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
         process.env.GOOGLE_PRIVATE_KEY &&
-        process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
+        process.env.GOOGLE_SUBSCRIPTION_SHEET_ID)) {
 
       [userData, learningData] = await Promise.all([
         getUserData(email),
@@ -100,9 +101,9 @@ export async function GET(request: NextRequest) {
 
     // Try to get topics from Google Sheets if available
     let sheetsTopics: ReturnType<typeof transformTopicRow>[] = [];
-    if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
+    if (useSupabase || (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
         process.env.GOOGLE_PRIVATE_KEY &&
-        process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
+        process.env.GOOGLE_SUBSCRIPTION_SHEET_ID)) {
       try {
         const dbTopics = await getDebateTopicsForUser(email, category || undefined);
         sheetsTopics = dbTopics.map(transformTopicRow);

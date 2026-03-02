@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getUserData, getLearningData, getDueCorrections } from '@/lib/dataHelper';
+import { useSupabase } from '@/lib/dataBackend';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,15 +17,17 @@ export async function GET(_request: NextRequest) {
 
     const email = session.user.email;
 
-    // If no Google Sheets credentials, fail closed (deny access)
-    if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
-      console.error('[check-subscription] Google Sheets credentials not configured');
-      return NextResponse.json({ subscribed: false, status: 'error', reason: 'Service configuration error' }, { status: 503 });
-    }
+    // If using Google Sheets, verify credentials
+    if (!useSupabase) {
+      if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
+        console.error('[check-subscription] Google Sheets credentials not configured');
+        return NextResponse.json({ subscribed: false, status: 'error', reason: 'Service configuration error' }, { status: 503 });
+      }
 
-    if (!process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
-      console.error('[check-subscription] Spreadsheet ID not configured');
-      return NextResponse.json({ subscribed: false, status: 'error', reason: 'Service configuration error' }, { status: 503 });
+      if (!process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
+        console.error('[check-subscription] Spreadsheet ID not configured');
+        return NextResponse.json({ subscribed: false, status: 'error', reason: 'Service configuration error' }, { status: 503 });
+      }
     }
 
     // Get user data using optimized helper (single API call)

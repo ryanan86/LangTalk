@@ -6,6 +6,7 @@ import { getUserData, updateUserFields } from '@/lib/dataHelper';
 import { ProfileData } from '@/lib/sheetTypes';
 import { makeRid, nowMs, since } from '@/lib/perf';
 import { userProfileBodySchema, parseBody } from '@/lib/apiSchemas';
+import { useSupabase } from '@/lib/dataBackend';
 
 // GET: Retrieve user profile
 export async function GET(request: Request) {
@@ -26,14 +27,16 @@ export async function GET(request: Request) {
     const email = session.user.email;
 
     // If no Google Sheets credentials, return empty for development
-    if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
-      console.log('No Google Sheets credentials, returning empty profile');
-      return NextResponse.json({ profile: null, email });
-    }
+    if (!useSupabase) {
+      if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
+        console.log('No Google Sheets credentials, returning empty profile');
+        return NextResponse.json({ profile: null, email });
+      }
 
-    if (!process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
-      console.log('No spreadsheet ID configured');
-      return NextResponse.json({ profile: null, email });
+      if (!process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
+        console.log('No spreadsheet ID configured');
+        return NextResponse.json({ profile: null, email });
+      }
     }
 
     // Get user data using optimized helper
@@ -107,14 +110,16 @@ export async function POST(request: NextRequest) {
     } = parsed.data;
 
     // If no Google Sheets credentials, return success for development
-    if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
-      console.log('No Google Sheets credentials, skipping profile save');
-      return NextResponse.json({ success: true, message: 'Development mode - not saved' });
-    }
+    if (!useSupabase) {
+      if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
+        console.log('No Google Sheets credentials, skipping profile save');
+        return NextResponse.json({ success: true, message: 'Development mode - not saved' });
+      }
 
-    if (!process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
-      console.log('No spreadsheet ID configured');
-      return NextResponse.json({ success: true, message: 'No spreadsheet configured' });
+      if (!process.env.GOOGLE_SUBSCRIPTION_SHEET_ID) {
+        console.log('No spreadsheet ID configured');
+        return NextResponse.json({ success: true, message: 'No spreadsheet configured' });
+      }
     }
 
     // Build profile update
