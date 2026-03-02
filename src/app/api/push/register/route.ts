@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { updateUserFields } from '@/lib/sheetHelper';
+import { updateUserFields } from '@/lib/dataHelper';
 
 /**
  * POST /api/push/register

@@ -7,7 +7,7 @@ import {
   getLearningData,
   addCorrections,
   getDueCorrections,
-} from '@/lib/sheetHelper';
+} from '@/lib/dataHelper';
 import { CorrectionItem } from '@/lib/sheetTypes';
 import { makeRid, nowMs, since } from '@/lib/perf';
 import { correctionsPostBodySchema, parseBody } from '@/lib/apiSchemas';

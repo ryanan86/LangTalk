@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { updateCorrectionAfterReview } from '@/lib/sheetHelper';
+import { updateCorrectionAfterReview } from '@/lib/dataHelper';
 import { makeRid, nowMs, since } from '@/lib/perf';
 import { correctionReviewBodySchema, parseBody } from '@/lib/apiSchemas';
 

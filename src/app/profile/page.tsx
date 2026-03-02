@@ -2,9 +2,12 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 import { useLanguage } from '@/lib/i18n';
 import ScheduleSettings from '@/components/settings/ScheduleSettings';
 import BottomNav from '@/components/BottomNav';
+
+const ADMIN_EMAILS = ['ryan@nuklabs.com', 'taewoongan@gmail.com'];
 
 interface ProfileType {
   id: string;
@@ -76,7 +79,9 @@ const interestOptions = [
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const { language } = useLanguage();
+  const isAdmin = session?.user?.email && ADMIN_EMAILS.includes(session.user.email);
 
   const [selectedType, setSelectedType] = useState<string>('');
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
@@ -493,6 +498,91 @@ export default function ProfilePage() {
             </p>
           )}
         </div>
+
+        {/* Account Section */}
+        <section className="border-t border-neutral-200 dark:border-neutral-700 pt-6">
+          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
+            {language === 'ko' ? '계정' : 'Account'}
+          </h2>
+
+          {session?.user && (
+            <div className="flex items-center gap-3 mb-4 p-3 bg-white dark:bg-dark-surface rounded-xl border border-neutral-200 dark:border-neutral-700">
+              {session.user.image && (
+                <img src={session.user.image} alt="" className="w-10 h-10 rounded-full" />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-neutral-900 dark:text-white text-sm truncate">{session.user.name}</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{session.user.email}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {/* Admin Dashboard Button */}
+            {isAdmin && (
+              <button
+                onClick={() => router.push('/admin/users')}
+                className="w-full flex items-center gap-3 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-dark-surface hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-left"
+              >
+                <span className="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-4 h-4 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </span>
+                <div>
+                  <span className="font-medium text-neutral-900 dark:text-white text-sm">
+                    {language === 'ko' ? '관리자 대시보드' : 'Admin Dashboard'}
+                  </span>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400 block">
+                    {language === 'ko' ? '사용자 관리, 구독 승인' : 'User management, subscription approval'}
+                  </span>
+                </div>
+                <svg className="w-5 h-5 text-neutral-400 ml-auto flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            )}
+
+            {/* Switch Account Button */}
+            <button
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              className="w-full flex items-center gap-3 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-dark-surface hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-left"
+            >
+              <span className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+              </span>
+              <div>
+                <span className="font-medium text-neutral-900 dark:text-white text-sm">
+                  {language === 'ko' ? '계정 전환' : 'Switch Account'}
+                </span>
+                <span className="text-xs text-neutral-500 dark:text-neutral-400 block">
+                  {language === 'ko' ? '로그아웃 후 다른 계정으로 로그인' : 'Sign out and log in with another account'}
+                </span>
+              </div>
+              <svg className="w-5 h-5 text-neutral-400 ml-auto flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
+            {/* Logout Button */}
+            <button
+              onClick={() => signOut({ callbackUrl: '/' })}
+              className="w-full flex items-center gap-3 p-4 rounded-xl border border-red-200 dark:border-red-500/30 bg-white dark:bg-dark-surface hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors text-left"
+            >
+              <span className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </span>
+              <span className="font-medium text-red-600 dark:text-red-400 text-sm">
+                {language === 'ko' ? '로그아웃' : 'Sign Out'}
+              </span>
+            </button>
+          </div>
+        </section>
       </main>
       {/* Bottom nav spacer */}
       <div className="h-20" />

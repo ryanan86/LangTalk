@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getUserData, getLearningData, getDueCorrections } from '@/lib/sheetHelper';
+import { getUserData, getLearningData, getDueCorrections } from '@/lib/dataHelper';
 
 export const dynamic = 'force-dynamic';
 

@@ -25,6 +25,7 @@
     "@google/genai": "^1.40.0",
     "@google/generative-ai": "^0.24.1",
     "@sentry/nextjs": "^10.38.0",
+    "@supabase/supabase-js": "^2.98.0",
     "firebase-admin": "^13.6.1",
     "googleapis": "^171.0.0",
     "html2canvas": "^1.4.1",

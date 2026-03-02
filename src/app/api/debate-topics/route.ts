@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getUserData, getLearningData, getDebateTopicsForUser } from '@/lib/sheetHelper';
+import { getUserData, getLearningData, getDebateTopicsForUser } from '@/lib/dataHelper';
 import { GRADE_TO_AGE_GROUP, AgeGroup, DebateCategory, DebateTopicRow } from '@/lib/sheetTypes';
 import {
   getTopicsForAgeGroup,

@@ -6,7 +6,7 @@ import { authOptions } from '@/lib/auth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getPersona } from '@/lib/personas';
 import { getAgeGroup, calculateAdaptiveDifficulty } from '@/lib/speechMetrics';
-import { getUserData } from '@/lib/sheetHelper';
+import { getUserData } from '@/lib/dataHelper';
 import { makeRid, nowMs, since, withTimeoutAbort } from '@/lib/perf';
 import { chatBodySchema, parseBody } from '@/lib/apiSchemas';
 

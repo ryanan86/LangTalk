@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getUserData } from '@/lib/sheetHelper';
+import { getUserData } from '@/lib/dataHelper';
 import { sendPushNotification } from '@/lib/firebaseAdmin';
 import webpush from 'web-push';
 

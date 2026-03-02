@@ -6,7 +6,9 @@ import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { MIN_SESSIONS_FOR_DEBATE } from '@/lib/debateTypes';
 import { calculateXP, checkLevelUp, checkAchievements } from '@/lib/gamification';
 import type { GamificationState } from '@/lib/gamification';
-import { getUserData, updateUserFields } from '@/lib/sheetHelper';
+import { getUserData, updateUserFields } from '@/lib/dataHelper';
+import { useSupabase } from '@/lib/dataBackend';
+import { getSessionCount, incrementSessionCount } from '@/lib/supabaseHelper';
 
 // GET: Retrieve current session count
 export async function GET(request: Request) {
@@ -22,6 +24,20 @@ export async function GET(request: Request) {
     if (rateLimitResult) return rateLimitResult;
 
     const email = session.user.email;
+
+    if (useSupabase) {
+      const data = await getSessionCount(email);
+      if (!data) {
+        return NextResponse.json({ sessionCount: 0, canDebate: false, email });
+      }
+      return NextResponse.json({
+        sessionCount: data.sessionCount,
+        evaluatedGrade: data.evaluatedGrade,
+        levelDetails: data.levelDetails,
+        canDebate: data.sessionCount >= MIN_SESSIONS_FOR_DEBATE,
+        email,
+      });
+    }
 
     // Require Google Sheets credentials
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
@@ -118,72 +134,84 @@ export async function POST(request: NextRequest) {
       // No body provided, just increment session count
     }
 
-    // Require Google Sheets credentials
-    if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
-      console.error('No Google Sheets credentials configured');
-      return NextResponse.json({ error: 'Service unavailable: missing credentials' }, { status: 503 });
-    }
+    let newCount: number;
+    let levelToStore: string;
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-
-    const sheets = google.sheets({ version: 'v4', auth });
-
-    const spreadsheetId = process.env.GOOGLE_SUBSCRIPTION_SHEET_ID;
-    if (!spreadsheetId) {
-      console.error('No spreadsheet ID configured');
-      return NextResponse.json({ error: 'Service unavailable: missing spreadsheet ID' }, { status: 503 });
-    }
-
-    // Read the subscription sheet to find the user
-    // Expected format: A=Email, B=Expiry, C=Status, D=Name, E=SignupDate, F=SessionCount, G=Level, H=LevelDetails
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: 'Subscriptions!A:H',
-    });
-
-    const rows = response.data.values || [];
-    let rowIndex = -1;
-    let currentCount = 0;
-    let currentLevel = '';
-
-    for (let i = 1; i < rows.length; i++) { // Skip header row
-      const row = rows[i];
-      const rowEmail = row[0];
-
-      if (rowEmail?.toLowerCase() === email.toLowerCase()) {
-        rowIndex = i + 1; // Sheets uses 1-based indexing
-        currentCount = parseInt(row[5] || '0', 10);
-        currentLevel = row[6] || '';
-        break;
+    if (useSupabase) {
+      const result = await incrementSessionCount(email, evaluatedGrade, levelDetails);
+      if (!result) {
+        return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
       }
+      newCount = result.newCount;
+      levelToStore = result.evaluatedGrade || evaluatedGrade || '';
+    } else {
+      // Require Google Sheets credentials
+      if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
+        console.error('No Google Sheets credentials configured');
+        return NextResponse.json({ error: 'Service unavailable: missing credentials' }, { status: 503 });
+      }
+
+      const auth = new google.auth.GoogleAuth({
+        credentials: {
+          client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+          private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+        },
+        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+      });
+
+      const sheets = google.sheets({ version: 'v4', auth });
+
+      const spreadsheetId = process.env.GOOGLE_SUBSCRIPTION_SHEET_ID;
+      if (!spreadsheetId) {
+        console.error('No spreadsheet ID configured');
+        return NextResponse.json({ error: 'Service unavailable: missing spreadsheet ID' }, { status: 503 });
+      }
+
+      // Read the subscription sheet to find the user
+      // Expected format: A=Email, B=Expiry, C=Status, D=Name, E=SignupDate, F=SessionCount, G=Level, H=LevelDetails
+      const response = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: 'Subscriptions!A:H',
+      });
+
+      const rows = response.data.values || [];
+      let rowIndex = -1;
+      let currentCount = 0;
+      let currentLevel = '';
+
+      for (let i = 1; i < rows.length; i++) { // Skip header row
+        const row = rows[i];
+        const rowEmail = row[0];
+
+        if (rowEmail?.toLowerCase() === email.toLowerCase()) {
+          rowIndex = i + 1; // Sheets uses 1-based indexing
+          currentCount = parseInt(row[5] || '0', 10);
+          currentLevel = row[6] || '';
+          break;
+        }
+      }
+
+      if (rowIndex === -1) {
+        return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
+      }
+
+      // Increment the session count
+      newCount = currentCount + 1;
+
+      // Determine the level to store (use new evaluated grade or keep current)
+      levelToStore = evaluatedGrade || currentLevel;
+      const levelDetailsToStore = levelDetails ? JSON.stringify(levelDetails) : '';
+
+      // Update session count and level
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: `Subscriptions!F${rowIndex}:H${rowIndex}`,
+        valueInputOption: 'RAW',
+        requestBody: {
+          values: [[newCount, levelToStore, levelDetailsToStore]],
+        },
+      });
     }
-
-    if (rowIndex === -1) {
-      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
-    }
-
-    // Increment the session count
-    const newCount = currentCount + 1;
-
-    // Determine the level to store (use new evaluated grade or keep current)
-    const levelToStore = evaluatedGrade || currentLevel;
-    const levelDetailsToStore = levelDetails ? JSON.stringify(levelDetails) : '';
-
-    // Update session count and level
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: `Subscriptions!F${rowIndex}:H${rowIndex}`,
-      valueInputOption: 'RAW',
-      requestBody: {
-        values: [[newCount, levelToStore, levelDetailsToStore]],
-      },
-    });
 
     // === Gamification: Update XP, streak, achievements ===
     let xpEarned = 0;

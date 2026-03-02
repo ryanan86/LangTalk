@@ -8,7 +8,7 @@ import {
   addSession,
   addCorrections,
   updateUserFields,
-} from '@/lib/sheetHelper';
+} from '@/lib/dataHelper';
 import { SessionSummary, CorrectionItem } from '@/lib/sheetTypes';
 import { makeRid, nowMs, since } from '@/lib/perf';
 import { lessonHistoryBodySchema, parseBody } from '@/lib/apiSchemas';

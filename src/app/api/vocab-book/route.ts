@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
-import { getLearningData, saveLearningData } from '@/lib/sheetHelper';
+import { getLearningData, saveLearningData } from '@/lib/dataHelper';
 import { makeRid, nowMs, since } from '@/lib/perf';
 import { vocabBookPostBodySchema, parseBody } from '@/lib/apiSchemas';
 
