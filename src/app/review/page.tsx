@@ -267,7 +267,7 @@ export default function ReviewPage() {
             {language === 'ko' ? '홈으로' : 'Back to Home'}
           </button>
         </main>
-        <div className="h-20" />
+        <div className="h-20" style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }} />
         <BottomNav />
       </div>
     );
@@ -505,7 +505,7 @@ export default function ReviewPage() {
         )}
       </main>
       {/* Bottom nav spacer */}
-      <div className="h-20" />
+      <div className="h-20" style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }} />
       <BottomNav />
     </div>
   );

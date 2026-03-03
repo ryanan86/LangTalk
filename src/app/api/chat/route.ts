@@ -536,7 +536,7 @@ Be specific, helpful, and maintain your teaching persona.`;
     // interview: 350 (was 150 - too short, caused shallow responses)
     // conversation: 600 (was 500 - allow richer tutoring responses)
     // analysis: 2048 (structured JSON output)
-    const maxTokens = mode === 'interview' ? 350 : mode === 'analysis' ? 2048 : 600;
+    const maxTokens = mode === 'interview' ? 350 : mode === 'analysis' ? 4000 : 600;
     const isAnalysis = mode === 'analysis';
 
     // Use streaming for interview mode when requested

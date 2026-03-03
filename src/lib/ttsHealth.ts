@@ -13,8 +13,8 @@ interface ProviderMetrics {
 
 const MAX_RECENT_LATENCIES = 20;
 const MAX_RECENT_RESULTS = 10;
-const CIRCUIT_BREAK_FAILURE_RATE = 0.5;
-const CIRCUIT_BREAK_COOLDOWN_MS = 60_000; // 60s
+const CIRCUIT_BREAK_FAILURE_RATE = 0.7;
+const CIRCUIT_BREAK_COOLDOWN_MS = 30_000; // 30s
 
 const metrics: Record<string, ProviderMetrics> = {};
 
@@ -89,7 +89,7 @@ export function getMetrics(): Record<string, ProviderMetrics & { p95Latency: num
  */
 export function shouldCircuitBreak(provider: string): boolean {
   const m = metrics[provider];
-  if (!m || m.recentResults.length < 3) return false; // not enough data
+  if (!m || m.recentResults.length < 5) return false; // not enough data
 
   const failures = m.recentResults.filter((r) => !r).length;
   const failureRate = failures / m.recentResults.length;

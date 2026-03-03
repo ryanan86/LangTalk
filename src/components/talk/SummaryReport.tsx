@@ -183,7 +183,7 @@ export default function SummaryReport({
       />
 
       {/* Report Content - for image capture */}
-      <div ref={summaryRef} className="overflow-hidden px-4 pb-4 space-y-1">
+      <div ref={summaryRef} className="overflow-visible px-4 pb-4 space-y-1">
         {/* Section: Header + Tutor */}
         <div data-report-section className="bg-gradient-to-b from-slate-900/80 dark:from-slate-900/80 from-neutral-200/80 to-transparent p-4">
           <div className="flex items-center justify-between text-xs mb-4 pb-3 border-b dark:border-white/10 border-black/[0.08]">

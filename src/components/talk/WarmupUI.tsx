@@ -10,12 +10,13 @@ interface WarmupUIProps {
   onBack: () => void;
   onPlayPhrase: (text: string) => void;
   isPlaying: boolean;
+  ttsLoading?: boolean;
 }
 
 const DIFFICULTY_LABELS = {
-  easy: { ko: '쉬움', en: 'Easy', color: 'text-green-500', bg: 'bg-green-100 dark:bg-green-500/20' },
-  medium: { ko: '보통', en: 'Medium', color: 'text-amber-500', bg: 'bg-amber-100 dark:bg-amber-500/20' },
-  stretch: { ko: '도전', en: 'Challenge', color: 'text-red-500', bg: 'bg-red-100 dark:bg-red-500/20' },
+  easy: { ko: '\uc27d\uc74c', en: 'Easy', color: 'text-green-500', bg: 'bg-green-100 dark:bg-green-500/20' },
+  medium: { ko: '\ubcf4\ud1b5', en: 'Medium', color: 'text-amber-500', bg: 'bg-amber-100 dark:bg-amber-500/20' },
+  stretch: { ko: '\ub3c4\uc804', en: 'Challenge', color: 'text-red-500', bg: 'bg-red-100 dark:bg-red-500/20' },
 };
 
 export default function WarmupUI({
@@ -24,6 +25,7 @@ export default function WarmupUI({
   onBack,
   onPlayPhrase,
   isPlaying,
+  ttsLoading = false,
 }: WarmupUIProps) {
   const { language } = useLanguage();
   const isKo = language === 'ko';
@@ -46,6 +48,7 @@ export default function WarmupUI({
   };
 
   const allDone = completed.size >= phrases.length;
+  const audioActive = isPlaying || ttsLoading;
 
   return (
     <div className="flex-1 flex flex-col p-4 sm:p-6">
@@ -62,10 +65,10 @@ export default function WarmupUI({
         </button>
         <div>
           <h2 className="text-lg font-bold text-neutral-900 dark:text-white">
-            {isKo ? '워밍업' : 'Warm Up'}
+            {isKo ? '\uc6cc\ubc0d\uc5c5' : 'Warm Up'}
           </h2>
           <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            {isKo ? '따라 말해보세요. 평가에 포함되지 않아요.' : 'Repeat after the tutor. This won\'t be graded.'}
+            {isKo ? '\ub530\ub77c \ub9d0\ud574\ubcf4\uc138\uc694. \ud3c9\uac00\uc5d0 \ud3ec\ud568\ub418\uc9c0 \uc54a\uc544\uc694.' : "Repeat after the tutor. This won't be graded."}
           </p>
         </div>
       </div>
@@ -101,11 +104,13 @@ export default function WarmupUI({
           {/* Play Button */}
           <button
             onClick={() => onPlayPhrase(currentPhrase.english)}
-            disabled={isPlaying}
-            className="w-16 h-16 mx-auto bg-primary-100 dark:bg-primary-500/20 rounded-full flex items-center justify-center hover:bg-primary-200 dark:hover:bg-primary-500/30 transition-colors mb-6"
+            disabled={audioActive}
+            className="w-16 h-16 mx-auto bg-primary-100 dark:bg-primary-500/20 rounded-full flex items-center justify-center hover:bg-primary-200 dark:hover:bg-primary-500/30 transition-colors mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Listen"
           >
-            {isPlaying ? (
+            {ttsLoading ? (
+              <div className="w-7 h-7 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+            ) : isPlaying ? (
               <div className="flex items-center gap-1 h-6">
                 {[1, 2, 3, 4, 5].map(i => (
                   <div key={i} className="w-0.5 bg-primary-500 rounded-full animate-pulse" style={{ height: `${8 + i * 3}px`, animationDelay: `${i * 0.1}s` }} />
@@ -122,18 +127,19 @@ export default function WarmupUI({
           <div className="flex gap-3 w-full max-w-md">
             <button
               onClick={() => onPlayPhrase(currentPhrase.english)}
-              disabled={isPlaying}
-              className="flex-1 py-3 rounded-xl text-sm font-medium border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+              disabled={audioActive}
+              className="flex-1 py-3 rounded-xl text-sm font-medium border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isKo ? '다시 듣기' : 'Listen Again'}
+              {isKo ? '\ub2e4\uc2dc \ub4e3\uae30' : 'Listen Again'}
             </button>
             <button
               onClick={markDone}
-              className="flex-1 py-3 rounded-xl text-sm font-semibold bg-primary-600 text-white hover:bg-primary-500 shadow-lg shadow-primary-500/20 transition-all"
+              disabled={audioActive}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold bg-primary-600 text-white hover:bg-primary-500 shadow-lg shadow-primary-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {currentIndex < phrases.length - 1
-                ? (isKo ? '다음 문장' : 'Next Phrase')
-                : (isKo ? '완료' : 'Done')}
+                ? (isKo ? '\ub2e4\uc74c \ubb38\uc7a5' : 'Next Phrase')
+                : (isKo ? '\uc644\ub8cc' : 'Done')}
             </button>
           </div>
         </div>
@@ -146,18 +152,18 @@ export default function WarmupUI({
             </svg>
           </div>
           <h3 className="text-xl font-bold text-neutral-900 dark:text-white mb-2">
-            {isKo ? '워밍업 완료!' : 'Warm-up Complete!'}
+            {isKo ? '\uc6cc\ubc0d\uc5c5 \uc644\ub8cc!' : 'Warm-up Complete!'}
           </h3>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm">
             {isKo
-              ? '잘했어요! 이제 진짜 대화를 시작해볼까요?'
+              ? '\uc798\ud588\uc5b4\uc694! \uc774\uc81c \uc9c4\uc9dc \ub300\ud654\ub97c \uc2dc\uc791\ud574\ubcfc\uae4c\uc694?'
               : 'Great job! Ready to start the real conversation?'}
           </p>
           <button
             onClick={onComplete}
             className="px-8 py-4 rounded-2xl font-semibold bg-primary-600 text-white hover:bg-primary-500 shadow-lg shadow-primary-500/20 transition-all text-base"
           >
-            {isKo ? '대화 시작하기' : 'Start Conversation'}
+            {isKo ? '\ub300\ud654 \uc2dc\uc791\ud558\uae30' : 'Start Conversation'}
           </button>
         </div>
       )}

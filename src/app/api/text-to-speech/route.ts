@@ -25,7 +25,17 @@ const FISH_AUDIO_VOICE_MAP: Record<string, string> = {
   alloy: '12d3a04e3dca4e49a40ee52fea6e7c0e',    // Henry - Mackenzie Bluey (young boy)
 };
 
-const FISH_AUDIO_TIMEOUT_MS = 5000;
+const FISH_AUDIO_TIMEOUT_MS = 12000;
+
+// Independent OpenAI fallback voices — closest match to each Fish Audio persona
+const OPENAI_FALLBACK_VOICE_MAP: Record<string, string> = {
+  shimmer: 'shimmer', // Emma — warm adult female (best match)
+  echo: 'echo',       // James — calm male
+  fable: 'nova',      // Charlotte — Fish Audio is British female, OpenAI fable is male → use nova (warm female)
+  onyx: 'onyx',       // Oliver — deep authoritative male (good match)
+  nova: 'shimmer',    // Alina — young girl → shimmer is warmest remaining female
+  alloy: 'alloy',     // Henry — neutral, no boyish voice available
+};
 
 async function generateWithFishAudio(text: string, voice: string, speed?: number, timings?: Record<string, number>): Promise<ArrayBuffer> {
   const apiKey = process.env.FISH_AUDIO_API_KEY;
@@ -52,7 +62,7 @@ async function generateWithFishAudio(text: string, voice: string, speed?: number
 
   const t0 = nowMs();
   const ac = new AbortController();
-  const timeout = setTimeout(() => ac.abort(new Error('Fish Audio timeout after 5s')), FISH_AUDIO_TIMEOUT_MS);
+  const timeout = setTimeout(() => ac.abort(new Error(`Fish Audio timeout after ${FISH_AUDIO_TIMEOUT_MS}ms`)), FISH_AUDIO_TIMEOUT_MS);
 
   try {
     const response = await fetch('https://api.fish.audio/v1/tts', {
@@ -81,11 +91,12 @@ async function generateWithFishAudio(text: string, voice: string, speed?: number
 }
 
 async function generateWithOpenAI(text: string, voice: string, timings?: Record<string, number>): Promise<ArrayBuffer> {
+  const openaiVoice = OPENAI_FALLBACK_VOICE_MAP[voice] ?? voice;
   const mp3 = await withTimeoutAbort(
     (signal) =>
       getOpenAI().audio.speech.create({
-        model: 'tts-1',
-        voice: voice as 'nova' | 'onyx' | 'alloy' | 'echo' | 'fable' | 'shimmer',
+        model: 'tts-1-hd',
+        voice: openaiVoice as 'nova' | 'onyx' | 'alloy' | 'echo' | 'fable' | 'shimmer',
         input: text,
         speed: 1.0,
       }, { signal }),

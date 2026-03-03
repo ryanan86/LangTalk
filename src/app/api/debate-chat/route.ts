@@ -321,7 +321,7 @@ Be fair and objective in scoring. The total for each team must equal the sum of 
 
     const response = await getOpenAI().chat.completions.create({
       model: 'gpt-4o',
-      max_tokens: 2000,
+      max_tokens: 4000,
       temperature: 0.3,
       messages: [
         { role: 'system', content: analysisPrompt },

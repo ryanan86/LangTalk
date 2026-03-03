@@ -87,6 +87,7 @@ function TalkContent() {
   });
   const {
     isPlaying, setIsPlaying,
+    ttsLoading,
     streamingText, setStreamingText,
     playTTS, extractCompleteSentences, queueTTS,
     clearQueue,
@@ -1002,6 +1003,7 @@ function TalkContent() {
             onBack={() => setPhase('mode-select')}
             onPlayPhrase={(text) => playTTS(text, 0.85)}
             isPlaying={isPlaying}
+            ttsLoading={ttsLoading}
           />
         )}
 
@@ -1177,6 +1179,11 @@ function TalkContent() {
                   </div>
                 )}
 
+                {ttsLoading && !isPlaying && (
+                  <p className="dark:text-white/50 text-zinc-400 text-sm sm:text-base animate-pulse">
+                    {language === 'ko' ? 'AI 튀터가 준비 중이에요...' : 'Tutor is preparing...'}
+                  </p>
+                )}
                 {isPlaying && (
                   <p className="dark:text-white/70 text-zinc-600 font-medium text-sm sm:text-base">{persona.name}{t.speaking}</p>
                 )}
@@ -1217,9 +1224,34 @@ function TalkContent() {
             </div>
 
             {/* Bottom Control Panel - Premium Glass */}
-            <div className="p-4 sm:p-6 dark:bg-neutral-900/80 bg-neutral-100/90 backdrop-blur-xl border-t dark:border-white/5 border-black/[0.05]">
+            <div className="p-4 sm:p-6 dark:bg-neutral-900/80 bg-neutral-100/90 backdrop-blur-xl border-t dark:border-white/5 border-black/[0.05]" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))' }}>
               <div className="max-w-lg mx-auto">
                 <div className="flex gap-3">
+                  {/* Replay last tutor message button */}
+                  {messages.length > 0 && (
+                    <button
+                      onClick={() => {
+                        const lastAssistant = [...messages].reverse().find(m => m.role === 'assistant');
+                        if (lastAssistant) playTTS(lastAssistant.content);
+                      }}
+                      disabled={isPlaying || ttsLoading || isRecordingReply || isProcessing}
+                      aria-label={language === 'ko' ? '튀터 메시지 다시 듣기' : 'Replay tutor message'}
+                      className={`px-3 py-4 rounded-2xl flex items-center justify-center transition-all ${
+                        isPlaying || ttsLoading || isRecordingReply || isProcessing
+                          ? 'dark:bg-white/5 bg-black/[0.03] dark:text-white/20 text-zinc-400 cursor-not-allowed'
+                          : 'dark:bg-white/10 bg-black/[0.06] dark:text-white/70 text-zinc-600 dark:hover:bg-white/15 hover:bg-black/[0.08]'
+                      }`}
+                    >
+                      {ttsLoading ? (
+                        <div className="w-5 h-5 border-2 dark:border-white/30 border-zinc-400 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      )}
+                    </button>
+                  )}
+
                   {/* Main Record Button */}
                   <button
                     onClick={recordReply}
@@ -1330,11 +1362,11 @@ function TalkContent() {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => playTTS(analysis.corrections[safeReviewIndex].corrected, 0.85)}
-                    disabled={isPlaying}
-                    className="w-12 h-12 sm:w-14 sm:h-14 bg-emerald-500/15 rounded-xl flex items-center justify-center hover:bg-emerald-500/25 transition-colors flex-shrink-0"
+                    disabled={isPlaying || ttsLoading}
+                    className="w-12 h-12 sm:w-14 sm:h-14 bg-emerald-500/15 rounded-xl flex items-center justify-center hover:bg-emerald-500/25 transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label={language === 'ko' ? '올바른 표현 듣기' : 'Listen to corrected form'}
                   >
-                    {isPlaying ? (
+                    {isPlaying || ttsLoading ? (
                       <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <svg className="w-6 h-6 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
@@ -1384,10 +1416,12 @@ function TalkContent() {
 
                 <button
                   onClick={() => playTTS(analysis.corrections[safeShadowingIndex].corrected, 0.8)}
-                  disabled={isPlaying}
-                  className="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-primary-100 rounded-full flex items-center justify-center hover:bg-primary-200 transition-colors mb-4 sm:mb-6"
+                  disabled={isPlaying || ttsLoading}
+                  className="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-primary-100 rounded-full flex items-center justify-center hover:bg-primary-200 transition-colors mb-4 sm:mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isPlaying ? (
+                  {ttsLoading ? (
+                    <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                  ) : isPlaying ? (
                     <div className="flex items-center gap-1 h-8">
                       {[...Array(5)].map((_, i) => (<div key={i} className="voice-bar" />))}
                     </div>

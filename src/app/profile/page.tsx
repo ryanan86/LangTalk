@@ -585,7 +585,7 @@ export default function ProfilePage() {
         </section>
       </main>
       {/* Bottom nav spacer */}
-      <div className="h-20" />
+      <div className="h-20" style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }} />
       <BottomNav />
     </div>
   );
