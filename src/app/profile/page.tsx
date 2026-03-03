@@ -6,6 +6,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { useLanguage } from '@/lib/i18n';
 import ScheduleSettings from '@/components/settings/ScheduleSettings';
 import BottomNav from '@/components/BottomNav';
+import { SHOP_ITEMS } from '@/lib/shopItems';
 
 const ADMIN_EMAILS = ['ryan@nuklabs.com', 'taewoongan@gmail.com'];
 
@@ -99,6 +100,7 @@ export default function ProfilePage() {
   const [hasUnsavedSchedule, setHasUnsavedSchedule] = useState(false);
   const [showScheduleWarning, setShowScheduleWarning] = useState(false);
   const scheduleWarningTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [inventory, setInventory] = useState<{ itemId: string; quantity: number; acquiredAt: string }[]>([]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -113,11 +115,14 @@ export default function ProfilePage() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const response = await fetch('/api/user-profile');
-        if (!response.ok) {
-          throw new Error(`Failed to load profile: ${response.status}`);
+        const [profileRes, shopRes] = await Promise.all([
+          fetch('/api/user-profile'),
+          fetch('/api/shop'),
+        ]);
+        if (!profileRes.ok) {
+          throw new Error(`Failed to load profile: ${profileRes.status}`);
         }
-        const data = await response.json();
+        const data = await profileRes.json();
 
         if (data.profile) {
           setSelectedType(data.profile.profileType || '');
@@ -128,6 +133,10 @@ export default function ProfilePage() {
           if (data.profile.schedule) {
             setSchedule(data.profile.schedule);
           }
+        }
+        if (shopRes.ok) {
+          const shopData = await shopRes.json();
+          setInventory(shopData.inventory || []);
         }
       } catch (error) {
         console.error('Failed to load profile:', error);
@@ -498,6 +507,40 @@ export default function ProfilePage() {
             </p>
           )}
         </div>
+
+        {/* Inventory Section */}
+        {inventory.length > 0 && (
+          <section className="border-t border-neutral-200 dark:border-neutral-700 pt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+                {language === 'ko' ? '내 아이템' : 'My Items'}
+              </h2>
+              <a
+                href="/shop"
+                className="text-sm text-primary-500 hover:text-primary-600 transition-colors"
+              >
+                {language === 'ko' ? '상점 가기' : 'Go to Shop'}
+              </a>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {inventory.map(inv => {
+                const item = SHOP_ITEMS.find(s => s.id === inv.itemId);
+                if (!item) return null;
+                return (
+                  <div key={inv.itemId} className="flex items-center gap-3 p-3 bg-white dark:bg-dark-surface rounded-xl border border-neutral-200 dark:border-neutral-700">
+                    <span className="text-2xl">{item.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
+                        {language === 'ko' ? item.name.ko : item.name.en}
+                      </p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">x{inv.quantity}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* Account Section */}
         <section className="border-t border-neutral-200 dark:border-neutral-700 pt-6">

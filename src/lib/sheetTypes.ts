@@ -79,6 +79,17 @@ export interface StatsData {
   dailyChallengeStreak: number;
   dailyChallengeLastDate?: string;
   weeklyXp: number[];            // Last 7 days XP [Sun..Sat]
+  dailyQuestProgress?: {
+    questId: string;
+    progress: number;
+    completed: boolean;
+    date: string;
+  }[];
+  inventory?: {
+    itemId: string;
+    quantity: number;
+    acquiredAt: string;
+  }[];
 }
 
 export interface UserRow {

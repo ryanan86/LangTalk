@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getUserData, getLearningData, getDueCorrections } from '@/lib/dataHelper';
+import { getUserData, getLearningData } from '@/lib/dataHelper';
 import { useSupabase } from '@/lib/dataBackend';
 
 export const dynamic = 'force-dynamic';
@@ -17,6 +17,8 @@ export async function GET(_request: NextRequest) {
     }
 
     const email = session.user.email;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     // If using Google Sheets, verify credentials
     if (!useSupabase) {
@@ -31,8 +33,11 @@ export async function GET(_request: NextRequest) {
       }
     }
 
-    // Get user data using optimized helper (single API call)
-    const userData = await getUserData(email);
+    // Fetch user data and learning data in parallel
+    const [userData, learningData] = await Promise.all([
+      getUserData(email),
+      getLearningData(email),
+    ]);
 
     // User not found
     if (!userData) {
@@ -46,8 +51,6 @@ export async function GET(_request: NextRequest) {
     }
 
     const { subscription, stats, profile } = userData;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
 
     // Check if status is pending (waiting for approval)
     if (subscription.status === 'pending') {
@@ -95,11 +98,12 @@ export async function GET(_request: NextRequest) {
       }
     }
 
-    // Get additional data for dashboard (corrections due, recent sessions)
-    const [learningData, dueCorrections] = await Promise.all([
-      getLearningData(email),
-      getDueCorrections(email),
-    ]);
+    // Filter due corrections inline from already-fetched learningData (avoids duplicate DB call)
+    const dueCorrectionsCount = (learningData?.corrections || []).filter(c => {
+      if (c.status !== 'active') return false;
+      const nextReview = new Date(c.nextReviewAt);
+      return nextReview <= today;
+    }).length;
 
     return NextResponse.json({
       subscribed: true,
@@ -120,7 +124,7 @@ export async function GET(_request: NextRequest) {
       weeklyXp: stats.weeklyXp || [0, 0, 0, 0, 0, 0, 0],
       profile,
       // Dashboard extras
-      dueCorrectionsCount: dueCorrections.length,
+      dueCorrectionsCount,
       recentSessionsCount: learningData?.recentSessions.length || 0,
       email
     });

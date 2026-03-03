@@ -30,3 +30,17 @@ export const getAllUserData = useSupabase ? supabase.getAllUserData : sheets.get
 // Session count (Supabase-only new functions, sheets fallback is handled in route)
 export const getSessionCount = useSupabase ? supabase.getSessionCount : null;
 export const incrementSessionCount = useSupabase ? supabase.incrementSessionCount : null;
+
+// Queries (read-only)
+export const queries = {
+  getUserData, getLearningData, getDueCorrections,
+  getDebateTopicsForUser, generatePersonalizedTopics,
+  getAllUserData, getSessionCount,
+};
+
+// Mutations (write)
+export const mutations = {
+  saveUserData, updateUserFields, saveLearningData,
+  addSession, addCorrections, updateCorrectionAfterReview,
+  incrementSessionCount,
+};

@@ -6,7 +6,6 @@ import { randomUUID } from 'crypto';
 import {
   getLearningData,
   addCorrections,
-  getDueCorrections,
 } from '@/lib/dataHelper';
 import { CorrectionItem } from '@/lib/sheetTypes';
 import { makeRid, nowMs, since } from '@/lib/perf';
@@ -47,15 +46,22 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Fetch all corrections once; filter for due if needed
+    const learningData = await getLearningData(email);
+    const allCorrections = learningData?.corrections || [];
+
     let corrections: CorrectionItem[];
 
     if (dueOnly) {
-      // Get only corrections due for review
-      corrections = await getDueCorrections(email);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      corrections = allCorrections.filter(c => {
+        if (c.status !== 'active') return false;
+        const nextReview = new Date(c.nextReviewAt);
+        return nextReview <= today;
+      });
     } else {
-      // Get all corrections from learning data
-      const learningData = await getLearningData(email);
-      corrections = learningData?.corrections || [];
+      corrections = allCorrections;
     }
 
     // Sort by next review date (oldest first)
@@ -64,9 +70,6 @@ export async function GET(request: NextRequest) {
     );
 
     // Detect repeated patterns across ALL user corrections
-    const allCorrections = dueOnly
-      ? (await getLearningData(email))?.corrections || []
-      : corrections;
     const categoryCounts: Record<string, number> = {};
     for (const c of allCorrections) {
       if (c.status === 'active') {

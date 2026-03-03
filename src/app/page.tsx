@@ -14,10 +14,9 @@ import HeroSection from '@/components/hero/HeroSection';
 import QuickActions from '@/components/home/QuickActions';
 import LessonHistory from '@/components/home/LessonHistory';
 import XPBar from '@/components/gamification/XPBar';
-import DailyChallengeCard from '@/components/gamification/DailyChallengeCard';
 import OnboardingFlow from '@/components/onboarding/OnboardingFlow';
 import BottomNav from '@/components/BottomNav';
-import { getTodayChallenge } from '@/lib/dailyChallenges';
+import { getTodayQuests } from '@/lib/dailyChallenges';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 // Helper function to check if running in native Capacitor app (iOS or Android)
 function isNativeApp(): boolean {
@@ -206,6 +205,7 @@ function HomePageContent() {
   // Gamification state
   const [userXP, setUserXP] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
+  const [completedQuestIds, setCompletedQuestIds] = useState<string[]>([]);
 
   // Push notifications (Android only) - register FCM token & handle scheduled calls
   usePushNotifications(!!session?.user?.email, (tutorId) => {
@@ -471,6 +471,13 @@ function HomePageContent() {
       setLevelDetails(data.levelDetails || null);
       if (data.xp !== undefined) setUserXP(data.xp);
       if (data.currentStreak !== undefined) setCurrentStreak(data.currentStreak);
+      if (data.dailyQuestProgress) {
+        const progress = data.dailyQuestProgress as { questId?: string; completed?: boolean; completedIds?: string[] }[];
+        // Support both array-of-quest format and flat format
+        if (Array.isArray(progress)) {
+          setCompletedQuestIds(progress.filter(p => p.completed).map(p => p.questId ?? '').filter(Boolean));
+        }
+      }
 
       // Fetch independent data in parallel
       const [historyResult, correctionsResult, profileResult] = await Promise.allSettled([
@@ -902,18 +909,75 @@ function HomePageContent() {
                   <div className="p-4 rounded-2xl bg-surface border border-theme">
                     <XPBar totalXP={userXP} />
                   </div>
-                  {/* Daily Challenge */}
-                  <DailyChallengeCard
-                    challenge={getTodayChallenge()}
-                    isComplete={false}
-                    streakDays={currentStreak}
-                    language={language}
-                  />
+                  {/* Daily Quests */}
+                  {(() => {
+                    const questSet = getTodayQuests();
+                    const allComplete = questSet.quests.every(q => completedQuestIds.includes(q.id));
+                    const difficultyColor = {
+                      easy: 'bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-300',
+                      normal: 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300',
+                      hard: 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300',
+                    };
+                    return (
+                      <div className="p-4 rounded-2xl bg-surface border border-theme">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-semibold text-theme-primary">
+                            {language === 'ko' ? '오늘의 퀘스트' : 'Daily Quests'}
+                          </span>
+                          <span className="text-xs text-theme-muted">
+                            {language === 'ko' ? `최대 ${questSet.totalXP} XP` : `Up to ${questSet.totalXP} XP`}
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          {questSet.quests.map(q => {
+                            const done = completedQuestIds.includes(q.id);
+                            const diff = q.difficulty ?? 'normal';
+                            return (
+                              <div key={q.id} className={`flex items-center gap-2 p-2 rounded-xl transition-colors ${done ? 'opacity-60' : ''}`}>
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${done ? 'bg-green-500 border-green-500' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                                  {done && (
+                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                </div>
+                                <span className="text-xs text-theme-primary flex-1 min-w-0 truncate">
+                                  {language === 'ko' ? q.title.ko : q.title.en}
+                                </span>
+                                <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0 ${difficultyColor[diff]}`}>
+                                  {diff === 'easy' ? (language === 'ko' ? '쉬움' : 'Easy') : diff === 'normal' ? (language === 'ko' ? '보통' : 'Normal') : (language === 'ko' ? '어려움' : 'Hard')}
+                                </span>
+                                <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 shrink-0">{q.xpReward} XP</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {allComplete && (
+                          <p className="text-center text-xs text-green-600 dark:text-green-400 font-medium mt-2">
+                            {language === 'ko' ? '모든 퀘스트 완료! 보너스 XP 지급됨' : 'All quests done! Bonus XP awarded'}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>
           </div>
         </section>
+
+        {/* Shop Access Button */}
+        {session && isSubscribed && (
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 mt-4">
+            <a
+              href="/shop"
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-theme bg-surface hover:bg-surface-hover transition-colors text-sm font-medium text-theme-secondary"
+            >
+              <span>🏪</span>
+              <span>{language === 'ko' ? '상점' : 'Shop'}</span>
+            </a>
+          </div>
+        )}
 
         {/* Mode Tabs */}
         {session && isSubscribed && (
