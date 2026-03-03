@@ -61,8 +61,7 @@ async function generateWithFishAudio(
     format: 'mp3',
     mp3_bitrate: 128,
     normalize: true,
-    latency: 'low',
-    chunk_length: 100,
+    latency: 'normal',
   };
   if (referenceId) {
     body.reference_id = referenceId;
