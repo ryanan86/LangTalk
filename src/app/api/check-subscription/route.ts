@@ -5,6 +5,7 @@ import { getUserData, getLearningData, getDueCorrections } from '@/lib/dataHelpe
 import { useSupabase } from '@/lib/dataBackend';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = 'icn1'; // Seoul — closest to Korean users
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function GET(_request: NextRequest) {

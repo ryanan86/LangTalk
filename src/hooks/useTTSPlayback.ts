@@ -2,6 +2,84 @@
 
 import { useState, useRef } from 'react';
 
+// --- IndexedDB Audio Cache ---
+const TTS_CACHE_DB = 'taptalk-tts-cache';
+const TTS_CACHE_STORE = 'audio';
+const TTS_CACHE_MAX_ENTRIES = 200;
+
+function getCacheKey(text: string, voice: string): string {
+  return `${voice}:${text.slice(0, 100)}`;
+}
+
+function openCacheDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(TTS_CACHE_DB, 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(TTS_CACHE_STORE)) {
+        db.createObjectStore(TTS_CACHE_STORE);
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function getCachedAudio(key: string): Promise<Blob | null> {
+  try {
+    const db = await openCacheDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(TTS_CACHE_STORE, 'readonly');
+      const store = tx.objectStore(TTS_CACHE_STORE);
+      const request = store.get(key);
+      request.onsuccess = () => resolve(request.result ?? null);
+      request.onerror = () => resolve(null);
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function setCachedAudio(key: string, blob: Blob): Promise<void> {
+  try {
+    const db = await openCacheDB();
+    const tx = db.transaction(TTS_CACHE_STORE, 'readwrite');
+    const store = tx.objectStore(TTS_CACHE_STORE);
+
+    // Check entry count and evict oldest if over limit
+    const countRequest = store.count();
+    await new Promise<void>((resolve) => {
+      countRequest.onsuccess = () => {
+        if (countRequest.result >= TTS_CACHE_MAX_ENTRIES) {
+          // Delete the first (oldest) key to make room
+          const cursorRequest = store.openCursor();
+          cursorRequest.onsuccess = () => {
+            const cursor = cursorRequest.result;
+            if (cursor) {
+              cursor.delete();
+            }
+            resolve();
+          };
+          cursorRequest.onerror = () => resolve();
+        } else {
+          resolve();
+        }
+      };
+      countRequest.onerror = () => resolve();
+    });
+
+    store.put(blob, key);
+    await new Promise<void>((resolve) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    });
+  } catch {
+    // Silently fail — Safari Private Mode, quota exceeded, etc.
+  }
+}
+
+// --- Hook ---
+
 interface UseTTSPlaybackOptions {
   voice: string;
   onQueueEnd?: () => void;
@@ -57,15 +135,28 @@ export function useTTSPlayback({ voice, onQueueEnd }: UseTTSPlaybackOptions): Us
       return audioCacheRef.current.get(sentence)!;
     }
 
-    const promise = fetch('/api/text-to-speech', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: sentence, voice }),
-      signal,
-    }).then(res => {
+    const cacheKey = getCacheKey(sentence, voice);
+
+    const promise = (async () => {
+      // Check IndexedDB cache first
+      const cached = await getCachedAudio(cacheKey);
+      if (cached) return cached;
+
+      // Fetch from API
+      const res = await fetch('/api/text-to-speech', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: sentence, voice }),
+        signal,
+      });
       if (!res.ok) throw new Error(`TTS API error: ${res.status}`);
-      return res.blob();
-    });
+      const blob = await res.blob();
+
+      // Store in IndexedDB (background, don't block)
+      setCachedAudio(cacheKey, blob).catch(() => {});
+
+      return blob;
+    })();
 
     audioCacheRef.current.set(sentence, promise);
     return promise;
@@ -100,7 +191,7 @@ export function useTTSPlayback({ voice, onQueueEnd }: UseTTSPlaybackOptions): Us
 
           await new Promise<void>((resolve, reject) => {
             const loadTimeout = setTimeout(() => {
-              audio.removeEventListener('canplaythrough', onCanPlay);
+              audio.removeEventListener('canplay', onCanPlay);
               audio.removeEventListener('error', onError);
               console.warn('Audio load timeout - skipping sentence');
               reject(new Error('Audio load timeout'));
@@ -108,18 +199,18 @@ export function useTTSPlayback({ voice, onQueueEnd }: UseTTSPlaybackOptions): Us
 
             const onCanPlay = () => {
               clearTimeout(loadTimeout);
-              audio.removeEventListener('canplaythrough', onCanPlay);
+              audio.removeEventListener('canplay', onCanPlay);
               audio.removeEventListener('error', onError);
               resolve();
             };
             const onError = () => {
               clearTimeout(loadTimeout);
-              audio.removeEventListener('canplaythrough', onCanPlay);
+              audio.removeEventListener('canplay', onCanPlay);
               audio.removeEventListener('error', onError);
               reject(new Error('Audio load failed'));
             };
 
-            audio.addEventListener('canplaythrough', onCanPlay, { once: true });
+            audio.addEventListener('canplay', onCanPlay, { once: true });
             audio.addEventListener('error', onError, { once: true });
             audio.preload = 'auto';
             audio.src = audioUrl;
@@ -164,21 +255,35 @@ export function useTTSPlayback({ voice, onQueueEnd }: UseTTSPlaybackOptions): Us
     setIsPlaying(true);
     stopFiller();
     try {
-      const response = await fetch('/api/text-to-speech', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voice, ...(speed && { speed }) }),
-        signal: controller.signal,
-      });
+      const cacheKey = getCacheKey(text, voice);
+      let audioBlob: Blob | null = null;
 
-      clearTimeout(timeoutId);
+      // Check IndexedDB cache first
+      audioBlob = await getCachedAudio(cacheKey);
 
-      if (!response.ok) {
-        console.error('TTS API error:', response.status);
-        return;
+      if (!audioBlob) {
+        const response = await fetch('/api/text-to-speech', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, voice, ...(speed && { speed }) }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          console.error('TTS API error:', response.status);
+          return;
+        }
+
+        audioBlob = await response.blob();
+
+        // Store in IndexedDB (background, don't block)
+        setCachedAudio(cacheKey, audioBlob).catch(() => {});
+      } else {
+        clearTimeout(timeoutId);
       }
 
-      const audioBlob = await response.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
 
       try {
@@ -187,25 +292,25 @@ export function useTTSPlayback({ voice, onQueueEnd }: UseTTSPlaybackOptions): Us
 
           await new Promise<void>((resolve, reject) => {
             const loadTimeout = setTimeout(() => {
-              audio.removeEventListener('canplaythrough', onCanPlay);
+              audio.removeEventListener('canplay', onCanPlay);
               audio.removeEventListener('error', onError);
               reject(new Error('Audio load timeout'));
             }, 10000);
 
             const onCanPlay = () => {
               clearTimeout(loadTimeout);
-              audio.removeEventListener('canplaythrough', onCanPlay);
+              audio.removeEventListener('canplay', onCanPlay);
               audio.removeEventListener('error', onError);
               resolve();
             };
             const onError = () => {
               clearTimeout(loadTimeout);
-              audio.removeEventListener('canplaythrough', onCanPlay);
+              audio.removeEventListener('canplay', onCanPlay);
               audio.removeEventListener('error', onError);
               reject(new Error('Audio load failed'));
             };
 
-            audio.addEventListener('canplaythrough', onCanPlay, { once: true });
+            audio.addEventListener('canplay', onCanPlay, { once: true });
             audio.addEventListener('error', onError, { once: true });
             audio.preload = 'auto';
             audio.src = audioUrl;

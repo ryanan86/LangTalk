@@ -10,6 +10,8 @@ import { getUserData } from '@/lib/dataHelper';
 import { makeRid, nowMs, since, withTimeoutAbort } from '@/lib/perf';
 import { chatBodySchema, parseBody } from '@/lib/apiSchemas';
 
+export const preferredRegion = 'icn1'; // Seoul — closest to Korean users
+
 const CONVERSATION_FALLBACK_POOL = [
   "Hmm, let me think about that for a moment. Could you tell me a bit more?",
   "Give me one more detail—what happened next?",

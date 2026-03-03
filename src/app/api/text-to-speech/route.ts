@@ -6,6 +6,8 @@ import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { makeRid, nowMs, since, withTimeoutAbort } from '@/lib/perf';
 import { recordSuccess, recordFailure, shouldCircuitBreak } from '@/lib/ttsHealth';
 
+export const preferredRegion = 'icn1'; // Seoul — closest to Korean users
+
 let _openai: OpenAI | null = null;
 function getOpenAI() {
   if (!_openai) {

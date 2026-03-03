@@ -10,6 +10,8 @@ import { getUserData, updateUserFields } from '@/lib/dataHelper';
 import { useSupabase } from '@/lib/dataBackend';
 import { getSessionCount, incrementSessionCount } from '@/lib/supabaseHelper';
 
+export const preferredRegion = 'icn1'; // Seoul — closest to Korean users
+
 // GET: Retrieve current session count
 export async function GET(request: Request) {
   try {

@@ -14,6 +14,7 @@ interface UseConversationAIOptions {
   extractCompleteSentences: (text: string) => { sentences: string[]; remaining: string };
   clearQueue: () => void;
   playTTS: (text: string, speed?: number) => Promise<void>;
+  prefetchAudio: (sentence: string, signal?: AbortSignal) => Promise<Blob>;
   /** Audio queue refs from useTTSPlayback */
   audioQueueRef: React.MutableRefObject<string[]>;
   isPlayingQueueRef: React.MutableRefObject<boolean>;
@@ -38,6 +39,7 @@ export function useConversationAI({
   extractCompleteSentences,
   clearQueue,
   playTTS,
+  prefetchAudio,
   audioQueueRef,
   isPlayingQueueRef,
   setMessages,
@@ -133,6 +135,8 @@ export function useConversationAI({
                     // Extract and queue complete sentences
                     const { sentences, remaining } = extractCompleteSentences(textBuffer);
                     for (const sentence of sentences) {
+                      // Prefetch audio in background before queuing for playback
+                      prefetchAudio(sentence);
                       queueTTS(sentence);
                     }
                     textBuffer = remaining;
@@ -191,6 +195,7 @@ export function useConversationAI({
     extractCompleteSentences,
     clearQueue,
     playTTS,
+    prefetchAudio,
     audioQueueRef,
     isPlayingQueueRef,
     setMessages,
