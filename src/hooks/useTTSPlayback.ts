@@ -142,14 +142,33 @@ export function useTTSPlayback({ voice, onQueueEnd }: UseTTSPlaybackOptions): Us
       const cached = await getCachedAudio(cacheKey);
       if (cached) return cached;
 
-      // Fetch from API
+      // Fetch from API with streaming enabled
       const res = await fetch('/api/text-to-speech', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-TTS-Stream': '1',
+        },
         body: JSON.stringify({ text: sentence, voice }),
         signal,
       });
       if (!res.ok) throw new Error(`TTS API error: ${res.status}`);
+
+      // Stream the response — collect chunks as they arrive
+      if (res.body) {
+        const reader = res.body.getReader();
+        const chunks: Uint8Array[] = [];
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+        }
+        const blob = new Blob(chunks as BlobPart[], { type: 'audio/mpeg' });
+        setCachedAudio(cacheKey, blob).catch(() => {});
+        return blob;
+      }
+
+      // Fallback: non-streaming
       const blob = await res.blob();
 
       // Store in IndexedDB (background, don't block)
@@ -264,7 +283,10 @@ export function useTTSPlayback({ voice, onQueueEnd }: UseTTSPlaybackOptions): Us
       if (!audioBlob) {
         const response = await fetch('/api/text-to-speech', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-TTS-Stream': '1',
+          },
           body: JSON.stringify({ text, voice, ...(speed && { speed }) }),
           signal: controller.signal,
         });
@@ -276,7 +298,19 @@ export function useTTSPlayback({ voice, onQueueEnd }: UseTTSPlaybackOptions): Us
           return;
         }
 
-        audioBlob = await response.blob();
+        // Stream the response for faster first-byte
+        if (response.body) {
+          const reader = response.body.getReader();
+          const chunks: Uint8Array[] = [];
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+          }
+          audioBlob = new Blob(chunks as BlobPart[], { type: 'audio/mpeg' });
+        } else {
+          audioBlob = await response.blob();
+        }
 
         // Store in IndexedDB (background, don't block)
         setCachedAudio(cacheKey, audioBlob).catch(() => {});

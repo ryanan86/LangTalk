@@ -398,12 +398,20 @@ function DebateContent() {
 
     return new Promise<void>(async (resolve) => {
       setIsPlaying(true);
+      const ac = new AbortController();
+      const timeout = setTimeout(() => ac.abort(), 10000);
+
       try {
         const response = await fetch('/api/text-to-speech', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-TTS-Stream': '1',
+          },
           body: JSON.stringify({ text, voice }),
+          signal: ac.signal,
         });
+        clearTimeout(timeout);
 
         if (!response.ok) {
           console.error('TTS error:', response.status);
@@ -411,16 +419,39 @@ function DebateContent() {
           resolve();
           return;
         }
-        const audioBlob = await response.blob();
+
+        // Stream response for faster audio start
+        let audioBlob: Blob;
+        if (response.body) {
+          const reader = response.body.getReader();
+          const chunks: Uint8Array[] = [];
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+          }
+          audioBlob = new Blob(chunks as BlobPart[], { type: 'audio/mpeg' });
+        } else {
+          audioBlob = await response.blob();
+        }
         const audioUrl = URL.createObjectURL(audioBlob);
 
         if (audioRef.current) {
+          const playTimeout = setTimeout(() => {
+            audioRef.current?.pause();
+            setIsPlaying(false);
+            URL.revokeObjectURL(audioUrl);
+            resolve();
+          }, 15000);
+
           audioRef.current.onended = () => {
+            clearTimeout(playTimeout);
             setIsPlaying(false);
             URL.revokeObjectURL(audioUrl);
             resolve();
           };
           audioRef.current.onerror = () => {
+            clearTimeout(playTimeout);
             setIsPlaying(false);
             URL.revokeObjectURL(audioUrl);
             resolve();
@@ -432,7 +463,12 @@ function DebateContent() {
           resolve();
         }
       } catch (error) {
-        console.error('TTS error:', error);
+        clearTimeout(timeout);
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.warn('Debate TTS timeout — skipping');
+        } else {
+          console.error('TTS error:', error);
+        }
         setIsPlaying(false);
         resolve();
       }

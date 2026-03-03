@@ -27,7 +27,7 @@ const FISH_AUDIO_VOICE_MAP: Record<string, string> = {
   alloy: '12d3a04e3dca4e49a40ee52fea6e7c0e',    // Henry - Mackenzie Bluey (young boy)
 };
 
-const FISH_AUDIO_TIMEOUT_MS = 12000;
+const FISH_AUDIO_TIMEOUT_MS = 8000; // lowered — 'low' latency mode is much faster
 
 // Independent OpenAI fallback voices — closest match to each Fish Audio persona
 const OPENAI_FALLBACK_VOICE_MAP: Record<string, string> = {
@@ -39,7 +39,17 @@ const OPENAI_FALLBACK_VOICE_MAP: Record<string, string> = {
   alloy: 'alloy',     // Henry — neutral, no boyish voice available
 };
 
-async function generateWithFishAudio(text: string, voice: string, speed?: number, timings?: Record<string, number>): Promise<ArrayBuffer> {
+/**
+ * Generate TTS with Fish Audio.
+ * Returns a ReadableStream for streaming to client, or ArrayBuffer for buffered mode.
+ */
+async function generateWithFishAudio(
+  text: string,
+  voice: string,
+  speed?: number,
+  timings?: Record<string, number>,
+  streaming?: boolean,
+): Promise<ReadableStream<Uint8Array> | ArrayBuffer> {
   const apiKey = process.env.FISH_AUDIO_API_KEY;
   if (!apiKey) {
     throw new Error('Fish Audio API key not configured');
@@ -51,7 +61,8 @@ async function generateWithFishAudio(text: string, voice: string, speed?: number
     format: 'mp3',
     mp3_bitrate: 128,
     normalize: true,
-    latency: 'normal',
+    latency: 'low',
+    chunk_length: 100,
   };
   if (referenceId) {
     body.reference_id = referenceId;
@@ -84,6 +95,15 @@ async function generateWithFishAudio(text: string, voice: string, speed?: number
       throw new Error(`Fish Audio TTS failed: ${response.status} - ${errorText}`);
     }
 
+    if (timings) timings['fish.ttfb.ms'] = since(t0);
+
+    // Streaming mode: pipe response body directly to client
+    if (streaming && response.body) {
+      clearTimeout(timeout);
+      return response.body;
+    }
+
+    // Buffered mode: collect full audio
     const buf = await response.arrayBuffer();
     if (timings) timings['fish.tts.ms'] = since(t0);
     return buf;
@@ -145,8 +165,10 @@ export async function POST(request: NextRequest) {
     // Validate speed parameter (0.5 ~ 2.0)
     const validSpeed = typeof speed === 'number' && speed >= 0.5 && speed <= 2.0 ? speed : undefined;
 
+    // Check streaming support (client signals via Accept header or query param)
+    const wantsStream = request.headers.get('X-TTS-Stream') === '1';
+
     // TTS priority: Fish Audio -> OpenAI (fallback) with circuit breaker
-    let audioBuffer: ArrayBuffer;
     let provider = 'OpenAI';
     let circuitBroken = false;
 
@@ -159,37 +181,69 @@ export async function POST(request: NextRequest) {
     if (fishKeyAvailable && !fishCircuitOpen) {
       const fishT0 = nowMs();
       try {
-        audioBuffer = await generateWithFishAudio(text, voice, validSpeed, timings);
+        const result = await generateWithFishAudio(text, voice, validSpeed, timings, wantsStream);
         provider = 'FishAudio';
         recordSuccess('FishAudio', since(fishT0));
+
+        // Streaming: pipe Fish Audio ReadableStream directly to client
+        if (result instanceof ReadableStream) {
+          const metaJson = JSON.stringify({ rid, provider, circuitBroken, timings });
+          return new NextResponse(result as unknown as BodyInit, {
+            headers: {
+              'Content-Type': 'audio/mpeg',
+              'X-TapTalk-Meta': metaJson,
+              'X-TTS-Streaming': '1',
+            },
+          });
+        }
+
+        // Buffered: return full audio
+        timings['total.ms'] = since(t0);
+        const metaJson = JSON.stringify({ rid, provider, circuitBroken, timings });
+        return new NextResponse(result, {
+          headers: {
+            'Content-Type': 'audio/mpeg',
+            'Content-Length': result.byteLength.toString(),
+            'X-TapTalk-Meta': metaJson,
+          },
+        });
       } catch (fishError) {
         recordFailure('FishAudio');
         console.error('Fish Audio failed, falling back to OpenAI:', fishError);
         const openaiT0 = nowMs();
-        audioBuffer = await generateWithOpenAI(text, voice, timings);
+        const audioBuffer = await generateWithOpenAI(text, voice, timings);
         recordSuccess('OpenAI', since(openaiT0));
+
+        timings['total.ms'] = since(t0);
+        const metaJson = JSON.stringify({ rid, provider: 'OpenAI', circuitBroken, timings });
+        return new NextResponse(audioBuffer, {
+          headers: {
+            'Content-Type': 'audio/mpeg',
+            'Content-Length': audioBuffer.byteLength.toString(),
+            'X-TapTalk-Meta': metaJson,
+          },
+        });
       }
     } else {
       const openaiT0 = nowMs();
       try {
-        audioBuffer = await generateWithOpenAI(text, voice, timings);
+        const audioBuffer = await generateWithOpenAI(text, voice, timings);
         recordSuccess('OpenAI', since(openaiT0));
+
+        timings['total.ms'] = since(t0);
+        const metaJson = JSON.stringify({ rid, provider, circuitBroken, timings });
+        return new NextResponse(audioBuffer, {
+          headers: {
+            'Content-Type': 'audio/mpeg',
+            'Content-Length': audioBuffer.byteLength.toString(),
+            'X-TapTalk-Meta': metaJson,
+          },
+        });
       } catch (openaiError) {
         recordFailure('OpenAI');
         throw openaiError;
       }
     }
-
-    timings['total.ms'] = since(t0);
-    const metaJson = JSON.stringify({ rid, provider, circuitBroken, timings });
-
-    return new NextResponse(audioBuffer, {
-      headers: {
-        'Content-Type': 'audio/mpeg',
-        'Content-Length': audioBuffer.byteLength.toString(),
-        'X-TapTalk-Meta': metaJson,
-      },
-    });
   } catch (error) {
     console.error('Text to speech error:', error);
     timings['total.ms'] = since(t0);
