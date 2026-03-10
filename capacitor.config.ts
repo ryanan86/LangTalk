@@ -8,7 +8,11 @@ const config: CapacitorConfig = {
     url: 'https://taptalk.xyz',
     androidScheme: 'https',
     // Allow Google domains for OAuth within WebView (User-Agent modified to bypass restriction)
-    allowNavigation: ['taptalk.xyz', '*.taptalk.xyz', 'accounts.google.com', '*.google.com', '*.googleapis.com', '*.gstatic.com'],
+    allowNavigation: [
+      'taptalk.xyz', '*.taptalk.xyz',
+      'accounts.google.com', '*.google.com', '*.googleapis.com', '*.gstatic.com',
+      'kauth.kakao.com', 'accounts.kakao.com', '*.kakao.com',
+    ],
   },
   plugins: {
     SplashScreen: {
@@ -20,7 +24,8 @@ const config: CapacitorConfig = {
     GoogleAuth: {
       scopes: ['profile', 'email'],
       serverClientId: '670234764770-sib307dj55oj4pg2d5cu1k27i7u5hith.apps.googleusercontent.com',
-      forceCodeForRefreshToken: true,
+      iosClientId: '670234764770-7s17o1cfit5vkb3hbf29uh0r42j52gdh.apps.googleusercontent.com',
+      forceCodeForRefreshToken: false,
     },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],

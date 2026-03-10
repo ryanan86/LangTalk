@@ -21,7 +21,7 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/';
   const error = searchParams.get('error');
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -32,16 +32,29 @@ function LoginContent() {
     setShowApple(isNativeApp() && isIOSDevice());
   }, []);
 
-  // Google Sign-In: use Capacitor plugin in native app, NextAuth redirect on web
+  // Open URL in in-app browser (SFSafariViewController) instead of external Safari
+  const openInAppBrowser = useCallback(async (url: string) => {
+    try {
+      const { Browser } = await import('@capacitor/browser');
+      await Browser.open({ url, presentationStyle: 'popover' });
+    } catch {
+      // Fallback: navigate in WebView
+      window.location.href = url;
+    }
+  }, []);
+
+  // Google Sign-In: use Capacitor plugin in native app, in-app browser fallback
   const handleGoogleSignIn = useCallback(async () => {
     if (isNativeApp()) {
       try {
         setIsLoading(true);
         const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
         await GoogleAuth.initialize({
-          clientId: '670234764770-sib307dj55oj4pg2d5cu1k27i7u5hith.apps.googleusercontent.com',
+          clientId: isIOSDevice()
+            ? '670234764770-7s17o1cfit5vkb3hbf29uh0r42j52gdh.apps.googleusercontent.com'
+            : '670234764770-sib307dj55oj4pg2d5cu1k27i7u5hith.apps.googleusercontent.com',
           scopes: ['profile', 'email'],
-          grantOfflineAccess: true,
+          grantOfflineAccess: false,
         });
 
         const result = await GoogleAuth.signIn();
@@ -56,20 +69,22 @@ function LoginContent() {
         if (signInResult?.ok) {
           window.location.href = callbackUrl;
         } else {
-          // Fallback to web OAuth
-          signIn('google', { callbackUrl });
+          setAuthError(language === 'ko'
+            ? 'Google 로그인에 실패했습니다. 다시 시도해주세요.'
+            : 'Google sign-in failed. Please try again.');
         }
       } catch (error) {
         console.error('[TapTalk] Native Google Sign-In error:', error);
-        // Fallback to web OAuth
-        signIn('google', { callbackUrl });
+        // Fallback: open Google OAuth in in-app browser (SFSafariViewController)
+        const googleAuthUrl = `https://taptalk.xyz/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+        await openInAppBrowser(googleAuthUrl);
       } finally {
         setIsLoading(false);
       }
     } else {
       signIn('google', { callbackUrl });
     }
-  }, [callbackUrl]);
+  }, [callbackUrl, openInAppBrowser]);
 
   // Apple Sign-In: use Capacitor plugin on iOS native, NextAuth redirect on web
   const handleAppleSignIn = useCallback(async () => {
@@ -174,7 +189,14 @@ function LoginContent() {
 
             {/* Kakao Sign-In */}
             <button
-              onClick={() => signIn('kakao', { callbackUrl })}
+              onClick={async () => {
+                if (isNativeApp()) {
+                  const kakaoAuthUrl = `https://taptalk.xyz/api/auth/signin/kakao?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+                  await openInAppBrowser(kakaoAuthUrl);
+                } else {
+                  signIn('kakao', { callbackUrl });
+                }
+              }}
               disabled={isLoading}
               className="w-full flex items-center justify-center gap-3 bg-[#FEE500] hover:bg-[#FDD800] text-[#191919] font-medium py-3 px-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50"
             >

@@ -49,7 +49,7 @@ export async function POST() {
     if (emailExists) {
       return NextResponse.json({
         error: 'Already signed up',
-        message: '이미 베타 신청이 완료되었습니다.'
+        message: '이미 서비스 이용 신청이 완료되었습니다.'
       }, { status: 400 });
     }
 
@@ -127,7 +127,7 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
-      message: '베타 신청이 완료되었습니다. 승인 후 이용 가능합니다.'
+      message: '서비스 이용 신청이 완료되었습니다. 승인 후 이용 가능합니다.'
     });
   } catch (error) {
     console.error('Beta signup error:', error);
@@ -146,7 +146,7 @@ async function sendAdminNotification(userEmail: string, userName: string, signup
       const escapedEmail = userEmail.replace(/[<>&]/g, '');
       const escapedName = (userName || '(없음)').replace(/[<>&]/g, '');
 
-      const message = `[새 베타 신청]\n\n이메일: ${escapedEmail}\n이름: ${escapedName}\n시간: ${signupTime}\n\nhttps://taptalk.xyz/admin/users`;
+      const message = `[새 서비스 신청]\n\n이메일: ${escapedEmail}\n이름: ${escapedName}\n시간: ${signupTime}\n\nhttps://taptalk.xyz/admin/users`;
 
       const res = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
         method: 'POST',
@@ -182,9 +182,9 @@ async function sendAdminNotification(userEmail: string, userName: string, signup
         body: JSON.stringify({
           from: 'TapTalk <noreply@taptalk.xyz>',
           to: ADMIN_EMAIL,
-          subject: `[TapTalk] 새 베타 신청: ${userEmail}`,
+          subject: `[TapTalk] 새 서비스 신청: ${userEmail}`,
           html: `
-            <h2>새로운 베타 신청이 들어왔습니다!</h2>
+            <h2>새로운 서비스 신청이 들어왔습니다!</h2>
             <p><strong>이메일:</strong> ${userEmail}</p>
             <p><strong>이름:</strong> ${userName || '(없음)'}</p>
             <p><strong>신청 시간:</strong> ${signupTime}</p>
@@ -207,7 +207,7 @@ async function sendAdminNotification(userEmail: string, userName: string, signup
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: `🆕 새 베타 신청!\n이메일: ${userEmail}\n이름: ${userName || '(없음)'}\n시간: ${signupTime}\n<https://taptalk.xyz/admin/users|승인하러 가기>`,
+          text: `🆕 새 서비스 신청!\n이메일: ${userEmail}\n이름: ${userName || '(없음)'}\n시간: ${signupTime}\n<https://taptalk.xyz/admin/users|승인하러 가기>`,
         }),
       });
       console.log('Admin notification sent via Slack');

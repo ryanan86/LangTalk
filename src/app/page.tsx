@@ -24,6 +24,11 @@ function isNativeApp(): boolean {
   return navigator.userAgent.includes('TapTalkNative');
 }
 
+function isIOSDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+  return /iPad|iPhone|iPod/i.test(navigator.userAgent);
+}
+
 // Typewriter Effect Hook
 function useTypewriter(texts: string[], typingSpeed = 80, deletingSpeed = 40, pauseTime = 2000) {
   const [displayText, setDisplayText] = useState('');
@@ -230,6 +235,16 @@ function HomePageContent() {
     { personaIdx: 4, start: 35.64, end: 43.52 },   // Alina (personas[4])
   ]);
 
+  // Open URL in in-app browser (SFSafariViewController) instead of external Safari
+  const openInAppBrowser = useCallback(async (url: string) => {
+    try {
+      const { Browser } = await import('@capacitor/browser');
+      await Browser.open({ url, presentationStyle: 'popover' });
+    } catch {
+      window.location.href = url;
+    }
+  }, []);
+
   // Handle Google Sign-In (native for iOS/Android, web for browser)
   const handleGoogleSignIn = useCallback(async () => {
     const isNative = isNativeApp();
@@ -241,11 +256,12 @@ function HomePageContent() {
         // Dynamic import for Capacitor plugin
         const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
 
-        // Initialize with Android client ID
         await GoogleAuth.initialize({
-          clientId: '670234764770-sib307dj55oj4pg2d5cu1k27i7u5hith.apps.googleusercontent.com',
+          clientId: isIOSDevice()
+            ? '670234764770-7s17o1cfit5vkb3hbf29uh0r42j52gdh.apps.googleusercontent.com'
+            : '670234764770-sib307dj55oj4pg2d5cu1k27i7u5hith.apps.googleusercontent.com',
           scopes: ['profile', 'email'],
-          grantOfflineAccess: true,
+          grantOfflineAccess: false,
         });
 
         const result = await GoogleAuth.signIn();
@@ -264,8 +280,9 @@ function HomePageContent() {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error('[TapTalk] Native Google Sign-In error:', errorMessage);
-        // Auto-fallback to web OAuth (works via "wv" removal in WebView)
-        signIn('google');
+        // Fallback: open Google OAuth in in-app browser (SFSafariViewController)
+        const googleAuthUrl = `https://taptalk.xyz/api/auth/signin/google?callbackUrl=${encodeURIComponent('/')}`;
+        await openInAppBrowser(googleAuthUrl);
         return;
       } finally {
         setIsAuthLoading(false);
@@ -274,13 +291,17 @@ function HomePageContent() {
       // Web (desktop): use standard NextAuth
       signIn('google');
     }
-  }, []);
+  }, [openInAppBrowser]);
 
-  // Force web sign-in (for when native fails)
-  const handleWebSignIn = useCallback(() => {
+  // Force web sign-in (for when native fails) — uses in-app browser
+  const handleWebSignIn = useCallback(async () => {
     setNativeSignInError(null);
-    signIn('google');
-  }, []);
+    if (isNativeApp()) {
+      await openInAppBrowser(`https://taptalk.xyz/api/auth/signin/google?callbackUrl=${encodeURIComponent('/')}`);
+    } else {
+      signIn('google');
+    }
+  }, [openInAppBrowser]);
 
   // Typewriter texts
   const typewriterTextsKo = [
@@ -710,7 +731,13 @@ function HomePageContent() {
                       <span className="text-sm">Google</span>
                     </button>
                     <button
-                      onClick={() => signIn('kakao')}
+                      onClick={async () => {
+                        if (isNativeApp()) {
+                          await openInAppBrowser(`https://taptalk.xyz/api/auth/signin/kakao?callbackUrl=${encodeURIComponent('/')}`);
+                        } else {
+                          signIn('kakao');
+                        }
+                      }}
                       className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#FEE500] text-[#3C1E1E] font-medium hover:bg-[#FDD800] transition-all hover:scale-105 shadow-lg shadow-yellow-500/20"
                     >
                       <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -1056,7 +1083,13 @@ function HomePageContent() {
                       {t.continueWithGoogle}
                     </button>
                     <button
-                      onClick={() => signIn('kakao')}
+                      onClick={async () => {
+                        if (isNativeApp()) {
+                          await openInAppBrowser(`https://taptalk.xyz/api/auth/signin/kakao?callbackUrl=${encodeURIComponent('/')}`);
+                        } else {
+                          signIn('kakao');
+                        }
+                      }}
                       disabled={isAuthLoading}
                       className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#FEE500] text-[#191919] font-medium hover:bg-[#FDD800] transition-all hover:scale-105 disabled:opacity-50"
                     >
@@ -1069,7 +1102,7 @@ function HomePageContent() {
                 </div>
               )}
 
-              {/* Beta Signup States */}
+              {/* Service Signup States */}
               {session && !checkingSubscription && subscriptionStatus === 'not_found' && (
                 <div className="max-w-md mx-auto text-center py-12">
                   <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-theme flex items-center justify-center mx-auto mb-6">
@@ -1077,7 +1110,7 @@ function HomePageContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-semibold text-theme-primary mb-3">{language === 'ko' ? '베타 서비스 신청' : 'Join Beta'}</h3>
+                  <h3 className="text-xl font-semibold text-theme-primary mb-3">{language === 'ko' ? '서비스 이용 신청' : 'Get Access'}</h3>
                   <p className="text-theme-secondary mb-6">{t.betaSignupPrompt}</p>
                   {signupMessage && (
                     <div className="mb-4 p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 text-sm">

@@ -1,10 +1,36 @@
 "use client";
 
 import { useLanguage } from "@/lib/i18n";
+import { useSession, signOut } from "next-auth/react";
+import { useState } from "react";
 import Link from "next/link";
 
 export default function DeleteAccountPage() {
   const { language } = useLanguage();
+  const { data: session } = useSession();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/account/delete', { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        await signOut({ callbackUrl: '/login' });
+      } else {
+        setError(language === 'ko' ? '계정 삭제에 실패했습니다. 다시 시도해주세요.' : 'Failed to delete account. Please try again.');
+        setShowConfirm(false);
+      }
+    } catch {
+      setError(language === 'ko' ? '계정 삭제에 실패했습니다. 다시 시도해주세요.' : 'Failed to delete account. Please try again.');
+      setShowConfirm(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-dark-bg py-12 px-4">
@@ -17,33 +43,22 @@ export default function DeleteAccountPage() {
         </Link>
 
         <h1 className="text-3xl font-bold mb-6">
-          {language === 'ko' ? '계정 삭제 요청' : 'Delete Account Request'}
+          {language === 'ko' ? '계정 삭제' : 'Delete Account'}
         </h1>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-lg text-red-700 dark:text-red-300 text-sm">
+            {error}
+          </div>
+        )}
 
         {language === 'ko' ? (
           <div className="space-y-6 text-neutral-700 dark:text-neutral-300">
             <section>
               <h2 className="text-xl font-semibold mb-3">계정 삭제 안내</h2>
               <p className="leading-relaxed">
-                TapTalk 계정 삭제를 원하시면 아래 이메일로 삭제 요청을 보내주세요.
-                요청 후 7일 이내에 계정 및 관련 데이터가 삭제됩니다.
+                계정을 삭제하면 모든 데이터가 즉시 영구적으로 삭제되며 복구할 수 없습니다.
               </p>
-            </section>
-
-            <section className="bg-blue-50 dark:bg-blue-500/10 p-6 rounded-lg">
-              <h3 className="font-semibold mb-2">삭제 요청 방법</h3>
-              <p className="mb-3">아래 이메일로 다음 정보를 보내주세요:</p>
-              <ul className="list-disc pl-6 space-y-1 mb-4">
-                <li>제목: &quot;계정 삭제 요청&quot;</li>
-                <li>가입 시 사용한 이메일 주소</li>
-                <li>삭제 요청 사유 (선택)</li>
-              </ul>
-              <a
-                href="mailto:support@taptalk.xyz?subject=계정 삭제 요청"
-                className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition"
-              >
-                support@taptalk.xyz로 이메일 보내기
-              </a>
             </section>
 
             <section>
@@ -56,46 +71,67 @@ export default function DeleteAccountPage() {
               </ul>
             </section>
 
-            <section>
-              <h2 className="text-xl font-semibold mb-3">처리 기간</h2>
-              <ul className="list-disc pl-6 space-y-1">
-                <li>삭제 요청 접수 후 7일 이내 처리</li>
-                <li>처리 완료 시 이메일로 안내</li>
-                <li>삭제 후에는 데이터 복구가 불가능합니다</li>
-              </ul>
-            </section>
-
             <section className="bg-yellow-50 dark:bg-yellow-500/10 p-4 rounded-lg">
               <p className="text-yellow-800 dark:text-yellow-300 text-sm">
                 <strong>참고:</strong> 법적 의무에 따라 일부 데이터(결제 기록 등)는
                 관련 법령에서 정한 기간 동안 보관될 수 있습니다.
               </p>
             </section>
+
+            {session ? (
+              <section className="pt-4">
+                {!showConfirm ? (
+                  <button
+                    onClick={() => setShowConfirm(true)}
+                    className="w-full py-3 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition-colors"
+                  >
+                    계정 삭제하기
+                  </button>
+                ) : (
+                  <div className="bg-red-50 dark:bg-red-500/10 p-6 rounded-lg border border-red-200 dark:border-red-500/30">
+                    <p className="text-red-700 dark:text-red-300 font-medium mb-4">
+                      정말로 계정을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+                    </p>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setShowConfirm(false)}
+                        disabled={isDeleting}
+                        className="flex-1 py-3 rounded-xl border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                      >
+                        취소
+                      </button>
+                      <button
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="flex-1 py-3 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                      >
+                        {isDeleting ? '삭제 중...' : '확인, 삭제합니다'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </section>
+            ) : (
+              <section className="pt-4">
+                <p className="text-neutral-500 dark:text-neutral-400 mb-4">
+                  계정 삭제를 위해 먼저 로그인해주세요.
+                </p>
+                <Link
+                  href="/login"
+                  className="inline-block w-full text-center py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
+                >
+                  로그인
+                </Link>
+              </section>
+            )}
           </div>
         ) : (
           <div className="space-y-6 text-neutral-700 dark:text-neutral-300">
             <section>
-              <h2 className="text-xl font-semibold mb-3">Account Deletion Information</h2>
+              <h2 className="text-xl font-semibold mb-3">Account Deletion</h2>
               <p className="leading-relaxed">
-                To delete your TapTalk account, please send a deletion request to the email below.
-                Your account and related data will be deleted within 7 days of the request.
+                Deleting your account will immediately and permanently remove all your data. This action cannot be undone.
               </p>
-            </section>
-
-            <section className="bg-blue-50 dark:bg-blue-500/10 p-6 rounded-lg">
-              <h3 className="font-semibold mb-2">How to Request Deletion</h3>
-              <p className="mb-3">Send an email with the following information:</p>
-              <ul className="list-disc pl-6 space-y-1 mb-4">
-                <li>Subject: &quot;Account Deletion Request&quot;</li>
-                <li>Email address used for registration</li>
-                <li>Reason for deletion (optional)</li>
-              </ul>
-              <a
-                href="mailto:support@taptalk.xyz?subject=Account Deletion Request"
-                className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition"
-              >
-                Send Email to support@taptalk.xyz
-              </a>
             </section>
 
             <section>
@@ -108,21 +144,59 @@ export default function DeleteAccountPage() {
               </ul>
             </section>
 
-            <section>
-              <h2 className="text-xl font-semibold mb-3">Processing Time</h2>
-              <ul className="list-disc pl-6 space-y-1">
-                <li>Processed within 7 days of request</li>
-                <li>Email notification upon completion</li>
-                <li>Data cannot be recovered after deletion</li>
-              </ul>
-            </section>
-
             <section className="bg-yellow-50 dark:bg-yellow-500/10 p-4 rounded-lg">
               <p className="text-yellow-800 dark:text-yellow-300 text-sm">
                 <strong>Note:</strong> Some data (such as payment records) may be retained
                 for the period required by applicable laws.
               </p>
             </section>
+
+            {session ? (
+              <section className="pt-4">
+                {!showConfirm ? (
+                  <button
+                    onClick={() => setShowConfirm(true)}
+                    className="w-full py-3 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition-colors"
+                  >
+                    Delete My Account
+                  </button>
+                ) : (
+                  <div className="bg-red-50 dark:bg-red-500/10 p-6 rounded-lg border border-red-200 dark:border-red-500/30">
+                    <p className="text-red-700 dark:text-red-300 font-medium mb-4">
+                      Are you sure you want to delete your account? This action cannot be undone.
+                    </p>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setShowConfirm(false)}
+                        disabled={isDeleting}
+                        className="flex-1 py-3 rounded-xl border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="flex-1 py-3 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                      >
+                        {isDeleting ? 'Deleting...' : 'Yes, Delete'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </section>
+            ) : (
+              <section className="pt-4">
+                <p className="text-neutral-500 dark:text-neutral-400 mb-4">
+                  Please sign in first to delete your account.
+                </p>
+                <Link
+                  href="/login"
+                  className="inline-block w-full text-center py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
+                >
+                  Sign In
+                </Link>
+              </section>
+            )}
           </div>
         )}
 

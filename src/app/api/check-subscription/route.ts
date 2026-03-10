@@ -44,7 +44,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({
         subscribed: false,
         status: 'not_found',
-        reason: '베타 신청이 필요합니다.',
+        reason: '서비스 이용 신청이 필요합니다.',
         sessionCount: 0,
         email
       });
@@ -57,7 +57,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({
         subscribed: false,
         status: 'pending',
-        reason: '베타 신청이 검토 중입니다.',
+        reason: '서비스 이용 신청이 검토 중입니다.',
         sessionCount: stats.sessionCount,
         evaluatedGrade: stats.currentLevel || null,
         levelDetails: stats.levelDetails || null,

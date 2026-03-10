@@ -45,6 +45,15 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.670234764770-7s17o1cfit5vkb3hbf29uh0r42j52gdh</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>TapTalk needs microphone access for English conversation practice with AI tutors.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
