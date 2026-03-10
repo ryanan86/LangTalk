@@ -54,6 +54,8 @@
 			</array>
 		</dict>
 	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>TapTalk needs microphone access for English conversation practice with AI tutors.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
