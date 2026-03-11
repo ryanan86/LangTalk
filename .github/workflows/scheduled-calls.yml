@@ -1,4 +1,4 @@
-name: Scheduled Call Notifications
+name: Scheduled Jobs
 
 on:
   schedule:
@@ -14,3 +14,19 @@ jobs:
           curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             "https://taptalk.xyz/api/cron/scheduled-calls"
+
+  supabase-keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase to prevent pausing
+        run: |
+          response=$(curl -s -w "\n%{http_code}" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/users?select=id&limit=1")
+          http_code=$(echo "$response" | tail -1)
+          echo "Supabase keepalive response: $http_code"
+          if [ "$http_code" -ne 200 ]; then
+            echo "::warning::Supabase ping failed with status $http_code"
+            exit 1
+          fi
