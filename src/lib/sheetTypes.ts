@@ -12,7 +12,10 @@ export interface SubscriptionData {
   expiryDate: string;
   signupDate: string;
   name: string;
-  plan?: 'free' | 'beta' | 'premium';
+  plan?: 'free' | 'beta' | 'premium' | 'monthly' | 'yearly';
+  paymentKey?: string;
+  orderId?: string;
+  startedAt?: string;
 }
 
 export interface ProfileData {

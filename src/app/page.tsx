@@ -1162,7 +1162,13 @@ function HomePageContent() {
                     </svg>
                   </div>
                   <h3 className="text-xl font-semibold text-theme-primary mb-3">{subscriptionStatus === 'expired' ? (language === 'ko' ? '만료됨' : 'Expired') : (language === 'ko' ? '비활성화됨' : 'Inactive')}</h3>
-                  <p className="text-theme-secondary">{subscriptionStatus === 'expired' ? t.betaExpired : t.betaInactive}</p>
+                  <p className="text-theme-secondary mb-6">{subscriptionStatus === 'expired' ? t.betaExpired : t.betaInactive}</p>
+                  <Link
+                    href="/subscribe"
+                    className="inline-block px-6 py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-semibold transition-colors"
+                  >
+                    {language === 'ko' ? '구독하기' : 'Subscribe'}
+                  </Link>
                 </div>
               )}
 
