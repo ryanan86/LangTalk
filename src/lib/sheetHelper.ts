@@ -610,3 +610,29 @@ export async function getAllUserData(email: string): Promise<{
 
   return { user, learningData };
 }
+
+// ============================================
+// Speech Coaching Sessions (Sheets fallback — no-op stubs)
+// ============================================
+
+export async function getSpeechSessions(_email: string): Promise<unknown[]> {
+  // Speech coaching data is not stored in Google Sheets
+  return [];
+}
+
+export async function saveSpeechSession(
+  _email: string,
+  _session: {
+    tutorId: string;
+    sessionNumber: number;
+    transcript: string;
+    duration: number;
+    analysis: unknown;
+    focusAreas: string[];
+    previousSessionId?: string;
+  }
+): Promise<{ id: string } | null> {
+  // Speech coaching data is not stored in Google Sheets
+  console.warn('saveSpeechSession: Sheets backend does not support speech sessions');
+  return { id: `local_${Date.now()}` };
+}

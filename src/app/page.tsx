@@ -171,7 +171,7 @@ function HomePageContent() {
   const [evaluatedGrade, setEvaluatedGrade] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [levelDetails, setLevelDetails] = useState<{ grammar: number; vocabulary: number; fluency: number; comprehension: number } | null>(null);
-  const [activeTab, setActiveTab] = useState<'talk' | 'debate'>('talk');
+  const [activeTab, setActiveTab] = useState<'talk' | 'debate' | 'speech'>('talk');
   const [lessonHistory, setLessonHistory] = useState<Array<{
     dateTime: string;
     tutor: string;
@@ -1047,6 +1047,21 @@ function HomePageContent() {
                       )}
                     </span>
                   </button>
+                  <button
+                    onClick={() => setActiveTab('speech')}
+                    className={`flex-1 min-w-0 px-5 sm:px-8 py-3 rounded-xl font-medium transition-all whitespace-nowrap ${
+                      activeTab === 'speech'
+                        ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25'
+                        : 'text-theme-muted hover:text-theme-primary'
+                    }`}
+                  >
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      Speech
+                    </span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1054,7 +1069,7 @@ function HomePageContent() {
         )}
 
         {/* Talk Mode Content */}
-        {(!session || !isSubscribed || activeTab === 'talk') && (
+        {(!session || !isSubscribed || activeTab === 'talk') && activeTab !== 'speech' && (
           <section className={`py-8 sm:py-12 transition-[opacity,transform] duration-700 delay-200 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -1463,6 +1478,65 @@ function HomePageContent() {
                   </button>
                 </div>
               )}
+            </div>
+          </section>
+        )}
+
+        {/* Speech Coaching Mode Content */}
+        {session && isSubscribed && activeTab === 'speech' && (
+          <section className={`py-8 sm:py-12 transition-[opacity,transform] duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center">
+                <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-cyan-500/25">
+                  <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </div>
+
+                <h2 className="text-2xl sm:text-3xl font-bold text-theme-primary mb-4">
+                  {language === 'ko' ? '스피치 코칭' : 'Speech Coaching'}
+                </h2>
+                <p className="text-theme-secondary mb-8 max-w-md mx-auto">
+                  {language === 'ko'
+                    ? '스피치를 녹음하고 AI 코치에게 상세한 피드백을 받아보세요'
+                    : 'Record your speech and get detailed AI coaching feedback'}
+                </p>
+
+                {/* Features */}
+                <div className="grid grid-cols-3 gap-4 sm:gap-6 mb-8">
+                  <div className="p-4 rounded-xl bg-surface border border-theme">
+                    <div className="text-2xl mb-2">AI</div>
+                    <div className="text-xs text-theme-muted">{language === 'ko' ? '분석' : 'Analysis'}</div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-surface border border-theme">
+                    <div className="text-2xl mb-2">6</div>
+                    <div className="text-xs text-theme-muted">{language === 'ko' ? '코치' : 'Coaches'}</div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-surface border border-theme">
+                    <div className="text-2xl mb-2">#N</div>
+                    <div className="text-xs text-theme-muted">{language === 'ko' ? '회차 추적' : 'Session Tracking'}</div>
+                  </div>
+                </div>
+
+                {/* Tutor selection */}
+                <p className="text-sm font-medium text-theme-muted mb-4">
+                  {language === 'ko' ? '코치를 선택하세요' : 'Choose your coach'}
+                </p>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-8 max-w-lg mx-auto">
+                  {personas.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => router.push(`/speech?tutor=${p.id}`)}
+                      className="flex flex-col items-center gap-2 p-3 rounded-xl bg-surface border border-theme hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/10 transition-all hover:scale-105"
+                    >
+                      <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${p.gradient} flex items-center justify-center text-white text-lg font-bold`}>
+                        {p.name[0]}
+                      </div>
+                      <span className="text-xs font-medium text-theme-primary">{p.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </section>
         )}

@@ -555,3 +555,85 @@ export async function getAllUserData(email: string): Promise<{
 
   return { user, learningData };
 }
+
+// ============================================
+// Speech Coaching Sessions
+// ============================================
+
+let speechTableVerified = false;
+
+async function ensureSpeechTable(): Promise<void> {
+  if (speechTableVerified) return;
+  const sb = getSupabase();
+  const { error } = await sb.from('speech_sessions').select('id').limit(1);
+  if (error && error.message.includes('does not exist')) {
+    // 테이블 자동 생성 via raw SQL
+    const { error: createError } = await sb.rpc('exec_sql', {
+      sql: `CREATE TABLE IF NOT EXISTS speech_sessions (
+        id text PRIMARY KEY, user_id text NOT NULL, tutor_id text NOT NULL,
+        session_number integer NOT NULL DEFAULT 1, transcript text,
+        duration integer DEFAULT 0, analysis jsonb,
+        focus_areas jsonb DEFAULT '[]'::jsonb, previous_session_id text,
+        created_at timestamptz DEFAULT now()
+      )`
+    });
+    if (createError) {
+      console.error('Auto-create speech_sessions failed (create manually in Supabase SQL Editor):', createError.message);
+    }
+  }
+  speechTableVerified = true;
+}
+
+export async function getSpeechSessions(email: string): Promise<unknown[]> {
+  await ensureSpeechTable();
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('speech_sessions')
+    .select('*')
+    .eq('user_id', email)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('getSpeechSessions error:', error);
+    return [];
+  }
+  return data || [];
+}
+
+export async function saveSpeechSession(
+  email: string,
+  session: {
+    tutorId: string;
+    sessionNumber: number;
+    transcript: string;
+    duration: number;
+    analysis: unknown;
+    focusAreas: string[];
+    previousSessionId?: string;
+  }
+): Promise<{ id: string } | null> {
+  await ensureSpeechTable();
+  const sb = getSupabase();
+  const id = `speech_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+  const { error } = await sb
+    .from('speech_sessions')
+    .insert({
+      id,
+      user_id: email,
+      tutor_id: session.tutorId,
+      session_number: session.sessionNumber,
+      transcript: session.transcript,
+      duration: session.duration,
+      analysis: session.analysis,
+      focus_areas: session.focusAreas,
+      previous_session_id: session.previousSessionId || null,
+      created_at: new Date().toISOString(),
+    });
+
+  if (error) {
+    console.error('saveSpeechSession error:', error);
+    return null;
+  }
+  return { id };
+}

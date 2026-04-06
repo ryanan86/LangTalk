@@ -27,6 +27,10 @@ export const generatePersonalizedTopics = useSupabase ? supabase.generatePersona
 // Utility
 export const getAllUserData = useSupabase ? supabase.getAllUserData : sheets.getAllUserData;
 
+// Speech coaching
+export const getSpeechSessions = useSupabase ? supabase.getSpeechSessions : sheets.getSpeechSessions;
+export const saveSpeechSession = useSupabase ? supabase.saveSpeechSession : sheets.saveSpeechSession;
+
 // Session count (Supabase-only new functions, sheets fallback is handled in route)
 export const getSessionCount = useSupabase ? supabase.getSessionCount : null;
 export const incrementSessionCount = useSupabase ? supabase.incrementSessionCount : null;

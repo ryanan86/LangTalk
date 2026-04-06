@@ -175,6 +175,93 @@ export const ttsBodySchema = z.object({
 export type TTSBody = z.infer<typeof ttsBodySchema>;
 
 // ============================================
+// /api/speech-coaching/analyze (POST)
+// ============================================
+
+const grammarCorrectionSchema = z.object({
+  original: z.string(),
+  corrected: z.string(),
+  explanation: z.string(),
+});
+
+const pronunciationIssueSchema = z.object({
+  word: z.string(),
+  suggestion: z.string(),
+  severity: z.enum(['minor', 'major']),
+});
+
+const previousAnalysisSchema = z.object({
+  overallScore: z.number().min(0).max(100),
+  delivery: z.object({
+    wordsPerMinute: z.number(),
+    fillerWords: z.array(z.object({ word: z.string(), count: z.number() })),
+    pauseQuality: z.enum(['good', 'too-many', 'too-few']),
+    pacing: z.enum(['too-fast', 'good', 'too-slow']),
+  }),
+  grammar: z.object({
+    corrections: z.array(grammarCorrectionSchema),
+    accuracy: z.number(),
+  }),
+  pronunciation: z.object({
+    issues: z.array(pronunciationIssueSchema),
+    clarity: z.number(),
+  }),
+  content: z.object({
+    structure: z.string(),
+    coherence: z.number(),
+    vocabulary: z.string(),
+  }),
+  strengths: z.array(z.string()),
+  improvements: z.array(z.string()),
+  focusForNextSession: z.string(),
+  encouragement: z.string(),
+  comparisonWithPrevious: z.object({
+    improved: z.array(z.string()),
+    stillNeedsWork: z.array(z.string()),
+    overallProgress: z.string(),
+  }).optional(),
+}).optional();
+
+export const speechCoachingAnalyzeSchema = z.object({
+  transcript: z.string().min(1).max(50000),
+  tutorId: z.string().min(1).max(50),
+  duration: z.number().min(1).max(3600),
+  sessionNumber: z.number().int().min(1).max(1000),
+  previousAnalysis: previousAnalysisSchema,
+  focusAreas: z.array(z.string().max(200)).max(10).optional(),
+  language: z.string().max(10).default('en'),
+});
+
+export type SpeechCoachingAnalyzeBody = z.infer<typeof speechCoachingAnalyzeSchema>;
+
+// ============================================
+// /api/speech-coaching/sessions (POST)
+// ============================================
+
+export const speechSessionSaveSchema = z.object({
+  tutorId: z.string().min(1).max(50),
+  sessionNumber: z.number().int().min(1).max(1000),
+  transcript: z.string().min(1).max(50000),
+  duration: z.number().min(1).max(3600),
+  analysis: z.object({
+    overallScore: z.number(),
+    delivery: z.any(),
+    grammar: z.any(),
+    pronunciation: z.any(),
+    content: z.any(),
+    strengths: z.array(z.string()),
+    improvements: z.array(z.string()),
+    focusForNextSession: z.string(),
+    encouragement: z.string(),
+    comparisonWithPrevious: z.any().optional(),
+  }),
+  focusAreas: z.array(z.string().max(200)).max(10),
+  previousSessionId: z.string().max(100).optional(),
+});
+
+export type SpeechSessionSaveBody = z.infer<typeof speechSessionSaveSchema>;
+
+// ============================================
 // Helper: parse and return 400 on failure
 // ============================================
 
