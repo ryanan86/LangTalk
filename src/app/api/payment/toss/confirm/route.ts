@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Toss 결제 승인 API 호출
-    const secretKey = process.env.TOSS_SECRET_KEY;
+    const secretKey = process.env.TOSS_SECRET_KEY?.trim();
     if (!secretKey) {
       console.error('[toss/confirm] TOSS_SECRET_KEY missing');
       return NextResponse.json({ error: '결제 설정이 완료되지 않았습니다.' }, { status: 500 });

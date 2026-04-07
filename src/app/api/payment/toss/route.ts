@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
   const emailHash = session.user.email.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8);
   const orderId = `LANGTALK_${planId.toUpperCase()}_${emailHash}_${Date.now()}`;
 
-  const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
+  const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY?.trim();
   if (!clientKey) {
     return NextResponse.json({ error: '결제 설정이 완료되지 않았습니다.' }, { status: 500 });
   }
