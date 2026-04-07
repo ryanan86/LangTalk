@@ -479,7 +479,8 @@ function HomePageContent() {
     try {
       // Fetch subscription data first (other calls may depend on it)
       const res = await fetch('/api/check-subscription', { signal });
-      if (!res.ok) {
+      // 401(미로그인) 또는 200 모두 JSON 응답을 파싱 — expired/not_found 케이스에 expiryDate 포함됨
+      if (!res.ok && res.status !== 401) {
         const errText = await res.text().catch(() => '');
         throw new Error(errText || `HTTP ${res.status}`);
       }
@@ -873,26 +874,68 @@ function HomePageContent() {
                 />
               )}
 
-              {/* Subscription Expiry Info - For active subscribers */}
-              {session && isSubscribed && expiryDate && (
-                <div className="max-w-2xl mx-auto mb-6">
-                  <div className="text-center text-sm text-theme-muted">
-                    {language === 'ko' ? '이용 기간: ' : 'Subscription valid until: '}
-                    <span className="text-theme-secondary font-medium">{expiryDate}</span>
-                    {(() => {
-                      const daysLeft = Math.ceil((new Date(expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-                      if (daysLeft <= 7 && daysLeft > 0) {
-                        return (
-                          <span className="ml-2 text-amber-400">
-                            ({language === 'ko' ? `${daysLeft}일 남음` : `${daysLeft} days left`})
-                          </span>
-                        );
-                      }
-                      return null;
-                    })()}
+              {/* Subscription Expiry Info - For active OR expired subscribers */}
+              {session && expiryDate && (() => {
+                const daysLeft = Math.ceil((new Date(expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                const expired = daysLeft <= 0;
+                const urgent = !expired && daysLeft <= 7;
+                const expiryText = new Date(expiryDate).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+                return (
+                  <div className="max-w-2xl mx-auto mb-6 px-4">
+                    <button
+                      onClick={() => router.push('/subscribe')}
+                      className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border transition-all hover:shadow-md ${
+                        expired
+                          ? 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30 hover:border-rose-300 dark:hover:border-rose-400/50'
+                          : urgent
+                          ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30 hover:border-amber-300 dark:hover:border-amber-400/50'
+                          : 'bg-white dark:bg-neutral-800/60 border-neutral-200 dark:border-neutral-700 hover:border-purple-300 dark:hover:border-purple-500/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 text-left min-w-0">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                          expired
+                            ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400'
+                            : urgent
+                            ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                            : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                        }`}>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z" />
+                          </svg>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs text-theme-muted leading-tight">
+                            {expired
+                              ? (language === 'ko' ? '구독 만료됨' : 'Subscription expired')
+                              : (language === 'ko' ? '이용 기간' : 'Subscription valid until')}
+                          </p>
+                          <p className="text-sm font-semibold text-theme-secondary truncate tabular-nums">
+                            {expiryText}
+                            <span className={`ml-2 text-xs font-bold ${
+                              expired ? 'text-rose-500' : urgent ? 'text-amber-500' : 'text-emerald-500'
+                            }`}>
+                              {expired
+                                ? (language === 'ko' ? '만료됨' : 'Expired')
+                                : (language === 'ko' ? `${daysLeft}일 남음` : `${daysLeft}d left`)}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                      <div className={`flex items-center gap-1 text-xs font-semibold shrink-0 ${
+                        expired ? 'text-rose-600 dark:text-rose-400' : 'text-purple-600 dark:text-purple-400'
+                      }`}>
+                        {expired
+                          ? (language === 'ko' ? '재구독' : 'Renew')
+                          : (language === 'ko' ? '연장' : 'Extend')}
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="m9 5 7 7-7 7" />
+                        </svg>
+                      </div>
+                    </button>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Review & Profile Widgets - For logged in users */}
               {session && isSubscribed && (
