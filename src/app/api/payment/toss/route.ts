@@ -24,6 +24,8 @@ export async function POST(request: NextRequest) {
   }
 
   const plan = PLANS[planId];
+  // customerKey: 영문/숫자/-/_만 허용, 2~50자
+  const customerKey = session.user.email.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 50);
   const emailHash = session.user.email.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8);
   const orderId = `LANGTALK_${planId.toUpperCase()}_${emailHash}_${Date.now()}`;
 
@@ -36,7 +38,7 @@ export async function POST(request: NextRequest) {
     orderId,
     amount: plan.price,
     orderName: `TapTalk ${plan.name}`,
-    customerKey: emailHash,
+    customerKey,
     clientKey,
     planId,
   });

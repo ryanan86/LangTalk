@@ -68,11 +68,11 @@ export default function SubscribePage() {
         throw new Error(data.error || '결제 준비에 실패했습니다.');
       }
 
-      const { orderId, amount, orderName, clientKey } = await res.json();
+      const { orderId, amount, orderName, clientKey, customerKey } = await res.json();
 
       // 2. Toss SDK 로드 및 결제 요청
       const tossPayments = await loadTossPayments(clientKey);
-      const payment = tossPayments.payment({ customerKey: session!.user!.email! });
+      const payment = tossPayments.payment({ customerKey });
 
       await payment.requestPayment({
         method: 'CARD',
