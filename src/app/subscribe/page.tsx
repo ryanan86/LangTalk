@@ -131,17 +131,27 @@ export default function SubscribePage() {
       <main className="max-w-lg mx-auto px-4 py-8 pb-24">
         {/* Current Subscription Status */}
         {isActive && expiryDate && (
-          <div className="mb-8 p-4 rounded-2xl bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-500/20 flex items-center justify-center">
-                <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          <div className="mb-8 p-5 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-500/10 dark:to-teal-500/10 border border-emerald-200 dark:border-emerald-500/30">
+            <div className="flex items-start gap-3">
+              <div className="w-11 h-11 rounded-xl bg-white dark:bg-emerald-500/20 flex items-center justify-center shrink-0 ring-1 ring-emerald-200 dark:ring-emerald-400/30">
+                <svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <div>
-                <p className="font-semibold text-green-800 dark:text-green-300">구독 활성화</p>
-                <p className="text-sm text-green-600 dark:text-green-400">
-                  {remainingDays}일 남음 ({expiryDate.toLocaleDateString('ko-KR')} 만료)
+              <div className="flex-1">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <p className="font-bold text-emerald-900 dark:text-emerald-200">
+                    {subscription?.plan === 'yearly' ? '연간 이용권 활성화' : subscription?.plan === 'monthly' ? '월간 이용권 활성화' : '구독 활성화'}
+                  </p>
+                  <span className="px-2 py-0.5 bg-white dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-bold rounded-full ring-1 ring-emerald-200 dark:ring-emerald-400/30 tabular-nums">
+                    {remainingDays}일 남음
+                  </span>
+                </div>
+                <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">
+                  만료일: <span className="font-semibold">{expiryDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                </p>
+                <p className="text-xs text-emerald-600/80 dark:text-emerald-400/70 mt-2 leading-relaxed">
+                  지금 추가 구독하시면 만료일에서부터 자동으로 연장됩니다.
                 </p>
               </div>
             </div>
@@ -151,10 +161,10 @@ export default function SubscribePage() {
         {/* Hero */}
         <div className="text-center mb-8">
           <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">
-            TapTalk 프리미엄
+            {isActive ? '구독 연장하기' : 'TapTalk 프리미엄'}
           </h2>
           <p className="text-neutral-500 dark:text-neutral-400">
-            AI 튜터와 무제한 영어 회화 연습
+            {isActive ? '원하는 플랜으로 이용 기간을 연장하세요' : 'AI 튜터와 무제한 영어 회화 연습'}
           </p>
         </div>
 

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useLanguage } from '@/lib/i18n';
 import { SHOP_ITEMS, ShopItem } from '@/lib/shopItems';
+import { ShopItemIcon, CoinIcon } from '@/components/shop/ShopIcons';
 import BottomNav from '@/components/BottomNav';
 
 interface InventoryItem {
@@ -12,6 +13,27 @@ interface InventoryItem {
   quantity: number;
   acquiredAt: string;
 }
+
+const CATEGORY_TONE: Record<ShopItem['category'], { ring: string; bg: string; text: string; accent: string }> = {
+  hint: {
+    ring: 'ring-amber-400/40 dark:ring-amber-300/40',
+    bg: 'bg-amber-50 dark:bg-amber-500/10',
+    text: 'text-amber-700 dark:text-amber-300',
+    accent: 'from-amber-500 to-orange-500',
+  },
+  boost: {
+    ring: 'ring-violet-400/40 dark:ring-violet-300/40',
+    bg: 'bg-violet-50 dark:bg-violet-500/10',
+    text: 'text-violet-700 dark:text-violet-300',
+    accent: 'from-violet-500 to-fuchsia-500',
+  },
+  cosmetic: {
+    ring: 'ring-sky-400/40 dark:ring-sky-300/40',
+    bg: 'bg-sky-50 dark:bg-sky-500/10',
+    text: 'text-sky-700 dark:text-sky-300',
+    accent: 'from-sky-500 to-cyan-500',
+  },
+};
 
 export default function ShopPage() {
   const router = useRouter();
@@ -63,7 +85,7 @@ export default function ShopPage() {
         setUserXP(data.newXP);
         setInventory(data.inventory || []);
         setConfirmItem(null);
-        showToast(language === 'ko' ? `${confirmItem.name.ko} 구매 완료!` : `${confirmItem.name.en} purchased!`);
+        showToast(language === 'ko' ? `${confirmItem.name.ko} 구매 완료` : `${confirmItem.name.en} purchased`);
       } else {
         showToast(language === 'ko' ? `오류: ${data.error}` : `Error: ${data.error}`);
       }
@@ -81,10 +103,7 @@ export default function ShopPage() {
   };
 
   const filteredItems = categoryTab === 'all' ? SHOP_ITEMS : SHOP_ITEMS.filter(i => i.category === categoryTab);
-
-  const getInventoryQty = (itemId: string) => {
-    return inventory.find(i => i.itemId === itemId)?.quantity ?? 0;
-  };
+  const getInventoryQty = (itemId: string) => inventory.find(i => i.itemId === itemId)?.quantity ?? 0;
 
   if (!session) {
     return (
@@ -103,12 +122,12 @@ export default function ShopPage() {
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
-      {/* Header */}
       <header className="bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800 px-4 sm:px-6 py-4 sticky top-0 z-50">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <button
             onClick={() => router.push('/')}
             className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 p-1"
+            aria-label="back"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -117,18 +136,16 @@ export default function ShopPage() {
           <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">
             {language === 'ko' ? '상점' : 'Shop'}
           </h1>
-          {/* XP balance */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/30 rounded-full">
-            <span className="text-yellow-500">🪙</span>
-            <span className="text-sm font-semibold text-yellow-700 dark:text-yellow-400">
-              {userXP !== null ? userXP.toLocaleString() : '—'} XP
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-full">
+            <CoinIcon className="w-4 h-4 text-amber-500" />
+            <span className="text-sm font-semibold text-amber-700 dark:text-amber-400 tabular-nums">
+              {userXP !== null ? userXP.toLocaleString() : '—'}
             </span>
           </div>
         </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 pb-24">
-        {/* Category Tabs */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
           {tabs.map(tab => (
             <button
@@ -136,7 +153,7 @@ export default function ShopPage() {
               onClick={() => setCategoryTab(tab.key)}
               className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
                 categoryTab === tab.key
-                  ? 'bg-purple-600 text-white'
+                  ? 'bg-purple-600 text-white shadow-sm shadow-purple-600/20'
                   : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700'
               }`}
             >
@@ -145,55 +162,57 @@ export default function ShopPage() {
           ))}
         </div>
 
-        {/* Items Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {filteredItems.map(item => {
             const canAfford = userXP !== null && userXP >= item.xpCost;
             const owned = getInventoryQty(item.id);
+            const tone = CATEGORY_TONE[item.category];
             return (
               <div
                 key={item.id}
-                className={`rounded-2xl border p-4 transition-all ${
-                  canAfford
-                    ? 'bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700'
-                    : 'bg-neutral-100 dark:bg-neutral-800/50 border-neutral-200 dark:border-neutral-700/50 opacity-70'
+                className={`group relative rounded-2xl border bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 p-5 transition-all hover:shadow-md hover:-translate-y-0.5 ${
+                  !canAfford ? 'opacity-70' : ''
                 }`}
               >
-                <div className="flex items-start gap-3">
-                  <div className="text-3xl">{item.icon}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-neutral-900 dark:text-white text-sm">
-                        {language === 'ko' ? item.name.ko : item.name.en}
-                      </h3>
-                      {owned > 0 && (
-                        <span className="px-2 py-0.5 bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 text-xs rounded-full">
-                          x{owned}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                {owned > 0 && (
+                  <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold rounded-full border border-emerald-200/60 dark:border-emerald-400/30">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    {owned}
+                  </div>
+                )}
+                <div className="flex items-start gap-3.5">
+                  <div className={`w-12 h-12 rounded-xl ${tone.bg} ring-1 ${tone.ring} flex items-center justify-center ${tone.text} shrink-0`}>
+                    <ShopItemIcon icon={item.icon} className="w-6 h-6" />
+                  </div>
+                  <div className="flex-1 min-w-0 pr-4">
+                    <h3 className="font-semibold text-neutral-900 dark:text-white text-[15px] leading-tight">
+                      {language === 'ko' ? item.name.ko : item.name.en}
+                    </h3>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 leading-relaxed line-clamp-2">
                       {language === 'ko' ? item.description.ko : item.description.en}
                     </p>
                   </div>
                 </div>
-                <div className="mt-3 flex items-center justify-between">
-                  <div className="flex items-center gap-1">
-                    <span className="text-yellow-500">🪙</span>
-                    <span className="text-sm font-bold text-yellow-700 dark:text-yellow-400">{item.xpCost} XP</span>
+                <div className="mt-4 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <CoinIcon className="w-4 h-4 text-amber-500" />
+                    <span className="text-sm font-bold text-neutral-900 dark:text-white tabular-nums">
+                      {item.xpCost.toLocaleString()}
+                    </span>
+                    <span className="text-xs text-neutral-400 dark:text-neutral-500">XP</span>
                   </div>
                   <button
                     onClick={() => canAfford && setConfirmItem(item)}
                     disabled={!canAfford}
-                    className={`px-4 py-1.5 rounded-xl text-xs font-medium transition-all ${
+                    className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
                       canAfford
-                        ? 'bg-purple-600 hover:bg-purple-500 text-white'
-                        : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
+                        ? 'bg-neutral-900 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-100 text-white dark:text-neutral-900'
+                        : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
                     }`}
                   >
                     {canAfford
-                      ? (language === 'ko' ? '구매' : 'Buy')
-                      : (language === 'ko' ? 'XP 부족' : 'Not enough XP')}
+                      ? (language === 'ko' ? '구매하기' : 'Buy')
+                      : (language === 'ko' ? 'XP 부족' : 'Not enough')}
                   </button>
                 </div>
               </div>
@@ -208,12 +227,13 @@ export default function ShopPage() {
         )}
       </main>
 
-      {/* Confirm Purchase Modal */}
       {confirmItem && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-neutral-800 rounded-2xl p-6 w-full max-w-sm border border-neutral-200 dark:border-neutral-700 shadow-xl">
-            <div className="text-center mb-4">
-              <div className="text-4xl mb-2">{confirmItem.icon}</div>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => !purchasing && setConfirmItem(null)}>
+          <div className="bg-white dark:bg-neutral-800 rounded-3xl p-6 w-full max-w-sm border border-neutral-200 dark:border-neutral-700 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex flex-col items-center text-center mb-5">
+              <div className={`w-16 h-16 rounded-2xl ${CATEGORY_TONE[confirmItem.category].bg} ring-1 ${CATEGORY_TONE[confirmItem.category].ring} flex items-center justify-center ${CATEGORY_TONE[confirmItem.category].text} mb-3`}>
+                <ShopItemIcon icon={confirmItem.icon} className="w-8 h-8" />
+              </div>
               <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
                 {language === 'ko' ? confirmItem.name.ko : confirmItem.name.en}
               </h3>
@@ -221,42 +241,49 @@ export default function ShopPage() {
                 {language === 'ko' ? confirmItem.description.ko : confirmItem.description.en}
               </p>
             </div>
-            <div className="bg-neutral-50 dark:bg-neutral-700/50 rounded-xl p-3 mb-4 space-y-2">
+            <div className="bg-neutral-50 dark:bg-neutral-700/50 rounded-2xl p-4 mb-5 space-y-2.5">
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-500 dark:text-neutral-400">
-                  {language === 'ko' ? '현재 XP' : 'Current XP'}
+                  {language === 'ko' ? '현재 보유' : 'Current'}
                 </span>
-                <span className="font-medium text-neutral-900 dark:text-white">🪙 {userXP?.toLocaleString()}</span>
+                <span className="font-medium text-neutral-900 dark:text-white tabular-nums flex items-center gap-1">
+                  <CoinIcon className="w-3.5 h-3.5 text-amber-500" />
+                  {userXP?.toLocaleString()}
+                </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-500 dark:text-neutral-400">
                   {language === 'ko' ? '가격' : 'Price'}
                 </span>
-                <span className="font-medium text-red-500">- {confirmItem.xpCost} XP</span>
-              </div>
-              <div className="border-t border-neutral-200 dark:border-neutral-600 pt-2 flex justify-between text-sm">
-                <span className="text-neutral-500 dark:text-neutral-400">
-                  {language === 'ko' ? '구매 후 XP' : 'After purchase'}
+                <span className="font-medium text-rose-500 tabular-nums">
+                  − {confirmItem.xpCost.toLocaleString()} XP
                 </span>
-                <span className="font-bold text-neutral-900 dark:text-white">
-                  🪙 {((userXP ?? 0) - confirmItem.xpCost).toLocaleString()}
+              </div>
+              <div className="border-t border-neutral-200 dark:border-neutral-600 pt-2.5 flex justify-between text-sm">
+                <span className="text-neutral-500 dark:text-neutral-400">
+                  {language === 'ko' ? '구매 후' : 'After'}
+                </span>
+                <span className="font-bold text-neutral-900 dark:text-white tabular-nums flex items-center gap-1">
+                  <CoinIcon className="w-3.5 h-3.5 text-amber-500" />
+                  {((userXP ?? 0) - confirmItem.xpCost).toLocaleString()}
                 </span>
               </div>
             </div>
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmItem(null)}
-                className="flex-1 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+                disabled={purchasing}
+                className="flex-1 py-3 rounded-2xl border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors disabled:opacity-50"
               >
                 {language === 'ko' ? '취소' : 'Cancel'}
               </button>
               <button
                 onClick={handlePurchase}
                 disabled={purchasing}
-                className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium disabled:opacity-50 transition-colors"
+                className="flex-1 py-3 rounded-2xl bg-neutral-900 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-100 text-white dark:text-neutral-900 text-sm font-semibold disabled:opacity-50 transition-colors"
               >
                 {purchasing
-                  ? (language === 'ko' ? '구매 중...' : 'Purchasing...')
+                  ? (language === 'ko' ? '구매 중...' : 'Processing...')
                   : (language === 'ko' ? '구매 확인' : 'Confirm')}
               </button>
             </div>
@@ -264,10 +291,9 @@ export default function ShopPage() {
         </div>
       )}
 
-      {/* Toast */}
       {toast && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50">
-          <div className="bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+          <div className="bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 px-4 py-2.5 rounded-full text-sm font-medium shadow-lg">
             {toast}
           </div>
         </div>
