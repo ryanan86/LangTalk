@@ -55,8 +55,9 @@ export default function SubscribePage() {
     setError(null);
     setSelectedPlan(planId);
 
+    let stage = 'init';
     try {
-      // 1. 서버에서 결제 정보 생성
+      stage = '서버 결제 세션 생성';
       const res = await fetch('/api/payment/toss', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -64,29 +65,44 @@ export default function SubscribePage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || '결제 준비에 실패했습니다.');
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `세션 생성 실패 (HTTP ${res.status})`);
       }
 
-      const { orderId, amount, orderName, clientKey, customerKey } = await res.json();
+      const payload = await res.json();
+      const { orderId, amount, orderName, clientKey, customerKey } = payload;
 
-      // 2. Toss SDK 로드 및 결제 요청
+      if (!clientKey) throw new Error('clientKey가 없습니다. 서버 설정 확인 필요');
+      if (!customerKey) throw new Error('customerKey가 없습니다');
+
+      stage = 'Toss SDK 로드';
+      console.log('[toss] loading SDK with clientKey:', clientKey.slice(0, 15) + '...');
       const tossPayments = await loadTossPayments(clientKey);
+
+      stage = 'payment 객체 생성';
+      console.log('[toss] creating payment with customerKey:', customerKey);
       const payment = tossPayments.payment({ customerKey });
 
+      stage = 'requestPayment 호출';
+      console.log('[toss] requesting payment:', { orderId, amount, orderName });
       await payment.requestPayment({
         method: 'CARD',
         amount: { currency: 'KRW', value: amount },
         orderId,
         orderName,
-        customerName: session!.user!.name || undefined,
-        customerEmail: session!.user!.email || undefined,
+        customerName: session?.user?.name || undefined,
+        customerEmail: session?.user?.email || undefined,
         successUrl: `${window.location.origin}/subscribe/success`,
         failUrl: `${window.location.origin}/subscribe/fail`,
       });
     } catch (err) {
-      if (err instanceof Error && err.message !== 'USER_CANCEL') {
-        setError(err.message);
+      const e = err as { message?: string; code?: string; name?: string };
+      console.error('[toss] payment error at', stage, err);
+      if (e?.code === 'USER_CANCEL' || e?.message === 'USER_CANCEL') {
+        // 사용자 취소는 무시
+      } else {
+        const detail = [e?.code, e?.message || String(err)].filter(Boolean).join(' | ');
+        setError(`[${stage}] ${detail}`);
       }
     } finally {
       setLoading(false);
