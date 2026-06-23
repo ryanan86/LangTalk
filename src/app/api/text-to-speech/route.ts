@@ -145,7 +145,12 @@ export async function POST(request: NextRequest) {
     const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.audio);
     if (rateLimitResult) return rateLimitResult;
 
-    const { text, voice = 'shimmer', speed } = await request.json();
+    const { text, voice = 'shimmer', speed, provider: requestedProvider } = await request.json();
+
+    // Optional provider lock from client: keeps ONE consistent voice for the whole
+    // session (no mid-answer Fish<->OpenAI timbre switching). null = auto (Fish -> OpenAI).
+    const lockedProvider: 'fish' | 'openai' | null =
+      requestedProvider === 'fish' || requestedProvider === 'openai' ? requestedProvider : null;
 
     if (!text || typeof text !== 'string') {
       timings['total.ms'] = since(t0);
@@ -174,10 +179,16 @@ export async function POST(request: NextRequest) {
     timings['text.chars'] = text.length;
 
     const fishKeyAvailable = !!process.env.FISH_AUDIO_API_KEY?.trim();
+    const forceOpenAI = lockedProvider === 'openai';
+    const forceFish = lockedProvider === 'fish';
     const fishCircuitOpen = shouldCircuitBreak('FishAudio');
     if (fishCircuitOpen) circuitBroken = true;
 
-    if (fishKeyAvailable && !fishCircuitOpen) {
+    // Use Fish when: not locked to OpenAI, key present, and (explicitly locked to Fish OR circuit healthy).
+    // A client-locked provider bypasses the circuit breaker so the voice stays consistent.
+    const useFish = !forceOpenAI && fishKeyAvailable && (forceFish || !fishCircuitOpen);
+
+    if (useFish) {
       const fishT0 = nowMs();
       try {
         const result = await generateWithFishAudio(text, voice, validSpeed, timings, wantsStream);
@@ -208,6 +219,16 @@ export async function POST(request: NextRequest) {
         });
       } catch (fishError) {
         recordFailure('FishAudio');
+        // Session locked to Fish: do NOT swap to OpenAI mid-session (that is exactly
+        // what makes the voice change). Surface an error so the client can decide.
+        if (forceFish) {
+          console.error('Fish Audio failed while provider-locked to fish:', fishError);
+          timings['total.ms'] = since(t0);
+          return NextResponse.json(
+            { error: 'Locked TTS provider (fish) failed', meta: { rid, timings } },
+            { status: 502 }
+          );
+        }
         console.error('Fish Audio failed, falling back to OpenAI:', fishError);
         const openaiT0 = nowMs();
         const audioBuffer = await generateWithOpenAI(text, voice, timings);
