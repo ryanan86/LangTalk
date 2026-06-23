@@ -6,8 +6,8 @@ import { authOptions } from '@/lib/auth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getPersona } from '@/lib/personas';
 import { getAgeGroup, calculateAdaptiveDifficulty } from '@/lib/speechMetrics';
-import { getUserData, updateUserFields } from '@/lib/dataHelper';
-import { LearnerMemory, MAX_MEMORY_FACTS, MAX_MEMORY_TOPICS } from '@/lib/sheetTypes';
+import { getUserData, updateUserFields, getLearningData } from '@/lib/dataHelper';
+import { LearnerMemory, MAX_MEMORY_FACTS, MAX_MEMORY_TOPICS, CorrectionItem } from '@/lib/sheetTypes';
 import { makeRid, nowMs, since, withTimeoutAbort } from '@/lib/perf';
 import { chatBodySchema, parseBody } from '@/lib/apiSchemas';
 
@@ -84,10 +84,15 @@ export async function POST(request: NextRequest) {
     // Calculate age if birthYear is provided
     const learnerAge = birthYear ? new Date().getFullYear() - birthYear : null;
 
-    // Fetch user data once (shared across all modes)
+    // Fetch user data + learning data in parallel (shared across all modes).
+    // Learning data carries the SRS correction history we mine for recurring weaknesses.
     let userData: Awaited<ReturnType<typeof getUserData>> = null;
+    let learningData: Awaited<ReturnType<typeof getLearningData>> = null;
     try {
-      userData = await getUserData(session.user.email);
+      [userData, learningData] = await Promise.all([
+        getUserData(session.user.email),
+        getLearningData(session.user.email).catch(() => null),
+      ]);
       timings['getUserData.ms'] = since(t0);
     } catch (e) {
       console.error('getUserData failed (non-blocking):', e);
@@ -147,6 +152,28 @@ export async function POST(request: NextRequest) {
       }
       parts.push('Naturally weave these in when relevant — like a friend who remembers. Do NOT recite them as a list or say "according to my notes". Only bring up what fits the moment.');
       memoryContext = parts.join('\n') + '\n';
+    }
+
+    // Recurring weaknesses: categories the learner has missed repeatedly across
+    // past sessions (mined from the SRS correction history). Closes the weakness
+    // loop by letting the tutor proactively target what keeps tripping them up.
+    let weaknessContext = '';
+    const allCorrections = (learningData?.corrections || []) as CorrectionItem[];
+    if (allCorrections.length) {
+      const categoryCounts: Record<string, number> = {};
+      for (const c of allCorrections) {
+        if (c.status === 'active' && c.category) {
+          categoryCounts[c.category] = (categoryCounts[c.category] || 0) + 1;
+        }
+      }
+      const recurring = Object.entries(categoryCounts)
+        .filter(([, count]) => count >= 2) // 2+ = a real pattern, not a one-off
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([category, count]) => `${category} (${count}x)`);
+      if (recurring.length) {
+        weaknessContext = `\n=== RECURRING WEAK SPOTS (from past corrections) ===\nThis learner repeatedly struggles with: ${recurring.join(', ')}.\nGently create natural openings for them to use these correctly, and prioritize recasting/correcting these when they slip. Never lecture or announce that you are targeting a weakness.\n`;
+      }
     }
 
     // Mode-specific instructions
@@ -544,6 +571,11 @@ Be specific, helpful, and maintain your teaching persona.`;
     // which have their own structured output and use profileContext instead).
     if (memoryContext && mode !== 'analysis' && mode !== 'feedback') {
       systemPrompt += memoryContext;
+    }
+    // Recurring weaknesses help BOTH conversation (proactive practice) and analysis
+    // (prioritize the right corrections), so inject for everything except feedback.
+    if (weaknessContext && mode !== 'feedback') {
+      systemPrompt += weaknessContext;
     }
 
     // Format messages for OpenAI (fallback)
