@@ -7,8 +7,10 @@ const TTS_CACHE_DB = 'taptalk-tts-cache';
 const TTS_CACHE_STORE = 'audio';
 const TTS_CACHE_MAX_ENTRIES = 200;
 
-function getCacheKey(text: string, voice: string): string {
-  return `${voice}:${text.slice(0, 100)}`;
+function getCacheKey(text: string, voice: string, provider?: string | null): string {
+  // Include provider so a blob synthesized by one engine never replays under a
+  // session locked to the other engine (which would sound like a different voice).
+  return `${provider || 'auto'}:${voice}:${text.slice(0, 100)}`;
 }
 
 function openCacheDB(): Promise<IDBDatabase> {
@@ -122,6 +124,24 @@ export function useTTSPlayback({ voice, onQueueEnd }: UseTTSPlaybackOptions): Us
   const ttsAbortRef = useRef<AbortController | null>(null);
   const queueAbortRef = useRef<AbortController | null>(null);
 
+  // Provider lock (session scope = hook lifetime). The first response decides the
+  // engine; every later request is pinned to it so the tutor voice never switches.
+  const lockedProviderRef = useRef<'fish' | 'openai' | null>(null);
+
+  // Learn the provider the server actually used from its meta header (once).
+  const captureProvider = (res: Response) => {
+    if (lockedProviderRef.current) return;
+    try {
+      const meta = res.headers.get('X-TapTalk-Meta');
+      if (!meta) return;
+      const used = (JSON.parse(meta) as { provider?: string }).provider;
+      if (used === 'FishAudio') lockedProviderRef.current = 'fish';
+      else if (used === 'OpenAI') lockedProviderRef.current = 'openai';
+    } catch {
+      // ignore malformed meta
+    }
+  };
+
   const stopFiller = () => {
     if (fillerAudioRef.current) {
       fillerAudioRef.current.onended = null;
@@ -135,7 +155,7 @@ export function useTTSPlayback({ voice, onQueueEnd }: UseTTSPlaybackOptions): Us
       return audioCacheRef.current.get(sentence)!;
     }
 
-    const cacheKey = getCacheKey(sentence, voice);
+    const cacheKey = getCacheKey(sentence, voice, lockedProviderRef.current);
 
     const promise = (async () => {
       // Check IndexedDB cache first
@@ -149,10 +169,11 @@ export function useTTSPlayback({ voice, onQueueEnd }: UseTTSPlaybackOptions): Us
           'Content-Type': 'application/json',
           'X-TTS-Stream': '1',
         },
-        body: JSON.stringify({ text: sentence, voice }),
+        body: JSON.stringify({ text: sentence, voice, ...(lockedProviderRef.current && { provider: lockedProviderRef.current }) }),
         signal,
       });
       if (!res.ok) throw new Error(`TTS API error: ${res.status}`);
+      captureProvider(res);
 
       // Stream the response — collect chunks as they arrive
       if (res.body) {
@@ -196,7 +217,9 @@ export function useTTSPlayback({ voice, onQueueEnd }: UseTTSPlaybackOptions): Us
 
     const sentence = audioQueueRef.current.shift()!;
 
-    if (audioQueueRef.current.length > 0) {
+    // Only look ahead once the provider is locked. Before that, a parallel prefetch
+    // could resolve to a different engine than the first sentence -> voice mismatch.
+    if (audioQueueRef.current.length > 0 && lockedProviderRef.current) {
       prefetchAudio(audioQueueRef.current[0], queueAbortRef.current?.signal);
     }
 
@@ -274,22 +297,35 @@ export function useTTSPlayback({ voice, onQueueEnd }: UseTTSPlaybackOptions): Us
     setIsPlaying(true);
     stopFiller();
     try {
-      const cacheKey = getCacheKey(text, voice);
       let audioBlob: Blob | null = null;
 
-      // Check IndexedDB cache first
+      // Check IndexedDB cache first (provider-aware)
+      const cacheKey = getCacheKey(text, voice, lockedProviderRef.current);
       audioBlob = await getCachedAudio(cacheKey);
 
       if (!audioBlob) {
-        const response = await fetch('/api/text-to-speech', {
+        const requestTTS = (useLock: boolean) => fetch('/api/text-to-speech', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'X-TTS-Stream': '1',
           },
-          body: JSON.stringify({ text, voice, ...(speed && { speed }) }),
+          body: JSON.stringify({
+            text, voice,
+            ...(speed && { speed }),
+            ...(useLock && lockedProviderRef.current && { provider: lockedProviderRef.current }),
+          }),
           signal: controller.signal,
         });
+
+        let response = await requestTTS(true);
+
+        // If a locked provider failed, drop the lock and retry once on auto so the
+        // session continues (voice may shift at most once, not every sentence).
+        if (!response.ok && lockedProviderRef.current) {
+          lockedProviderRef.current = null;
+          response = await requestTTS(false);
+        }
 
         clearTimeout(timeoutId);
 
@@ -297,6 +333,8 @@ export function useTTSPlayback({ voice, onQueueEnd }: UseTTSPlaybackOptions): Us
           console.error('TTS API error:', response.status);
           return;
         }
+
+        captureProvider(response);
 
         // Stream the response for faster first-byte
         if (response.body) {
@@ -312,8 +350,8 @@ export function useTTSPlayback({ voice, onQueueEnd }: UseTTSPlaybackOptions): Us
           audioBlob = await response.blob();
         }
 
-        // Store in IndexedDB (background, don't block)
-        setCachedAudio(cacheKey, audioBlob).catch(() => {});
+        // Store in IndexedDB under the key matching the provider actually used.
+        setCachedAudio(getCacheKey(text, voice, lockedProviderRef.current), audioBlob).catch(() => {});
       } else {
         clearTimeout(timeoutId);
       }
@@ -397,7 +435,10 @@ export function useTTSPlayback({ voice, onQueueEnd }: UseTTSPlaybackOptions): Us
       queueAbortRef.current = new AbortController();
     }
 
-    prefetchAudio(sentence, queueAbortRef.current?.signal);
+    // Eager prefetch only after the provider is locked (see playNextInQueue note).
+    if (lockedProviderRef.current) {
+      prefetchAudio(sentence, queueAbortRef.current?.signal);
+    }
     audioQueueRef.current.push(sentence);
 
     if (!isPlayingQueueRef.current) playNextInQueue();

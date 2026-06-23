@@ -47,7 +47,21 @@ export interface ProfileData {
     preferredTutor?: string; // "emma" | "random"
     timezone?: string; // IANA timezone e.g. "Asia/Seoul", "Asia/Jakarta"
   };
+
+  // Persistent learner memory — lets the tutor remember the user across sessions
+  // (continuity is the core of "feels like a real conversation"). Stored in profile
+  // JSON so no DB migration is needed.
+  memory?: LearnerMemory;
 }
+
+export interface LearnerMemory {
+  facts: string[];       // durable facts ("has a dog named Coco", "preparing for a Bali trip")
+  lastTopics: string[];  // most recent conversation topics, newest first
+  updatedAt: string;
+}
+
+export const MAX_MEMORY_FACTS = 20;
+export const MAX_MEMORY_TOPICS = 5;
 
 export interface StatsData {
   // Session stats

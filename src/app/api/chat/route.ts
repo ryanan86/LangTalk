@@ -6,7 +6,8 @@ import { authOptions } from '@/lib/auth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getPersona } from '@/lib/personas';
 import { getAgeGroup, calculateAdaptiveDifficulty } from '@/lib/speechMetrics';
-import { getUserData } from '@/lib/dataHelper';
+import { getUserData, updateUserFields } from '@/lib/dataHelper';
+import { LearnerMemory, MAX_MEMORY_FACTS, MAX_MEMORY_TOPICS } from '@/lib/sheetTypes';
 import { makeRid, nowMs, since, withTimeoutAbort } from '@/lib/perf';
 import { chatBodySchema, parseBody } from '@/lib/apiSchemas';
 
@@ -131,6 +132,23 @@ export async function POST(request: NextRequest) {
     let systemPrompt = persona.systemPrompt;
     const isKorean = language === 'ko';
 
+    // Persistent memory: what the tutor already knows about this learner from past
+    // sessions. Injected into conversational prompts so the tutor shows continuity.
+    const savedMemory = userData?.profile?.memory as LearnerMemory | undefined;
+    let memoryContext = '';
+    if (savedMemory && (savedMemory.facts?.length || savedMemory.lastTopics?.length)) {
+      const parts: string[] = ['\n=== WHAT YOU REMEMBER ABOUT THIS LEARNER (from past sessions) ==='];
+      if (savedMemory.facts?.length) {
+        parts.push('Known facts:');
+        parts.push(...savedMemory.facts.slice(0, MAX_MEMORY_FACTS).map(f => `- ${f}`));
+      }
+      if (savedMemory.lastTopics?.length) {
+        parts.push(`Recently talked about: ${savedMemory.lastTopics.slice(0, MAX_MEMORY_TOPICS).join(', ')}`);
+      }
+      parts.push('Naturally weave these in when relevant — like a friend who remembers. Do NOT recite them as a list or say "according to my notes". Only bring up what fits the moment.');
+      memoryContext = parts.join('\n') + '\n';
+    }
+
     // Mode-specific instructions
     if (mode === 'interview') {
       systemPrompt = `You're ${persona.name}, chatting casually with a friend. This is NOT a lesson - just a fun, natural conversation.
@@ -216,16 +234,17 @@ ${correctionLevel === 1 ? `CORRECTION STYLE: Supportive Echo (Level 1 - Just Cha
 
 === HOW TO RESPOND ===
 
-CRITICAL: Your first sentence MUST be a short (1-5 word) natural reaction that echoes or acknowledges what the student ACTUALLY said. This creates a natural conversational rhythm.
+CRITICAL: Be a real conversation partner, NOT a mirror. Never just repeat or rephrase what the student said back to them ("So you went to the park?", "You like pizza, huh?"). Restating their words feels robotic and makes it seem like you aren't really listening. Every reply MUST add something of your OWN.
 
-1. FIRST: Quick contextual reaction to their words (1-5 words). Reference their content!
-   - They said "I went to the park" -> "Oh the park!" or "Nice, a park day!"
-   - They said "I like pizza" -> "Ooh pizza!" or "Ha, same!"
-   - They said "My dog is sick" -> "Oh no, your dog!" or "Aw that sucks."
-   - They said "I watched a movie" -> "Oh what movie?" or "A movie night!"
-   - If they made a grammar error, naturally recast in your reaction: "I goed to store" -> "Oh you went shopping!"
+1. (OPTIONAL) A short, natural reaction is fine when it fits — but keep it to a few words and NEVER let it be the whole reply:
+   - "I went to the park" -> "Oh nice, a park day!"
+   - If they made a grammar error, naturally recast it: "I goed to store" -> "Oh you went shopping!"
 
-2. THEN: Follow-up naturally based on their energy level. Keep total response concise.
+2. ALWAYS CONTRIBUTE (this is the important part). Add at least ONE of these every turn:
+   - Your own opinion or quick take ("Honestly, mornings at the park beat evenings for me.")
+   - A small piece of your own experience or a relevant fact ("There's a great one near me with a huge oak tree.")
+   - A genuinely NEW question that builds on what they said — not a restatement of it
+   Move the conversation FORWARD with real content. Don't just hand the turn back with a generic question. Keep the total response concise.
 
 GOOD EXAMPLES (notice the short contextual first reaction):
 - "Oh Bali! So jealous. You going anywhere else soon?"
@@ -431,7 +450,9 @@ RETURN THIS EXACT JSON FORMAT (no markdown, valid JSON only):
     "comprehension": 0-100,
     "summary": "${isKorean ? '레벨 평가에 대한 한 문장 요약' : 'One sentence summary of level evaluation'}"
   },
-  "encouragement": "${exampleEncouragement}"
+  "encouragement": "${exampleEncouragement}",
+  "memoryFacts": ["Durable facts about the learner worth remembering for FUTURE conversations, in English, e.g. 'is preparing for a trip to Bali', 'has a dog named Coco', 'works in marketing'. Only stable personal facts — NOT one-off small talk. Empty array if none."],
+  "topicSummary": "A short English phrase naming what this conversation was mainly about, e.g. 'weekend plans and travel'"
 }
 
 BE THOROUGH: Find at least 3-5 corrections. Focus on grammar errors, unnatural phrasing, and vocabulary that doesn't fit the register. Show them how a native speaker would express the same idea IN THE SAME CONVERSATIONAL CONTEXT. Do NOT turn casual chat into essay writing.
@@ -519,6 +540,12 @@ Be specific, helpful, and maintain your teaching persona.`;
       }
     }
 
+    // Inject persistent memory into conversational prompts (not analysis/feedback,
+    // which have their own structured output and use profileContext instead).
+    if (memoryContext && mode !== 'analysis' && mode !== 'feedback') {
+      systemPrompt += memoryContext;
+    }
+
     // Format messages for OpenAI (fallback)
     const openaiMessages = [
       { role: 'system' as const, content: systemPrompt },
@@ -535,10 +562,10 @@ Be specific, helpful, and maintain your teaching persona.`;
     }));
 
     // Optimize max_tokens based on mode
-    // interview: 350 (was 150 - too short, caused shallow responses)
+    // interview: 500 (was 350 - allow room to contribute real content, not just echo)
     // conversation: 600 (was 500 - allow richer tutoring responses)
     // analysis: 2048 (structured JSON output)
-    const maxTokens = mode === 'interview' ? 350 : mode === 'analysis' ? 4000 : 600;
+    const maxTokens = mode === 'interview' ? 500 : mode === 'analysis' ? 4000 : 600;
     const isAnalysis = mode === 'analysis';
 
     // Use streaming for interview mode when requested
@@ -834,6 +861,43 @@ Be specific, helpful, and maintain your teaching persona.`;
           confidence = 'low';
         }
         data.confidence = confidence;
+
+        // Persist learner memory from this session (non-blocking, fire-and-forget).
+        try {
+          const newFacts = Array.isArray(data.memoryFacts)
+            ? (data.memoryFacts as unknown[])
+                .filter((f): f is string => typeof f === 'string' && f.trim().length > 0)
+                .map(f => f.trim())
+            : [];
+          const newTopic = typeof data.topicSummary === 'string' ? data.topicSummary.trim() : '';
+          delete data.memoryFacts;
+          delete data.topicSummary;
+
+          if (newFacts.length || newTopic) {
+            const prev = (userData?.profile?.memory as LearnerMemory | undefined)
+              || { facts: [], lastTopics: [], updatedAt: '' };
+            // Dedup facts case-insensitively (newest appended), cap to MAX_MEMORY_FACTS.
+            const seen = new Set(prev.facts.map(f => f.toLowerCase()));
+            const mergedFacts = [...prev.facts];
+            for (const f of newFacts) {
+              if (!seen.has(f.toLowerCase())) { seen.add(f.toLowerCase()); mergedFacts.push(f); }
+            }
+            const mergedTopics = newTopic
+              ? [newTopic, ...prev.lastTopics.filter(t => t.toLowerCase() !== newTopic.toLowerCase())]
+              : prev.lastTopics;
+            const updatedMemory: LearnerMemory = {
+              facts: mergedFacts.slice(-MAX_MEMORY_FACTS),
+              lastTopics: mergedTopics.slice(0, MAX_MEMORY_TOPICS),
+              updatedAt: new Date().toISOString(),
+            };
+            if (session.user.email) {
+              updateUserFields(session.user.email, { profile: { memory: updatedMemory } })
+                .catch(e => console.error('memory persist failed (non-blocking):', e));
+            }
+          }
+        } catch (e) {
+          console.error('memory merge failed (non-blocking):', e);
+        }
 
         timings['total.ms'] = since(t0);
         return NextResponse.json({ analysis: data, meta: { rid, timings } });
