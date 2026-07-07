@@ -31,6 +31,7 @@ import type { SpeakingEvaluationResponse } from '@/app/api/speaking-evaluate/rou
 import { track } from '@/lib/analytics';
 import Badge from '@/components/ui/Badge';
 import Skeleton from '@/components/ui/Skeleton';
+import AiBadge from '@/components/ai/AiBadge';
 
 type Phase = 'ready' | 'mode-select' | 'topic-select' | 'warmup' | 'tutor-intro'
            | 'recording' | 'interview' | 'analysis' | 'review' | 'shadowing' | 'summary';
@@ -1290,6 +1291,7 @@ function TalkContent() {
                 <span className="font-semibold text-white text-sm">{persona.name}</span>
                 <Badge variant="info" size="sm">{persona.nationality ?? 'English'}</Badge>
                 {previousGrade && <Badge variant="default" size="sm">{previousGrade}</Badge>}
+                <AiBadge variant="neutral" />
               </div>
 
               {/* State label area */}
@@ -1503,12 +1505,15 @@ function TalkContent() {
           <div className="motion-safe:animate-fade-up flex-1 flex flex-col p-4 sm:p-6 bg-neutral-50 dark:bg-dark-bg">
             {/* Phase header */}
             <div className="text-center mb-4 sm:mb-5">
-              <p className="text-xs font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">
-                {correctionLevel <= 2
-                  ? (language === 'ko' ? '오늘의 표현' : "Today's Expressions")
-                  : t.correction}
-                {' '}{safeReviewIndex + 1} / {analysis.corrections.length}
-              </p>
+              <div className="inline-flex items-center gap-1.5">
+                <p className="text-xs font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">
+                  {correctionLevel <= 2
+                    ? (language === 'ko' ? '오늘의 표현' : "Today's Expressions")
+                    : t.correction}
+                  {' '}{safeReviewIndex + 1} / {analysis.corrections.length}
+                </p>
+                <AiBadge variant="neutral" />
+              </div>
               {/* Progress pip track */}
               {analysis.corrections.length > 1 && (
                 <div className="flex items-center justify-center gap-1 mt-2">

@@ -28,6 +28,7 @@ import {
 } from '@/lib/studyClient';
 import { useStudyVoice, type StudyChatContext, type StudyMessage } from '@/hooks/useStudyVoice';
 import { track } from '@/lib/analytics';
+import AiBadge from '@/components/ai/AiBadge';
 
 interface StudySessionPlayerProps {
   plan: StudyPlan;
@@ -1023,7 +1024,10 @@ function CelebrationScreen({
         </svg>
       </div>
 
-      <h2 className="relative text-display-1 text-neutral-900 dark:text-white mb-1">오늘 학습 완료!</h2>
+      <div className="relative flex items-center gap-2 mb-1">
+        <h2 className="text-display-1 text-neutral-900 dark:text-white">오늘 학습 완료!</h2>
+        <AiBadge variant="violet" />
+      </div>
       <p className="relative text-sm text-neutral-500 dark:text-neutral-400 mb-6">
         {result.week}주차 {result.day}일차를 마쳤어요.
       </p>

@@ -18,6 +18,7 @@ import {
 } from '@/lib/debateTypes';
 import CorrectionCard from '@/components/talk/CorrectionCard';
 import { Card, Badge, ProgressBar } from '@/components/ui';
+import AiBadge from '@/components/ai/AiBadge';
 
 // Build the full structured turn order for the debate
 function buildTurnOrder(
@@ -927,9 +928,12 @@ function DebateContent() {
                 {/* User performance — StatCard row */}
                 {(analysis.userPerformance?.strengths?.length > 0 || analysis.userPerformance?.improvements?.length > 0) && (
                   <Card variant="default" padding="md">
-                    <h3 className="text-sm font-bold text-neutral-900 dark:text-white mb-4">
-                      {language === 'ko' ? '개인 피드백' : 'Your Performance'}
-                    </h3>
+                    <div className="flex items-center gap-1.5 mb-4">
+                      <h3 className="text-sm font-bold text-neutral-900 dark:text-white">
+                        {language === 'ko' ? '개인 피드백' : 'Your Performance'}
+                      </h3>
+                      <AiBadge variant="neutral" />
+                    </div>
                     {analysis.userPerformance?.strengths?.length > 0 && (
                       <div className="mb-3">
                         <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2">

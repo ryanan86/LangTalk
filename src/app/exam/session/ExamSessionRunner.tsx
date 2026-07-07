@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { EXAM_FORMS } from '@/data/examForms';
 import { useExamVoice } from '@/hooks/useExamVoice';
 import { Modal, Button, ProgressBar } from '@/components/ui';
+import AiBadge from '@/components/ai/AiBadge';
 import type {
   ExamForm,
   ExamTask,
@@ -405,7 +406,10 @@ export default function ExamSessionRunner() {
                   </div>
                 </div>
               </div>
-              <p className="text-neutral-400 text-xs mt-2">예상 등급 (AI 참고용)</p>
+              <div className="flex items-center gap-1.5 mt-2">
+                <p className="text-neutral-400 text-xs">예상 등급 (AI 참고용)</p>
+                <AiBadge variant="violet" />
+              </div>
             </div>
           </div>
 

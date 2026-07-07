@@ -507,7 +507,11 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
                 </div>
               )}
 
-              <div className="mt-6 w-full max-w-xs">
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 max-w-xs leading-relaxed mt-2">
+                탭톡의 학습 경험은 생성형 AI로 만들어집니다.
+              </p>
+
+              <div className="mt-4 w-full max-w-xs">
                 <button
                   onClick={handleComplete}
                   className="pressable btn-primary py-4 text-lg w-full rounded-2xl"

@@ -21,6 +21,7 @@ import BottomNav from '@/components/BottomNav';
 import { ProgressBar } from '@/components/ui';
 import { getTodayQuests } from '@/lib/dailyChallenges';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import AiDisclosureNotice from '@/components/ai/AiDisclosureNotice';
 // Helper function to check if running in native Capacitor app (iOS or Android)
 function isNativeApp(): boolean {
   if (typeof window === 'undefined') return false;
@@ -1946,6 +1947,9 @@ function HomePageContent() {
           </div>
         </div>
       )}
+
+      {/* AI Disclosure — 1회성 고지, 로그인 사용자 대상 */}
+      {session && <AiDisclosureNotice />}
 
       {/* Bottom nav spacer */}
       <div className="h-20" style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }} />

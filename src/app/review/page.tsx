@@ -6,6 +6,7 @@ import { useLanguage } from '@/lib/i18n';
 import BottomNav from '@/components/BottomNav';
 import { track } from '@/lib/analytics';
 import { Card, Button, Badge, Skeleton } from '@/components/ui';
+import AiBadge from '@/components/ai/AiBadge';
 
 interface Correction {
   correctionId: string;
@@ -457,9 +458,12 @@ export default function ReviewPage() {
 
                   {/* Explanation */}
                   <div className="p-4 rounded-2xl bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/25">
-                    <p className="text-2xs font-semibold text-sky-600 dark:text-sky-400 uppercase tracking-widest mb-2">
-                      {language === 'ko' ? '설명' : 'Why'}
-                    </p>
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <p className="text-2xs font-semibold text-sky-600 dark:text-sky-400 uppercase tracking-widest">
+                        {language === 'ko' ? '설명' : 'Why'}
+                      </p>
+                      <AiBadge variant="neutral" />
+                    </div>
                     <p className="text-sm text-sky-900 dark:text-sky-200 leading-relaxed">
                       {currentCorrection.explanation}
                     </p>
