@@ -44,10 +44,10 @@ export default function SupportPage() {
                 아래 이메일로 문의해 주세요. 영업일 기준 24시간 이내에 답변드립니다.
               </p>
               <a
-                href="mailto:[고객센터 이메일 기입 필요]"
+                href="mailto:info@nuklabs.com"
                 className="inline-block mt-3 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium no-underline"
               >
-                <span className="font-bold text-amber-200">[고객센터 이메일 기입 필요]</span>
+                info@nuklabs.com
               </a>
               <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-3">
                 응답 시간: 영업일 기준 24시간 이내
@@ -110,7 +110,7 @@ export default function SupportPage() {
                 <div>
                   <h3 className="font-semibold text-lg mb-2">Q. 환불은 어떻게 신청하나요?</h3>
                   <p className="text-neutral-700 dark:text-neutral-300">
-                    고객센터 이메일(<span className="font-bold text-amber-600 dark:text-amber-400">[고객센터 이메일 기입 필요]</span>)로
+                    고객센터 이메일(info@nuklabs.com)로
                     결제 계정 이메일, 결제 일자, 주문번호, 환불 사유를 기재하여 신청하시면 됩니다.
                     결제일로부터 7일 이내 미이용(또는 경미한 이용) 시 전액 환불, 이후에는 잔여 기간 일할 계산 환불이 적용됩니다.
                     접수 후 영업일 기준 3일 이내에 처리됩니다.
@@ -147,7 +147,7 @@ export default function SupportPage() {
                   <h3 className="font-semibold text-lg mb-2">Q. 계정을 삭제하고 싶어요.</h3>
                   <p className="text-neutral-700 dark:text-neutral-300">
                     앱 내 프로필 &gt; 계정 설정에서 계정 삭제를 진행할 수 있습니다.
-                    또는 <span className="font-bold text-amber-600 dark:text-amber-400">[고객센터 이메일 기입 필요]</span>로 계정 삭제를 요청해 주세요.
+                    또는 info@nuklabs.com으로 계정 삭제를 요청해 주세요.
                     삭제 후 30일 이내에 모든 데이터가 영구 삭제됩니다.
                   </p>
                 </div>
@@ -173,23 +173,23 @@ export default function SupportPage() {
                 </div>
                 <div>
                   <dt className="font-semibold text-neutral-700 dark:text-neutral-300">대표자</dt>
-                  <dd className="font-bold text-amber-600 dark:text-amber-400">[대표자명 확인 필요]</dd>
+                  <dd className="text-neutral-600 dark:text-neutral-400">안태웅</dd>
                 </div>
                 <div>
                   <dt className="font-semibold text-neutral-700 dark:text-neutral-300">사업자등록번호</dt>
-                  <dd className="font-bold text-amber-600 dark:text-amber-400">[사업자등록번호 기입 필요]</dd>
+                  <dd className="text-neutral-600 dark:text-neutral-400">561-88-02777</dd>
                 </div>
                 <div>
                   <dt className="font-semibold text-neutral-700 dark:text-neutral-300">통신판매업신고번호</dt>
-                  <dd className="font-bold text-amber-600 dark:text-amber-400">[통신판매업신고번호 기입 필요]</dd>
+                  <dd className="text-neutral-600 dark:text-neutral-400">2022-서울서초-2594</dd>
                 </div>
                 <div className="sm:col-span-2">
                   <dt className="font-semibold text-neutral-700 dark:text-neutral-300">주소</dt>
-                  <dd className="text-neutral-600 dark:text-neutral-400">경기도 화성시 동탄영천로 150, B동 504호</dd>
+                  <dd className="text-neutral-600 dark:text-neutral-400">경기도 화성시 동탄영천로 150, 제비동 503호 (영천동, 현대실리콘앨리 동탄)</dd>
                 </div>
                 <div>
                   <dt className="font-semibold text-neutral-700 dark:text-neutral-300">고객센터</dt>
-                  <dd className="font-bold text-amber-600 dark:text-amber-400">[고객센터 이메일 기입 필요]</dd>
+                  <dd className="text-neutral-600 dark:text-neutral-400">info@nuklabs.com</dd>
                 </div>
               </dl>
             </section>
@@ -204,10 +204,10 @@ export default function SupportPage() {
                 Send us an email and we will get back to you within 24 business hours.
               </p>
               <a
-                href="mailto:[고객센터 이메일 기입 필요]"
+                href="mailto:info@nuklabs.com"
                 className="inline-block mt-3 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium no-underline"
               >
-                <span className="font-bold text-amber-200">[Customer support email required]</span>
+                info@nuklabs.com
               </a>
               <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-3">
                 Response time: within 24 business hours
@@ -333,23 +333,23 @@ export default function SupportPage() {
                 </div>
                 <div>
                   <dt className="font-semibold text-neutral-700 dark:text-neutral-300">Representative</dt>
-                  <dd className="font-bold text-amber-600 dark:text-amber-400">[Representative name required]</dd>
+                  <dd className="text-neutral-600 dark:text-neutral-400">Taewung Ahn (안태웅)</dd>
                 </div>
                 <div>
                   <dt className="font-semibold text-neutral-700 dark:text-neutral-300">Business Registration No.</dt>
-                  <dd className="font-bold text-amber-600 dark:text-amber-400">[Business registration number required]</dd>
+                  <dd className="text-neutral-600 dark:text-neutral-400">561-88-02777</dd>
                 </div>
                 <div>
                   <dt className="font-semibold text-neutral-700 dark:text-neutral-300">Mail-Order Sales Report No.</dt>
-                  <dd className="font-bold text-amber-600 dark:text-amber-400">[Mail-order sales report number required]</dd>
+                  <dd className="text-neutral-600 dark:text-neutral-400">2022-서울서초-2594</dd>
                 </div>
                 <div className="sm:col-span-2">
                   <dt className="font-semibold text-neutral-700 dark:text-neutral-300">Address</dt>
-                  <dd className="text-neutral-600 dark:text-neutral-400">150 Dongtanyeongcheon-ro, B-dong 504, Hwaseong-si, Gyeonggi-do, Republic of Korea</dd>
+                  <dd className="text-neutral-600 dark:text-neutral-400">150 Dongtanyeongcheon-ro, Jebidong 503, Hwaseong-si, Gyeonggi-do, Republic of Korea (Yeongcheondong, Hyundai Silicon Alley Dongtan)</dd>
                 </div>
                 <div>
                   <dt className="font-semibold text-neutral-700 dark:text-neutral-300">Customer Support</dt>
-                  <dd className="font-bold text-amber-600 dark:text-amber-400">[Customer support email required]</dd>
+                  <dd className="text-neutral-600 dark:text-neutral-400">info@nuklabs.com</dd>
                 </div>
               </dl>
             </section>

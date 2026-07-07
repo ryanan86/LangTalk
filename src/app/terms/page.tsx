@@ -168,7 +168,7 @@ export default function TermsPage() {
 
               <h3 className="text-lg font-semibold mt-6 mb-2">4. 환불 신청 방법 및 처리 기간</h3>
               <p>
-                환불 신청은 고객센터 이메일([고객센터 이메일 기입 필요])로 접수하여야 합니다.
+                환불 신청은 고객센터 이메일(info@nuklabs.com)로 접수하여야 합니다.
                 신청 시 결제 계정 이메일, 결제 일자, 주문번호, 환불 사유를 함께 기재하여 주세요.
                 접수 후 영업일 기준 3일 이내에 처리되며, 실제 환불 반영은 카드사에 따라 추가 영업일이 소요될 수 있습니다.
               </p>
@@ -229,23 +229,23 @@ export default function TermsPage() {
                 </div>
                 <div>
                   <dt className="font-semibold text-neutral-700 dark:text-neutral-300">대표자</dt>
-                  <dd className="text-neutral-600 dark:text-neutral-400 font-bold text-amber-600 dark:text-amber-400">[대표자명 확인 필요]</dd>
+                  <dd className="text-neutral-600 dark:text-neutral-400">안태웅</dd>
                 </div>
                 <div>
                   <dt className="font-semibold text-neutral-700 dark:text-neutral-300">사업자등록번호</dt>
-                  <dd className="text-neutral-600 dark:text-neutral-400 font-bold text-amber-600 dark:text-amber-400">[사업자등록번호 기입 필요]</dd>
+                  <dd className="text-neutral-600 dark:text-neutral-400">561-88-02777</dd>
                 </div>
                 <div>
                   <dt className="font-semibold text-neutral-700 dark:text-neutral-300">통신판매업신고번호</dt>
-                  <dd className="text-neutral-600 dark:text-neutral-400 font-bold text-amber-600 dark:text-amber-400">[통신판매업신고번호 기입 필요]</dd>
+                  <dd className="text-neutral-600 dark:text-neutral-400">2022-서울서초-2594</dd>
                 </div>
                 <div className="sm:col-span-2">
                   <dt className="font-semibold text-neutral-700 dark:text-neutral-300">주소</dt>
-                  <dd className="text-neutral-600 dark:text-neutral-400">경기도 화성시 동탄영천로 150, B동 504호</dd>
+                  <dd className="text-neutral-600 dark:text-neutral-400">경기도 화성시 동탄영천로 150, 제비동 503호 (영천동, 현대실리콘앨리 동탄)</dd>
                 </div>
                 <div>
                   <dt className="font-semibold text-neutral-700 dark:text-neutral-300">고객센터 이메일</dt>
-                  <dd className="text-neutral-600 dark:text-neutral-400 font-bold text-amber-600 dark:text-amber-400">[고객센터 이메일 기입 필요]</dd>
+                  <dd className="text-neutral-600 dark:text-neutral-400">info@nuklabs.com</dd>
                 </div>
               </dl>
             </section>
@@ -376,7 +376,7 @@ export default function TermsPage() {
 
               <h3 className="text-lg font-semibold mt-6 mb-2">7.3 How to Request a Refund</h3>
               <p>
-                Contact customer support at [고객센터 이메일 기입 필요] with your account email, payment date,
+                Contact customer support at info@nuklabs.com with your account email, payment date,
                 order number, and reason. Refunds are processed within 3 business days of receipt.
                 Additional time may be required by your card issuer.
               </p>
@@ -436,23 +436,23 @@ export default function TermsPage() {
                 </div>
                 <div>
                   <dt className="font-semibold text-neutral-700 dark:text-neutral-300">Representative</dt>
-                  <dd className="text-neutral-600 dark:text-neutral-400 font-bold text-amber-600 dark:text-amber-400">[Representative name required]</dd>
+                  <dd className="text-neutral-600 dark:text-neutral-400">Taewung Ahn (안태웅)</dd>
                 </div>
                 <div>
                   <dt className="font-semibold text-neutral-700 dark:text-neutral-300">Business Registration No.</dt>
-                  <dd className="text-neutral-600 dark:text-neutral-400 font-bold text-amber-600 dark:text-amber-400">[Business registration number required]</dd>
+                  <dd className="text-neutral-600 dark:text-neutral-400">561-88-02777</dd>
                 </div>
                 <div>
                   <dt className="font-semibold text-neutral-700 dark:text-neutral-300">Mail-Order Sales Report No.</dt>
-                  <dd className="text-neutral-600 dark:text-neutral-400 font-bold text-amber-600 dark:text-amber-400">[Report number required]</dd>
+                  <dd className="text-neutral-600 dark:text-neutral-400">2022-서울서초-2594</dd>
                 </div>
                 <div className="sm:col-span-2">
                   <dt className="font-semibold text-neutral-700 dark:text-neutral-300">Address</dt>
-                  <dd className="text-neutral-600 dark:text-neutral-400">150 Dongtanyeongcheon-ro, B-dong 504, Hwaseong-si, Gyeonggi-do, Republic of Korea</dd>
+                  <dd className="text-neutral-600 dark:text-neutral-400">150 Dongtanyeongcheon-ro, Jebidong 503, Hwaseong-si, Gyeonggi-do, Republic of Korea (Yeongcheondong, Hyundai Silicon Alley Dongtan)</dd>
                 </div>
                 <div>
                   <dt className="font-semibold text-neutral-700 dark:text-neutral-300">Customer Support</dt>
-                  <dd className="text-neutral-600 dark:text-neutral-400 font-bold text-amber-600 dark:text-amber-400">[Customer support email required]</dd>
+                  <dd className="text-neutral-600 dark:text-neutral-400">info@nuklabs.com</dd>
                 </div>
               </dl>
             </section>

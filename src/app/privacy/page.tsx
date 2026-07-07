@@ -177,7 +177,7 @@ export default function PrivacyPage() {
                 <li>계정 삭제 요청</li>
               </ul>
               <p className="mt-2">
-                권리 행사를 원하시면 [고객센터 이메일 기입 필요]로 문의해 주세요.
+                권리 행사를 원하시면 info@nuklabs.com으로 문의해 주세요.
               </p>
             </section>
 
@@ -215,8 +215,8 @@ export default function PrivacyPage() {
                 아래와 같이 개인정보 보호책임자를 지정하고 있습니다.
               </p>
               <ul className="list-none pl-0 mt-2 space-y-1 text-sm">
-                <li>성명: <span className="font-bold text-amber-600 dark:text-amber-400">[개인정보 보호책임자 성명 기입 필요]</span></li>
-                <li>이메일: <span className="font-bold text-amber-600 dark:text-amber-400">[고객센터 이메일 기입 필요]</span></li>
+                <li>성명: 이지응</li>
+                <li>이메일: info@nuklabs.com</li>
               </ul>
             </section>
 
@@ -230,7 +230,7 @@ export default function PrivacyPage() {
             <section>
               <h2 className="text-xl font-semibold mt-8 mb-4">13. 문의처</h2>
               <p>
-                개인정보 관련 문의: <span className="font-bold text-amber-600 dark:text-amber-400">[고객센터 이메일 기입 필요]</span>
+                개인정보 관련 문의: info@nuklabs.com
               </p>
             </section>
           </div>
@@ -386,7 +386,7 @@ export default function PrivacyPage() {
                 <li>Request account deletion</li>
               </ul>
               <p className="mt-2">
-                To exercise these rights, contact us at <span className="font-bold text-amber-600 dark:text-amber-400">[Customer support email required]</span>
+                To exercise these rights, contact us at info@nuklabs.com
               </p>
             </section>
 
@@ -420,8 +420,8 @@ export default function PrivacyPage() {
             <section>
               <h2 className="text-xl font-semibold mt-8 mb-4">11. Privacy Officer</h2>
               <ul className="list-none pl-0 mt-2 space-y-1 text-sm">
-                <li>Name: <span className="font-bold text-amber-600 dark:text-amber-400">[Privacy officer name required]</span></li>
-                <li>Email: <span className="font-bold text-amber-600 dark:text-amber-400">[Customer support email required]</span></li>
+                <li>Name: Lee Ji-eung (이지응)</li>
+                <li>Email: info@nuklabs.com</li>
               </ul>
             </section>
 
@@ -436,7 +436,7 @@ export default function PrivacyPage() {
             <section>
               <h2 className="text-xl font-semibold mt-8 mb-4">13. Contact Us</h2>
               <p>
-                For privacy inquiries: <span className="font-bold text-amber-600 dark:text-amber-400">[Customer support email required]</span>
+                For privacy inquiries: info@nuklabs.com
               </p>
             </section>
           </div>
