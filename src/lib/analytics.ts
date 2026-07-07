@@ -7,6 +7,7 @@
 export type AnalyticsEvent =
   // Activation funnel
   | 'sign_up_complete'
+  | 'trial_start'
   | 'onboarding_complete'
   | 'first_session_start'
   | 'first_session_complete'

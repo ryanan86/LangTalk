@@ -66,13 +66,17 @@ export async function POST() {
       hour12: false,
     }).format(now);
 
+    // 7-day free trial for all new signups
+    const trialExpiry = new Date(now);
+    trialExpiry.setDate(trialExpiry.getDate() + 7);
+
     // Prepare data for new Users sheet structure
     const subscription = {
-      status: 'pending',
-      expiryDate: '',
+      status: 'active',
+      expiryDate: trialExpiry.toISOString(),
       signupDate: koreaTime,
       name: name,
-      plan: 'free',
+      plan: 'trial',
     };
 
     const profile = {
@@ -127,7 +131,7 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
-      message: '서비스 이용 신청이 완료되었습니다. 승인 후 이용 가능합니다.'
+      message: '7일 무료 체험이 시작되었습니다. 지금 바로 이용하세요!'
     });
   } catch (error) {
     console.error('Beta signup error:', error);

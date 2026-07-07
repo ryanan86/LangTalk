@@ -40,12 +40,14 @@ function getKoreaTime(): string {
 }
 
 function getDefaultSubscription(): SubscriptionData {
+  const trialExpiry = new Date();
+  trialExpiry.setDate(trialExpiry.getDate() + 7);
   return {
-    status: 'pending',
-    expiryDate: '',
+    status: 'active',
+    expiryDate: trialExpiry.toISOString(),
     signupDate: getKoreaTime(),
     name: '',
-    plan: 'free',
+    plan: 'trial',
   };
 }
 

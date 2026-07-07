@@ -14,7 +14,7 @@ export interface SubscriptionData {
   expiryDate: string;
   signupDate: string;
   name: string;
-  plan?: 'free' | 'beta' | 'premium' | 'monthly' | 'yearly';
+  plan?: 'free' | 'beta' | 'premium' | 'monthly' | 'yearly' | 'trial';
   paymentKey?: string;
   orderId?: string;
   startedAt?: string;

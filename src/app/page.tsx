@@ -6,6 +6,7 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useLanguage, LanguageToggle } from '@/lib/i18n';
+import { track } from '@/lib/analytics';
 import { Flag } from '@/components/Icons';
 import TapTalkLogo from '@/components/TapTalkLogo';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -164,6 +165,7 @@ function HomePageContent() {
   const [selectedPersona, setSelectedPersona] = useState<string | null>(null);
   const [isSubscribed, setIsSubscribed] = useState<boolean | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
+  const [subscriptionPlan, setSubscriptionPlan] = useState<string | null>(null);
   const [expiryDate, setExpiryDate] = useState<string | null>(null);
   const [checkingSubscription, setCheckingSubscription] = useState(true);
   const [isSigningUp, setIsSigningUp] = useState(false);
@@ -383,6 +385,15 @@ function HomePageContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
+  // Fire trial_start once per device when the app first observes a fresh trial
+  useEffect(() => {
+    if (!isSubscribed || subscriptionPlan !== 'trial') return;
+    const flagKey = 'taptalk-trial-start-fired';
+    if (localStorage.getItem(flagKey)) return;
+    track('trial_start', { expiryDate: expiryDate ?? undefined });
+    localStorage.setItem(flagKey, '1');
+  }, [isSubscribed, subscriptionPlan, expiryDate]);
+
   const startMicTest = async () => {
     setIsTesting(true);
     setTestResult(null);
@@ -488,6 +499,7 @@ function HomePageContent() {
       const data = await res.json();
       setIsSubscribed(data.subscribed);
       setSubscriptionStatus(data.status || (data.subscribed ? 'active' : 'not_found'));
+      setSubscriptionPlan(data.plan || null);
       setExpiryDate(data.expiryDate || null);
       setSessionCount(data.sessionCount || 0);
       setEvaluatedGrade(data.evaluatedGrade || null);
@@ -570,7 +582,9 @@ function HomePageContent() {
       const data = await res.json();
       if (data.success) {
         setSignupMessage(data.message);
-        setSubscriptionStatus('pending');
+        // Re-check subscription to pick up the new active trial state
+        const controller = new AbortController();
+        await checkSubscription(controller.signal);
       } else {
         setSignupMessage(data.message || data.error);
       }
@@ -882,6 +896,7 @@ function HomePageContent() {
               {session && expiryDate && (() => {
                 const daysLeft = Math.ceil((new Date(expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
                 const expired = daysLeft <= 0;
+                const isTrial = subscriptionPlan === 'trial';
                 const urgent = !expired && daysLeft <= 7;
                 const expiryText = new Date(expiryDate).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
                 return (
@@ -891,6 +906,8 @@ function HomePageContent() {
                       className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border transition-all hover:shadow-md ${
                         expired
                           ? 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30 hover:border-rose-300 dark:hover:border-rose-400/50'
+                          : isTrial
+                          ? 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/30 hover:border-indigo-300 dark:hover:border-indigo-400/50'
                           : urgent
                           ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30 hover:border-amber-300 dark:hover:border-amber-400/50'
                           : 'bg-white dark:bg-neutral-800/60 border-neutral-200 dark:border-neutral-700 hover:border-purple-300 dark:hover:border-purple-500/50'
@@ -900,6 +917,8 @@ function HomePageContent() {
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
                           expired
                             ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400'
+                            : isTrial
+                            ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400'
                             : urgent
                             ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400'
                             : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
@@ -912,25 +931,31 @@ function HomePageContent() {
                           <p className="text-xs text-theme-muted leading-tight">
                             {expired
                               ? (language === 'ko' ? '구독 만료됨' : 'Subscription expired')
+                              : isTrial
+                              ? (language === 'ko' ? '무료 체험 중' : 'Free trial active')
                               : (language === 'ko' ? '이용 기간' : 'Subscription valid until')}
                           </p>
                           <p className="text-sm font-semibold text-theme-secondary truncate tabular-nums">
                             {expiryText}
                             <span className={`ml-2 text-xs font-bold ${
-                              expired ? 'text-rose-500' : urgent ? 'text-amber-500' : 'text-emerald-500'
+                              expired ? 'text-rose-500' : isTrial ? 'text-indigo-500' : urgent ? 'text-amber-500' : 'text-emerald-500'
                             }`}>
                               {expired
                                 ? (language === 'ko' ? '만료됨' : 'Expired')
+                                : isTrial
+                                ? (language === 'ko' ? `D-${daysLeft}` : `D-${daysLeft}`)
                                 : (language === 'ko' ? `${daysLeft}일 남음` : `${daysLeft}d left`)}
                             </span>
                           </p>
                         </div>
                       </div>
                       <div className={`flex items-center gap-1 text-xs font-semibold shrink-0 ${
-                        expired ? 'text-rose-600 dark:text-rose-400' : 'text-purple-600 dark:text-purple-400'
+                        expired ? 'text-rose-600 dark:text-rose-400' : isTrial ? 'text-indigo-600 dark:text-indigo-400' : 'text-purple-600 dark:text-purple-400'
                       }`}>
                         {expired
                           ? (language === 'ko' ? '재구독' : 'Renew')
+                          : isTrial
+                          ? (language === 'ko' ? '구독하기' : 'Subscribe')
                           : (language === 'ko' ? '연장' : 'Extend')}
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="m9 5 7 7-7 7" />

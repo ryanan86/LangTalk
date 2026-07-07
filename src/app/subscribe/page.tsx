@@ -117,6 +117,7 @@ export default function SubscribePage() {
   };
 
   const isActive = subscription?.status === 'active';
+  const isTrial = subscription?.plan === 'trial';
   const expiryDate = subscription?.expiryDate ? new Date(subscription.expiryDate) : null;
   const remainingDays = expiryDate ? Math.max(0, Math.ceil((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0;
 
@@ -153,27 +154,41 @@ export default function SubscribePage() {
       <main className="max-w-lg mx-auto px-4 py-8 pb-24">
         {/* Current Subscription Status */}
         {isActive && expiryDate && (
-          <div className="mb-8 p-5 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-500/10 dark:to-teal-500/10 border border-emerald-200 dark:border-emerald-500/30">
+          <div className={`mb-8 p-5 rounded-2xl border ${
+            isTrial
+              ? 'bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-500/10 dark:to-violet-500/10 border-indigo-200 dark:border-indigo-500/30'
+              : 'bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-500/10 dark:to-teal-500/10 border-emerald-200 dark:border-emerald-500/30'
+          }`}>
             <div className="flex items-start gap-3">
-              <div className="w-11 h-11 rounded-xl bg-white dark:bg-emerald-500/20 flex items-center justify-center shrink-0 ring-1 ring-emerald-200 dark:ring-emerald-400/30">
-                <svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ring-1 ${
+                isTrial
+                  ? 'bg-white dark:bg-indigo-500/20 ring-indigo-200 dark:ring-indigo-400/30'
+                  : 'bg-white dark:bg-emerald-500/20 ring-emerald-200 dark:ring-emerald-400/30'
+              }`}>
+                <svg className={`w-5 h-5 ${isTrial ? 'text-indigo-600 dark:text-indigo-400' : 'text-emerald-600 dark:text-emerald-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
               <div className="flex-1">
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <p className="font-bold text-emerald-900 dark:text-emerald-200">
-                    {subscription?.plan === 'yearly' ? '연간 이용권 활성화' : subscription?.plan === 'monthly' ? '월간 이용권 활성화' : '구독 활성화'}
+                  <p className={`font-bold ${isTrial ? 'text-indigo-900 dark:text-indigo-200' : 'text-emerald-900 dark:text-emerald-200'}`}>
+                    {isTrial ? '무료 체험 중' : subscription?.plan === 'yearly' ? '연간 이용권 활성화' : subscription?.plan === 'monthly' ? '월간 이용권 활성화' : '구독 활성화'}
                   </p>
-                  <span className="px-2 py-0.5 bg-white dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-bold rounded-full ring-1 ring-emerald-200 dark:ring-emerald-400/30 tabular-nums">
-                    {remainingDays}일 남음
+                  <span className={`px-2 py-0.5 text-xs font-bold rounded-full ring-1 tabular-nums ${
+                    isTrial
+                      ? 'bg-white dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 ring-indigo-200 dark:ring-indigo-400/30'
+                      : 'bg-white dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 ring-emerald-200 dark:ring-emerald-400/30'
+                  }`}>
+                    {isTrial ? `D-${remainingDays}` : `${remainingDays}일 남음`}
                   </span>
                 </div>
-                <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">
-                  만료일: <span className="font-semibold">{expiryDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                <p className={`text-sm mt-1 ${isTrial ? 'text-indigo-700 dark:text-indigo-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                  {isTrial ? '체험 종료일' : '만료일'}: <span className="font-semibold">{expiryDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                 </p>
-                <p className="text-xs text-emerald-600/80 dark:text-emerald-400/70 mt-2 leading-relaxed">
-                  지금 추가 구독하시면 만료일에서부터 자동으로 연장됩니다.
+                <p className={`text-xs mt-2 leading-relaxed ${isTrial ? 'text-indigo-600/80 dark:text-indigo-400/70' : 'text-emerald-600/80 dark:text-emerald-400/70'}`}>
+                  {isTrial
+                    ? '무료 체험이 종료됩니다. 지금 구독하면 체험 종료 후 이어집니다.'
+                    : '지금 추가 구독하시면 만료일에서부터 자동으로 연장됩니다.'}
                 </p>
               </div>
             </div>
@@ -183,10 +198,10 @@ export default function SubscribePage() {
         {/* Hero */}
         <div className="text-center mb-8">
           <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">
-            {isActive ? '구독 연장하기' : 'TapTalk 프리미엄'}
+            {isActive && !isTrial ? '구독 연장하기' : 'TapTalk 프리미엄'}
           </h2>
           <p className="text-neutral-500 dark:text-neutral-400">
-            {isActive ? '원하는 플랜으로 이용 기간을 연장하세요' : 'AI 튜터와 무제한 영어 회화 연습'}
+            {isActive && !isTrial ? '원하는 플랜으로 이용 기간을 연장하세요' : 'AI 튜터와 무제한 영어 회화 연습'}
           </p>
         </div>
 
