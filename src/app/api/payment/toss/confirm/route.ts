@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { PLANS, type PlanId } from '@/lib/plans';
+import { PLANS, isFamilyPlan, type PlanId } from '@/lib/plans';
 import { updateUserFields, getUserData } from '@/lib/dataHelper';
 
 // POST /api/payment/toss/confirm — Toss 결제 승인 + 구독 업데이트
@@ -23,8 +23,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '결제 정보가 누락되었습니다.' }, { status: 400 });
     }
 
-    // orderId 형식: LANGTALK_MONTHLY_xxxx_timestamp
-    const planFromOrder = orderId.split('_')[1]?.toLowerCase() as PlanId;
+    // orderId 형식: LANGTALK_MONTHLY_xxxx_timestamp 또는 LANGTALK_FAMILY-MONTHLY_xxxx_timestamp
+    // planId는 두 번째 세그먼트를 소문자로 변환한 값 (family-monthly, family-yearly 포함)
+    const rawPlanSegment = orderId.split('_').slice(1, -2).join('_').toLowerCase();
+    const planFromOrder = rawPlanSegment as PlanId;
     if (!(planFromOrder in PLANS)) {
       console.error('[toss/confirm] invalid plan in orderId:', orderId, '→', planFromOrder);
       return NextResponse.json({ error: '올바르지 않은 주문입니다.' }, { status: 400 });
@@ -88,6 +90,12 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date(baseDate);
     expiresAt.setDate(expiresAt.getDate() + plan.durationDays);
 
+    // 가족 플랜 재구매 시 기존 familyMembers 유지
+    const existingFamilyMembers =
+      isFamilyPlan(planFromOrder) && existingUser?.subscription?.familyMembers
+        ? existingUser.subscription.familyMembers
+        : undefined;
+
     // 구독 업데이트
     const updated = await updateUserFields(session.user.email, {
       subscription: {
@@ -97,6 +105,7 @@ export async function POST(request: NextRequest) {
         startedAt: now.toISOString(),
         paymentKey,
         orderId,
+        ...(existingFamilyMembers !== undefined ? { familyMembers: existingFamilyMembers } : {}),
       },
     });
 
