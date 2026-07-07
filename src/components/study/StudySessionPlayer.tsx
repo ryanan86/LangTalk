@@ -297,16 +297,24 @@ export default function StudySessionPlayer({ plan, stats, tutorId = 'emma', onEx
           <div className="w-9" />
         </div>
 
-        {/* Block progress bar */}
+        {/* Block progress rail */}
         {phase === 'block' && (
-          <div className="max-w-lg mx-auto mt-2 flex gap-1">
+          <div className="max-w-lg mx-auto mt-2.5 flex gap-1.5">
             {blocks.map((b, i) => (
               <div
                 key={b.type}
-                className={`h-1.5 flex-1 rounded-full transition-colors ${
-                  i < blockIndex ? 'bg-primary-500' : i === blockIndex ? 'bg-primary-300 dark:bg-primary-500/50' : 'bg-neutral-200 dark:bg-neutral-700'
-                }`}
-              />
+                className="h-1.5 flex-1 rounded-full overflow-hidden bg-neutral-200 dark:bg-white/[0.08]"
+              >
+                <div
+                  className={`h-full rounded-full origin-left transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                    i < blockIndex
+                      ? 'bg-brand-gradient scale-x-100'
+                      : i === blockIndex
+                        ? 'bg-primary-400 dark:bg-primary-500/60 scale-x-100 motion-safe:animate-pulse'
+                        : 'scale-x-0'
+                  }`}
+                />
+              </div>
             ))}
           </div>
         )}
@@ -349,12 +357,12 @@ export default function StudySessionPlayer({ plan, stats, tutorId = 'emma', onEx
         {phase === 'block' && currentBlock && (
           <>
             {/* Block header */}
-            <div className="px-4 sm:px-6 pt-4 pb-2">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-neutral-900 dark:text-white">{currentBlock.title}</h2>
+            <div key={currentBlock.type} className="px-4 sm:px-6 pt-5 pb-2 motion-safe:animate-fade-up">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-display-1 text-neutral-900 dark:text-white">{currentBlock.title}</h2>
                 <BlockTimer elapsed={blockElapsed} suggestedMinutes={currentBlock.minutes} />
               </div>
-              <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
+              <p className="text-xs font-medium text-neutral-400 dark:text-neutral-500 mt-1 tabular-nums">
                 {blockIndex + 1} / {blocks.length} 블록 · 예상 {currentBlock.minutes}분 · 하루 {totalMinutes}분
               </p>
             </div>
@@ -467,23 +475,29 @@ function RecordButton({ voice, onTranscript, disabled }: { voice: VoiceApi; onTr
     <button
       onClick={() => voice.toggleRecord({ onTranscript })}
       disabled={disabled || busy}
-      className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
+      className={`pressable relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 ${
         voice.isRecording
-          ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 animate-pulse'
+          ? 'bg-red-500 text-white shadow-lg shadow-red-500/40'
           : busy || disabled
             ? 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 cursor-not-allowed'
-            : 'bg-primary-500 text-white shadow-lg shadow-primary-500/30 hover:bg-primary-600'
+            : 'bg-brand-gradient text-white shadow-lg shadow-primary-500/40 hover:shadow-primary-500/50'
       }`}
       aria-label={voice.isRecording ? '녹음 종료' : '말하기'}
     >
+      {voice.isRecording && (
+        <>
+          <span aria-hidden="true" className="absolute inset-0 rounded-full bg-red-500/60 motion-safe:animate-pulse-ring-recording" />
+          <span aria-hidden="true" className="absolute inset-0 rounded-full bg-red-500/40 motion-safe:animate-pulse-ring-recording" style={{ animationDelay: '0.5s' }} />
+        </>
+      )}
       {voice.isProcessingSTT ? (
-        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        <div className="relative z-10 w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
       ) : voice.isRecording ? (
-        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+        <svg className="relative z-10 w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
           <rect x="6" y="6" width="12" height="12" rx="2" />
         </svg>
       ) : (
-        <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+        <svg className="relative z-10 w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
           <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
           <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
         </svg>
@@ -998,34 +1012,41 @@ function CelebrationScreen({
   const streak = updatedStats?.currentStreak ?? (prevStats?.currentStreak ?? 0) + 1;
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-6 text-center motion-safe:animate-scale-in">
-      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center mb-5 shadow-lg shadow-primary-500/30">
-        <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className="relative flex-1 flex flex-col items-center justify-center p-6 text-center overflow-hidden">
+      {/* Ambient celebration glow */}
+      <div aria-hidden="true" className="absolute top-1/4 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full bg-primary-500/15 blur-3xl motion-safe:animate-glow" />
+
+      <div className="relative w-24 h-24 rounded-full bg-brand-gradient flex items-center justify-center mb-5 shadow-float dark:shadow-float-dark motion-safe:animate-gentle-bounce">
+        <div aria-hidden="true" className="absolute inset-0 rounded-full ring-4 ring-white/40 dark:ring-white/10" />
+        <svg className="w-11 h-11 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
         </svg>
       </div>
 
-      <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-1">오늘 학습 완료!</h2>
-      <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6">
+      <h2 className="relative text-display-1 text-neutral-900 dark:text-white mb-1">오늘 학습 완료!</h2>
+      <p className="relative text-sm text-neutral-500 dark:text-neutral-400 mb-6">
         {result.week}주차 {result.day}일차를 마쳤어요.
       </p>
 
-      <div className="w-full max-w-xs p-4 rounded-2xl bg-primary-50 dark:bg-primary-500/10 border border-primary-200 dark:border-primary-500/30 mb-4">
-        <p className="text-3xl font-bold text-primary-600 dark:text-primary-400">+{xp} XP</p>
+      <div className="relative w-full max-w-xs p-4 rounded-card-lg bg-primary-50 dark:bg-primary-500/10 border border-primary-200 dark:border-primary-500/30 mb-4 overflow-hidden">
+        <div aria-hidden="true" className="absolute -top-8 -right-6 w-24 h-24 rounded-full bg-primary-400/20 blur-2xl" />
+        <p className="relative text-4xl font-extrabold tracking-tight text-primary-600 dark:text-primary-400 tabular-nums motion-safe:animate-count-pop">
+          +{xp} <span className="text-2xl">XP</span>
+        </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 w-full max-w-xs mb-4">
-        <div className="p-3 rounded-xl bg-white dark:bg-dark-surface border border-neutral-100 dark:border-neutral-800">
-          <p className="text-lg font-bold text-neutral-900 dark:text-white">{result.spokenSentences}</p>
-          <p className="text-[10px] text-neutral-500 dark:text-neutral-400">발화 문장</p>
+      <div className="relative grid grid-cols-3 gap-3 w-full max-w-xs mb-4">
+        <div className="p-3 rounded-card bg-white dark:bg-white/[0.04] border border-neutral-100 dark:border-white/[0.06] shadow-card dark:shadow-card-dark">
+          <p className="text-lg font-extrabold text-neutral-900 dark:text-white tabular-nums">{result.spokenSentences}</p>
+          <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-0.5">발화 문장</p>
         </div>
-        <div className="p-3 rounded-xl bg-white dark:bg-dark-surface border border-neutral-100 dark:border-neutral-800">
-          <p className="text-lg font-bold text-neutral-900 dark:text-white">{result.newWordsLearned}</p>
-          <p className="text-[10px] text-neutral-500 dark:text-neutral-400">습득 단어</p>
+        <div className="p-3 rounded-card bg-white dark:bg-white/[0.04] border border-neutral-100 dark:border-white/[0.06] shadow-card dark:shadow-card-dark">
+          <p className="text-lg font-extrabold text-neutral-900 dark:text-white tabular-nums">{result.newWordsLearned}</p>
+          <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-0.5">습득 단어</p>
         </div>
-        <div className="p-3 rounded-xl bg-white dark:bg-dark-surface border border-neutral-100 dark:border-neutral-800">
-          <p className="text-lg font-bold text-neutral-900 dark:text-white">{result.shadowingAccuracy ?? '-'}{result.shadowingAccuracy ? '%' : ''}</p>
-          <p className="text-[10px] text-neutral-500 dark:text-neutral-400">쉐도잉</p>
+        <div className="p-3 rounded-card bg-white dark:bg-white/[0.04] border border-neutral-100 dark:border-white/[0.06] shadow-card dark:shadow-card-dark">
+          <p className="text-lg font-extrabold text-neutral-900 dark:text-white tabular-nums">{result.shadowingAccuracy ?? '-'}{result.shadowingAccuracy ? '%' : ''}</p>
+          <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-0.5">쉐도잉</p>
         </div>
       </div>
 
@@ -1055,13 +1076,18 @@ function CelebrationScreen({
         </div>
       )}
 
-      <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6">다음: {nextPreview}</p>
+      <p className="relative text-sm text-neutral-500 dark:text-neutral-400 mb-6">다음: {nextPreview}</p>
 
       {saveError && (
-        <p className="text-xs text-red-500 dark:text-red-400 mb-3">{saveError}</p>
+        <p className="relative text-xs text-red-500 dark:text-red-400 mb-3">{saveError}</p>
       )}
 
-      <button onClick={onDone} className="btn-primary px-8 py-3 w-full max-w-xs">대시보드로</button>
+      <button
+        onClick={onDone}
+        className="pressable relative w-full max-w-xs px-8 py-3.5 rounded-2xl bg-brand-gradient text-white font-bold shadow-lg shadow-primary-500/30 hover:shadow-primary-500/40 transition-all"
+      >
+        대시보드로
+      </button>
     </div>
   );
 }

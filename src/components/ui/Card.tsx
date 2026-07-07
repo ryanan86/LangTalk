@@ -14,7 +14,15 @@ const variantClasses = {
     'bg-white/80 dark:bg-white/[0.04]',
     'border border-black/[0.06] dark:border-white/[0.06]',
     'backdrop-blur-xl',
-    'shadow-card dark:shadow-none',
+    'shadow-card dark:shadow-card-dark',
+  ].join(' '),
+
+  /** Higher-elevation surface — for hero tiles and floating panels. */
+  elevated: [
+    'bg-white dark:bg-white/[0.05]',
+    'border border-black/[0.05] dark:border-white/[0.07]',
+    'backdrop-blur-xl',
+    'shadow-float dark:shadow-float-dark',
   ].join(' '),
 
   outlined: [
@@ -67,9 +75,9 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
           paddingClasses[padding],
           interactive && [
             'cursor-pointer',
-            'transition-all duration-300',
-            'hover:scale-[1.01]',
-            'hover:shadow-card-hover dark:hover:bg-white/[0.06]',
+            'transition-all duration-300 ease-out',
+            'hover:scale-[1.01] active:scale-[0.99]',
+            'hover:shadow-card-hover dark:hover:shadow-card-hover-dark dark:hover:bg-white/[0.06]',
           ].join(' '),
           className
         )}

@@ -10,22 +10,12 @@ import {
   selectDailyPatterns,
 } from '@/lib/studyClient';
 import { buildBlockSequence } from '@/lib/studyTypes';
+import { StatCard, ProgressBar } from '@/components/ui';
 
 interface StudyDashboardProps {
   plan: StudyPlan;
   stats: StudyStats | null;
   onStartSession: () => void;
-}
-
-function StatCard({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div className="p-4 rounded-2xl bg-white dark:bg-dark-surface border border-neutral-100 dark:border-neutral-800">
-      <p className={`text-2xl font-bold ${accent ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-900 dark:text-white'}`}>
-        {value}
-      </p>
-      <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{label}</p>
-    </div>
-  );
 }
 
 export default function StudyDashboard({ plan, stats, onStartSession }: StudyDashboardProps) {
@@ -57,12 +47,18 @@ export default function StudyDashboard({ plan, stats, onStartSession }: StudyDas
       <div className="max-w-lg mx-auto px-4 sm:px-6 py-4 space-y-5">
         {/* ===== Today's session hero ===== */}
         <section
-          className={`rounded-3xl p-5 relative overflow-hidden ${
+          className={`rounded-card-lg p-5 relative overflow-hidden motion-safe:animate-fade-up ${
             todayDone
               ? 'bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30'
-              : 'bg-gradient-to-br from-primary-600 to-primary-800 text-white shadow-lg shadow-primary-500/20'
+              : 'bg-brand-gradient text-white shadow-float dark:shadow-float-dark'
           }`}
         >
+          {!todayDone && (
+            <>
+              <div aria-hidden="true" className="absolute -top-16 -right-10 w-48 h-48 rounded-full bg-white/10 blur-3xl" />
+              <div aria-hidden="true" className="absolute -bottom-20 -left-8 w-44 h-44 rounded-full bg-indigo-400/20 blur-3xl" />
+            </>
+          )}
           {todayDone ? (
             <div>
               <div className="flex items-center gap-2 mb-2">
@@ -121,9 +117,13 @@ export default function StudyDashboard({ plan, stats, onStartSession }: StudyDas
 
               <button
                 onClick={onStartSession}
-                className="w-full py-3.5 rounded-2xl bg-white text-primary-700 font-bold hover:bg-white/90 active:scale-[0.99] transition-all shadow-lg"
+                className="pressable w-full py-3.5 rounded-2xl bg-white text-primary-700 font-bold hover:bg-white/95 transition-all shadow-lg
+                           flex items-center justify-center gap-2"
               >
                 {isWeeklyTestDay ? '주간 테스트 시작하기' : '오늘 세션 시작하기'}
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="m9 5 7 7-7 7" />
+                </svg>
               </button>
             </div>
           )}
@@ -131,20 +131,27 @@ export default function StudyDashboard({ plan, stats, onStartSession }: StudyDas
 
         {/* ===== Stats grid ===== */}
         <section className="grid grid-cols-2 gap-3">
-          <StatCard label="연속 학습일" value={`${stats?.currentStreak ?? 0}일`} accent />
-          <StatCard label="총 발화 문장" value={`${stats?.totalSpokenSentences ?? 0}`} />
-          <StatCard label="습득 단어" value={`${stats?.totalWordsLearned ?? 0}`} />
-          <StatCard label="마스터 패턴" value={`${stats?.patternsMastered?.length ?? 0}`} />
+          <StatCard label="연속 학습일" value={stats?.currentStreak ?? 0} suffix="일" accent />
+          <StatCard label="총 발화 문장" value={stats?.totalSpokenSentences ?? 0} />
+          <StatCard label="습득 단어" value={stats?.totalWordsLearned ?? 0} />
+          <StatCard label="마스터 패턴" value={stats?.patternsMastered?.length ?? 0} />
         </section>
 
         {/* ===== 12-week progress ===== */}
-        <section className="p-4 rounded-2xl bg-white dark:bg-dark-surface border border-neutral-100 dark:border-neutral-800">
+        <section className="p-4 rounded-card-lg bg-white/80 dark:bg-white/[0.04] backdrop-blur-xl border border-black/[0.05] dark:border-white/[0.06] shadow-card dark:shadow-card-dark">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">12주 진행</h3>
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">
+            <h3 className="text-sm font-bold text-neutral-900 dark:text-white tracking-tight">12주 진행</h3>
+            <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 tabular-nums">
               {Math.min(pos.week, 12)} / 12주
             </span>
           </div>
+          <ProgressBar
+            value={(Math.min(pos.week, 12) / 12) * 100}
+            variant="brand"
+            size="md"
+            label="12주 프로그램 진행률"
+            className="mb-4"
+          />
           <div className="grid grid-cols-12 gap-1">
             {plan.weeks.map((w) => {
               const completed = w.week < pos.week;
@@ -237,16 +244,16 @@ export default function StudyDashboard({ plan, stats, onStartSession }: StudyDas
             <ul className="space-y-2">
               {weeklyTests.slice().reverse().map((t) => (
                 <li key={`${t.week}-${t.date}`} className="flex items-center justify-between">
-                  <span className="text-sm text-neutral-600 dark:text-neutral-300">{t.week}주차</span>
-                  <div className="flex items-center gap-3 flex-1 mx-3">
-                    <div className="flex-1 h-2 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${t.score >= 70 ? 'bg-primary-500' : 'bg-amber-400'}`}
-                        style={{ width: `${t.score}%` }}
-                      />
-                    </div>
+                  <span className="text-sm text-neutral-600 dark:text-neutral-300 w-12">{t.week}주차</span>
+                  <div className="flex-1 mx-3">
+                    <ProgressBar
+                      value={t.score}
+                      variant={t.score >= 70 ? 'brand' : 'amber'}
+                      size="sm"
+                      label={`${t.week}주차 테스트 점수`}
+                    />
                   </div>
-                  <span className="text-sm font-semibold text-neutral-900 dark:text-white w-10 text-right">{t.score}점</span>
+                  <span className="text-sm font-semibold text-neutral-900 dark:text-white w-10 text-right tabular-nums">{t.score}점</span>
                 </li>
               ))}
             </ul>

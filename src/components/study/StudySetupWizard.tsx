@@ -117,9 +117,10 @@ export default function StudySetupWizard({ interests, assessedCEFR, onComplete, 
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
         <div className="relative mb-8">
-          <div className="w-20 h-20 rounded-full border-4 border-primary-200 dark:border-primary-500/20 border-t-primary-500 animate-spin" />
+          <div aria-hidden="true" className="absolute inset-0 rounded-full bg-primary-500/20 blur-2xl motion-safe:animate-glow" />
+          <div className="relative w-20 h-20 rounded-full border-4 border-primary-200 dark:border-primary-500/20 border-t-primary-500 animate-spin" />
         </div>
-        <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-3">
+        <h2 className="text-display-2 text-neutral-900 dark:text-white mb-3">
           12주 플랜을 만들고 있어요
         </h2>
         <p className="text-sm text-neutral-600 dark:text-neutral-300 min-h-[1.5rem] transition-all">
@@ -148,13 +149,17 @@ export default function StudySetupWizard({ interests, assessedCEFR, onComplete, 
             {STEP_TITLES.map((_, i) => (
               <div
                 key={i}
-                className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                  i <= step ? 'bg-primary-500' : 'bg-neutral-200 dark:bg-neutral-700'
-                }`}
-              />
+                className="h-1.5 flex-1 rounded-full overflow-hidden bg-neutral-200 dark:bg-white/[0.08]"
+              >
+                <div
+                  className={`h-full rounded-full origin-left transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                    i <= step ? 'bg-brand-gradient scale-x-100' : 'scale-x-0'
+                  }`}
+                />
+              </div>
             ))}
           </div>
-          <p className="text-xs font-medium text-primary-600 dark:text-primary-400">
+          <p className="text-xs font-semibold text-primary-600 dark:text-primary-400 tracking-tight">
             {step + 1} / 4 · {STEP_TITLES[step]}
           </p>
         </div>
@@ -178,10 +183,10 @@ export default function StudySetupWizard({ interests, assessedCEFR, onComplete, 
                     <button
                       key={g.goal}
                       onClick={() => setGoal(g.goal)}
-                      className={`text-left p-4 rounded-2xl border-2 transition-all ${
+                      className={`pressable text-left p-4 rounded-card-lg border-2 transition-all duration-200 ease-out ${
                         selected
-                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10'
-                          : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-dark-surface hover:border-primary-300 dark:hover:border-primary-500/40'
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10 shadow-card dark:shadow-card-dark scale-[1.015]'
+                          : 'border-neutral-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] hover:border-primary-300 dark:hover:border-primary-500/40'
                       }`}
                     >
                       <div className="flex items-center justify-between">
@@ -236,10 +241,10 @@ export default function StudySetupWizard({ interests, assessedCEFR, onComplete, 
                     <button
                       key={l.value}
                       onClick={() => setSelfLevel(l.value)}
-                      className={`text-left p-4 rounded-2xl border-2 transition-all ${
+                      className={`pressable text-left p-4 rounded-card-lg border-2 transition-all duration-200 ease-out ${
                         selected
-                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10'
-                          : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-dark-surface hover:border-primary-300 dark:hover:border-primary-500/40'
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10 shadow-card dark:shadow-card-dark scale-[1.015]'
+                          : 'border-neutral-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] hover:border-primary-300 dark:hover:border-primary-500/40'
                       }`}
                     >
                       <div className="flex items-center justify-between">
@@ -280,10 +285,10 @@ export default function StudySetupWizard({ interests, assessedCEFR, onComplete, 
                     <button
                       key={o.value}
                       onClick={() => setDailyMinutes(o.value)}
-                      className={`text-left p-4 rounded-2xl border-2 transition-all ${
+                      className={`pressable text-left p-4 rounded-card-lg border-2 transition-all duration-200 ease-out ${
                         selected
-                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10'
-                          : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-dark-surface hover:border-primary-300 dark:hover:border-primary-500/40'
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10 shadow-card dark:shadow-card-dark scale-[1.015]'
+                          : 'border-neutral-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] hover:border-primary-300 dark:hover:border-primary-500/40'
                       }`}
                     >
                       <p className={`text-lg font-bold ${selected ? 'text-primary-700 dark:text-primary-300' : 'text-neutral-900 dark:text-white'}`}>
@@ -306,10 +311,10 @@ export default function StudySetupWizard({ interests, assessedCEFR, onComplete, 
                 꾸준함이 실력을 만들어요. 무리하지 않는 선에서 골라주세요.
               </p>
 
-              <div className="p-5 rounded-2xl border-2 border-primary-500 bg-primary-50 dark:bg-primary-500/10 text-center mb-5">
-                <p className="text-4xl font-bold text-primary-600 dark:text-primary-400">
+              <div className="p-5 rounded-card-lg border-2 border-primary-500 bg-primary-50 dark:bg-primary-500/10 text-center mb-5">
+                <p key={studyDaysPerWeek} className="text-5xl font-extrabold tracking-tight text-primary-600 dark:text-primary-400 tabular-nums motion-safe:animate-count-pop">
                   {studyDaysPerWeek}
-                  <span className="text-lg font-medium text-primary-500/70 dark:text-primary-400/70 ml-1">일 / 주</span>
+                  <span className="text-lg font-semibold text-primary-500/70 dark:text-primary-400/70 ml-1">일 / 주</span>
                 </p>
               </div>
 
@@ -320,10 +325,10 @@ export default function StudySetupWizard({ interests, assessedCEFR, onComplete, 
                     <button
                       key={d}
                       onClick={() => setStudyDaysPerWeek(d)}
-                      className={`py-3 rounded-xl font-semibold transition-all ${
+                      className={`pressable py-3 rounded-xl font-bold transition-all duration-200 ${
                         selected
-                          ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/30'
-                          : 'bg-white dark:bg-dark-surface border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:border-primary-300'
+                          ? 'bg-brand-gradient text-white shadow-lg shadow-primary-500/30'
+                          : 'bg-white dark:bg-white/[0.04] border border-neutral-200 dark:border-white/[0.08] text-neutral-600 dark:text-neutral-300 hover:border-primary-300 dark:hover:border-primary-500/40'
                       }`}
                     >
                       {d}

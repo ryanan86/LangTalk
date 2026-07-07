@@ -18,6 +18,7 @@ import XPBar from '@/components/gamification/XPBar';
 import OnboardingFlow from '@/components/onboarding/OnboardingFlow';
 import StudyModeCard from '@/components/study/StudyModeCard';
 import BottomNav from '@/components/BottomNav';
+import { ProgressBar } from '@/components/ui';
 import { getTodayQuests } from '@/lib/dailyChallenges';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 // Helper function to check if running in native Capacitor app (iOS or Android)
@@ -878,6 +879,31 @@ function HomePageContent() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-4xl mx-auto">
 
+              {/* Greeting header — personalised welcome with streak flame */}
+              {session && isSubscribed && (
+                <div className="max-w-2xl mx-auto mb-5 px-4 flex items-center justify-between gap-3 text-left motion-safe:animate-fade-up">
+                  <div className="min-w-0">
+                    <p className="text-sm text-theme-muted font-medium">
+                      {language === 'ko' ? '다시 만나서 반가워요' : 'Welcome back'}
+                    </p>
+                    <h1 className="text-display-1 text-theme-primary truncate">
+                      {session.user?.name?.split(' ')[0] ?? (language === 'ko' ? '학습자' : 'Learner')}
+                      <span className="text-theme-muted font-medium">{language === 'ko' ? '님' : ''}</span>
+                    </h1>
+                  </div>
+                  {currentStreak > 0 && (
+                    <div className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/25">
+                      <svg className="w-4 h-4 text-amber-500 motion-safe:animate-fire" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 2c.5 3-1.5 4.5-2.5 6C8 10 8.5 12 10 13c.3-1.2 1-2 1.5-2.5.8 1.2 2.5 2.3 2.5 4.5a4.5 4.5 0 11-9 0c0-2.3 1.3-3.8 2-5C8.5 8 9 5 12 2z" />
+                      </svg>
+                      <span className="text-sm font-bold text-amber-700 dark:text-amber-300 tabular-nums">
+                        {currentStreak}{language === 'ko' ? '일' : 'd'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Dashboard Stats - For logged in users with at least 1 session */}
               {session && isSubscribed && sessionCount > 0 && (
                 <DashboardStats
@@ -980,16 +1006,15 @@ function HomePageContent() {
               {session && isSubscribed && !canAccessDebate && sessionCount > 0 && (
                 <div className="max-w-md mx-auto mb-6">
                   <div className="flex items-center justify-between text-xs text-theme-muted mb-2">
-                    <span>{language === 'ko' ? '디베이트 모드 잠금 해제' : 'Unlock Debate Mode'}</span>
-                    <span>{sessionCount}/5</span>
+                    <span className="font-medium">{language === 'ko' ? '디베이트 모드 잠금 해제' : 'Unlock Debate Mode'}</span>
+                    <span className="font-semibold tabular-nums">{sessionCount}/5</span>
                   </div>
-                  <div className="relative h-2 rounded-full dark:bg-white/10 bg-zinc-200 overflow-hidden">
-                    <div
-                      className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-amber-500 transition-all duration-1000"
-                      style={{ width: `${(sessionCount / 5) * 100}%` }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-                  </div>
+                  <ProgressBar
+                    value={(sessionCount / 5) * 100}
+                    variant="brand"
+                    size="md"
+                    label={language === 'ko' ? '디베이트 모드 잠금 해제 진행률' : 'Debate mode unlock progress'}
+                  />
                 </div>
               )}
 
