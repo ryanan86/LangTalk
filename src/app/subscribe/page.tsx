@@ -6,11 +6,30 @@ import { useSession } from 'next-auth/react';
 import { PLANS, type PlanId } from '@/lib/plans';
 import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
 import { track } from '@/lib/analytics';
+import { Badge } from '@/components/ui';
 
 interface SubscriptionInfo {
   status: string;
   expiryDate?: string;
   plan?: string;
+}
+
+// ── SVG check icon (no emoji) ──────────────────────────────────────────────────
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L8.414 15 3.293 9.879a1 1 0 111.414-1.414L8.414 12.172l6.879-6.879a1 1 0 011.414 0z" clipRule="evenodd" />
+    </svg>
+  );
+}
+
+// ── Shield / trust icon ────────────────────────────────────────────────────────
+function ShieldIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+    </svg>
+  );
 }
 
 export default function SubscribePage() {
@@ -35,6 +54,7 @@ export default function SubscribePage() {
   useEffect(() => {
     if (!session?.user?.email) return;
     fetchSubscriptionStatus();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
   const fetchSubscriptionStatus = async () => {
@@ -82,15 +102,12 @@ export default function SubscribePage() {
       if (!customerKey) throw new Error('customerKey가 없습니다');
 
       stage = 'Toss SDK 로드';
-      console.log('[toss] loading SDK with clientKey:', clientKey.slice(0, 15) + '...');
       const tossPayments = await loadTossPayments(clientKey);
 
       stage = 'payment 객체 생성';
-      console.log('[toss] creating payment with customerKey:', customerKey);
       const payment = tossPayments.payment({ customerKey });
 
       stage = 'requestPayment 호출';
-      console.log('[toss] requesting payment:', { orderId, amount, orderName });
       await payment.requestPayment({
         method: 'CARD',
         amount: { currency: 'KRW', value: amount },
@@ -127,60 +144,64 @@ export default function SubscribePage() {
 
   if (authStatus === 'loading' || checkingStatus) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
       {/* Header */}
-      <header className="bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800 px-4 py-4 sticky top-0 z-50">
+      <header className="bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl border-b border-black/[0.06] dark:border-white/[0.06] px-4 py-4 sticky top-0 z-50 safe-top">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <button
             onClick={() => router.back()}
-            className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 p-1"
+            className="pressable p-2 -ml-2 text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
+            aria-label="뒤로가기"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">구독하기</h1>
+          <h1 className="text-base font-semibold text-neutral-900 dark:text-white">구독하기</h1>
           <div className="w-8" />
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-8 pb-24">
-        {/* Current Subscription Status */}
+      <main className="max-w-lg mx-auto px-4 py-8 pb-24 space-y-6 motion-safe:animate-fade-up">
+
+        {/* ── Trial / active subscription status banner ──────────────────────── */}
         {isActive && expiryDate && (
-          <div className={`mb-8 p-5 rounded-2xl border ${
+          <div className={`p-5 rounded-card-lg border ${
             isTrial
-              ? 'bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-500/10 dark:to-violet-500/10 border-indigo-200 dark:border-indigo-500/30'
-              : 'bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-500/10 dark:to-teal-500/10 border-emerald-200 dark:border-emerald-500/30'
-          }`}>
+              ? 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/30'
+              : 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30'
+          } motion-safe:animate-fade-up`}>
             <div className="flex items-start gap-3">
-              <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ring-1 ${
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
                 isTrial
-                  ? 'bg-white dark:bg-indigo-500/20 ring-indigo-200 dark:ring-indigo-400/30'
-                  : 'bg-white dark:bg-emerald-500/20 ring-emerald-200 dark:ring-emerald-400/30'
+                  ? 'bg-indigo-100 dark:bg-indigo-500/20'
+                  : 'bg-emerald-100 dark:bg-emerald-500/20'
               }`}>
-                <svg className={`w-5 h-5 ${isTrial ? 'text-indigo-600 dark:text-indigo-400' : 'text-emerald-600 dark:text-emerald-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                <svg className={`w-5 h-5 ${isTrial ? 'text-indigo-600 dark:text-indigo-400' : 'text-emerald-600 dark:text-emerald-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <p className={`font-bold ${isTrial ? 'text-indigo-900 dark:text-indigo-200' : 'text-emerald-900 dark:text-emerald-200'}`}>
+                  <p className={`font-bold text-sm ${isTrial ? 'text-indigo-900 dark:text-indigo-200' : 'text-emerald-900 dark:text-emerald-200'}`}>
                     {isTrial ? '무료 체험 중' : subscription?.plan === 'yearly' ? '연간 이용권 활성화' : subscription?.plan === 'monthly' ? '월간 이용권 활성화' : '구독 활성화'}
                   </p>
-                  <span className={`px-2 py-0.5 text-xs font-bold rounded-full ring-1 tabular-nums ${
-                    isTrial
-                      ? 'bg-white dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 ring-indigo-200 dark:ring-indigo-400/30'
-                      : 'bg-white dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 ring-emerald-200 dark:ring-emerald-400/30'
-                  }`}>
+                  {/* D-n badge using the Badge primitive */}
+                  <Badge
+                    variant={isTrial ? 'info' : 'success'}
+                    size="md"
+                    dot
+                    className="tabular-nums font-bold motion-safe:animate-count-pop"
+                  >
                     {isTrial ? `D-${remainingDays}` : `${remainingDays}일 남음`}
-                  </span>
+                  </Badge>
                 </div>
                 <p className={`text-sm mt-1 ${isTrial ? 'text-indigo-700 dark:text-indigo-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
                   {isTrial ? '체험 종료일' : '만료일'}: <span className="font-semibold">{expiryDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
@@ -195,74 +216,96 @@ export default function SubscribePage() {
           </div>
         )}
 
-        {/* Hero */}
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">
+        {/* ── Hero heading ──────────────────────────────────────────────────── */}
+        <div className="text-center pt-2">
+          <h2 className="text-display-1 font-display text-neutral-900 dark:text-white mb-2">
             {isActive && !isTrial ? '구독 연장하기' : 'TapTalk 프리미엄'}
           </h2>
-          <p className="text-neutral-500 dark:text-neutral-400">
+          <p className="text-neutral-500 dark:text-neutral-400 text-sm">
             {isActive && !isTrial ? '원하는 플랜으로 이용 기간을 연장하세요' : 'AI 튜터와 무제한 영어 회화 연습'}
           </p>
         </div>
 
-        {/* Plan Cards */}
-        <div className="space-y-4 mb-8">
-          {/* Monthly */}
-          <button
-            onClick={() => handlePayment('monthly')}
-            disabled={loading}
-            className="w-full text-left p-5 rounded-2xl border-2 border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:border-purple-400 dark:hover:border-purple-500 transition-all disabled:opacity-50"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-neutral-900 dark:text-white text-lg">{PLANS.monthly.name}</p>
-                <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-1">매월 자동 갱신 없음</p>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-neutral-900 dark:text-white">{PLANS.monthly.label}</p>
-              </div>
-            </div>
-            {loading && selectedPlan === 'monthly' && (
-              <div className="mt-3 flex items-center justify-center">
-                <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-                <span className="ml-2 text-sm text-purple-500">결제 준비 중...</span>
-              </div>
-            )}
-          </button>
+        {/* ── Plan cards ────────────────────────────────────────────────────── */}
+        <div className="space-y-3">
 
-          {/* Yearly */}
+          {/* ── Yearly (featured / 인기) ────────────────────────────────────── */}
           <button
             onClick={() => handlePayment('yearly')}
             disabled={loading}
-            className="w-full text-left p-5 rounded-2xl border-2 border-purple-500 dark:border-purple-400 bg-white dark:bg-neutral-800 hover:border-purple-600 dark:hover:border-purple-300 transition-all relative overflow-hidden disabled:opacity-50"
+            className="pressable w-full text-left p-5 rounded-card-lg border-2 border-violet-500 dark:border-violet-400 bg-white dark:bg-white/[0.04] relative overflow-hidden transition-all hover:shadow-card-hover dark:hover:shadow-card-hover-dark disabled:opacity-50 group"
+            aria-label={`연간 플랜 ${PLANS.yearly.label} 선택`}
           >
-            {/* Savings Badge */}
-            <div className="absolute top-0 right-0 bg-purple-500 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">
-              {savingsPercent}% 할인
+            {/* subtle gradient wash on hover */}
+            <div aria-hidden="true" className="absolute inset-0 bg-brand-gradient opacity-0 group-hover:opacity-[0.04] transition-opacity duration-300 pointer-events-none" />
+
+            {/* 인기 badge — top right */}
+            <div className="absolute top-0 right-0">
+              <div className="bg-brand-gradient text-white text-[11px] font-bold px-3 py-1 rounded-bl-xl tracking-wide">
+                인기
+              </div>
             </div>
-            <div className="flex items-center justify-between">
+
+            <div className="flex items-start justify-between pr-12">
               <div>
-                <p className="font-semibold text-neutral-900 dark:text-white text-lg">{PLANS.yearly.name}</p>
+                <p className="font-bold text-neutral-900 dark:text-white text-lg leading-tight">{PLANS.yearly.name}</p>
                 <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-1">
                   월 {yearlyMonthlyPrice.toLocaleString()}원 (자동 갱신 없음)
                 </p>
               </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{PLANS.yearly.label}</p>
+              <div className="text-right shrink-0">
+                <p className="text-display-2 font-display font-extrabold text-violet-600 dark:text-violet-400 tabular-nums">
+                  {PLANS.yearly.label}
+                </p>
               </div>
             </div>
+
+            {/* Savings callout */}
+            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-50 dark:bg-violet-500/15 border border-violet-200 dark:border-violet-500/30">
+              <svg className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm2.5 3a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm6.207.293a1 1 0 00-1.414 0l-6 6a1 1 0 101.414 1.414l6-6a1 1 0 000-1.414zM12.5 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" clipRule="evenodd" />
+              </svg>
+              <span className="text-xs font-bold text-violet-700 dark:text-violet-300">월간 대비 {savingsPercent}% 절약</span>
+            </div>
+
             {loading && selectedPlan === 'yearly' && (
-              <div className="mt-3 flex items-center justify-center">
-                <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-                <span className="ml-2 text-sm text-purple-500">결제 준비 중...</span>
+              <div className="mt-3 flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm text-violet-500">결제 준비 중...</span>
+              </div>
+            )}
+          </button>
+
+          {/* ── Monthly ─────────────────────────────────────────────────────── */}
+          <button
+            onClick={() => handlePayment('monthly')}
+            disabled={loading}
+            className="pressable w-full text-left p-5 rounded-card-lg border-2 border-neutral-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] hover:border-neutral-300 dark:hover:border-white/[0.12] transition-all disabled:opacity-50"
+            aria-label={`월간 플랜 ${PLANS.monthly.label} 선택`}
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="font-bold text-neutral-900 dark:text-white text-lg leading-tight">{PLANS.monthly.name}</p>
+                <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-1">매월 자동 갱신 없음</p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-display-2 font-display font-extrabold text-neutral-900 dark:text-white tabular-nums">
+                  {PLANS.monthly.label}
+                </p>
+              </div>
+            </div>
+            {loading && selectedPlan === 'monthly' && (
+              <div className="mt-3 flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm text-violet-500">결제 준비 중...</span>
               </div>
             )}
           </button>
         </div>
 
-        {/* Features */}
-        <div className="space-y-3 mb-8">
-          <h3 className="text-sm font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">포함 기능</h3>
+        {/* ── Benefits checklist ────────────────────────────────────────────── */}
+        <div className="p-5 rounded-card bg-white dark:bg-white/[0.03] border border-neutral-200 dark:border-white/[0.06] space-y-3">
+          <h3 className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-widest mb-4">포함 기능</h3>
           {[
             'AI 튜터와 무제한 회화 연습',
             '6명의 원어민 AI 튜터',
@@ -271,26 +314,26 @@ export default function SubscribePage() {
             '단어장 자동 생성',
           ].map((feature) => (
             <div key={feature} className="flex items-center gap-3">
-              <svg className="w-5 h-5 text-purple-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-neutral-700 dark:text-neutral-300 text-sm">{feature}</span>
+              <span className="w-5 h-5 rounded-full bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center flex-shrink-0">
+                <CheckIcon className="w-3 h-3 text-violet-600 dark:text-violet-400" />
+              </span>
+              <span className="text-sm text-neutral-700 dark:text-neutral-300">{feature}</span>
             </div>
           ))}
         </div>
 
-        {/* Error */}
+        {/* ── Error ─────────────────────────────────────────────────────────── */}
         {error && (
-          <div className="p-4 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 text-sm mb-4">
+          <div className="p-4 rounded-card bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 text-sm motion-safe:animate-fade-up">
             {error}
           </div>
         )}
 
-        {/* Note */}
-        <p className="text-center text-xs text-neutral-400 dark:text-neutral-500">
-          결제는 Toss Payments를 통해 안전하게 처리됩니다.
-          <br />자동 갱신되지 않으며, 만료 후 재구독할 수 있습니다.
-        </p>
+        {/* ── Trust footer ─────────────────────────────────────────────────── */}
+        <div className="flex items-center justify-center gap-2 text-xs text-neutral-400 dark:text-neutral-500">
+          <ShieldIcon className="w-4 h-4 flex-shrink-0" />
+          <span>Toss Payments로 안전하게 처리 · 자동 갱신 없음</span>
+        </div>
       </main>
     </div>
   );

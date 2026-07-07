@@ -183,21 +183,34 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-neutral-50 dark:bg-dark-bg overflow-hidden">
-      {/* Progress Dots */}
-      <div className="absolute top-0 left-0 right-0 pt-[env(safe-area-inset-top)] px-4 py-4 z-10">
-        <div className="flex items-center justify-center gap-2">
+    <div className="fixed inset-0 z-50 bg-neutral-50 dark:bg-neutral-950 overflow-hidden">
+      {/* Ambient glow — visible in dark mode, very faint in light */}
+      <div aria-hidden="true" className="pointer-events-none absolute -top-20 left-1/2 -translate-x-1/2 w-80 h-80 rounded-full bg-violet-500/10 dark:bg-violet-500/15 blur-[100px]" />
+
+      {/* ── Gradient step rail (top of screen) ─────────────────────────────── */}
+      <div className="absolute top-0 left-0 right-0 z-10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        {/* Rail track */}
+        <div className="mx-5 mt-3 h-1 rounded-full bg-neutral-200 dark:bg-white/[0.08] overflow-hidden">
+          <div
+            className="h-full rounded-full bg-brand-gradient motion-safe:animate-progress-fill origin-left"
+            style={{
+              width: `${((currentStep + 1) / TOTAL_STEPS) * 100}%`,
+              transition: 'width 0.45s cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
+          />
+        </div>
+        {/* Step dots overlaid on top of rail for visual anchor */}
+        <div className="flex items-center justify-between mx-5 -mt-[5px]">
           {Array.from({ length: TOTAL_STEPS }).map((_, index) => (
             <div
               key={index}
               className={`
-                h-1.5 rounded-full transition-all duration-500
-                ${index === currentStep
-                  ? 'w-8 bg-primary-500'
-                  : index < currentStep
-                    ? 'w-1.5 bg-primary-300 dark:bg-primary-600'
-                    : 'w-1.5 bg-neutral-300 dark:bg-neutral-700'
+                w-2.5 h-2.5 rounded-full border-2 transition-all duration-400
+                ${index <= currentStep
+                  ? 'bg-violet-500 border-violet-500 shadow-sm shadow-violet-500/40'
+                  : 'bg-neutral-200 dark:bg-neutral-700 border-neutral-200 dark:border-neutral-700'
                 }
+                ${index === currentStep ? 'motion-safe:animate-ds-scale-in' : ''}
               `}
             />
           ))}
@@ -205,15 +218,18 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
       </div>
 
       {/* Navigation: Back + Skip */}
-      <div className="absolute top-0 left-0 right-0 pt-[env(safe-area-inset-top)] px-4 py-3 z-10 flex items-center justify-between">
+      <div
+        className="absolute left-0 right-0 z-10 flex items-center justify-between px-4 py-3"
+        style={{ top: 'env(safe-area-inset-top)', marginTop: '1.5rem' }}
+      >
         {/* Back Button (steps 2-6) */}
         {currentStep > 0 ? (
           <button
             onClick={prevStep}
-            className="p-2 -ml-2 text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
+            className="pressable p-2 -ml-2 text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
             aria-label="Go back"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
@@ -221,14 +237,13 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
           <div className="w-10" />
         )}
 
-        {/* Step indicator in center - pushed down to avoid overlap with dots */}
         <div className="h-10" />
 
         {/* Skip Button (steps 2-4) */}
         {currentStep >= 1 && currentStep <= 3 ? (
           <button
             onClick={nextStep}
-            className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors px-2 py-1"
+            className="pressable text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors px-2 py-1"
           >
             {language === 'ko' ? '건너뛰기' : 'Skip'}
           </button>
@@ -238,7 +253,7 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
       </div>
 
       {/* Main Content Area */}
-      <div className="h-full flex flex-col pt-16 pb-[env(safe-area-inset-bottom)]">
+      <div className="h-full flex flex-col pt-20 pb-[env(safe-area-inset-bottom)]">
         <div
           key={currentStep}
           className={`flex-1 flex flex-col justify-center overflow-y-auto ${getSlideClass()}`}
@@ -249,7 +264,7 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
               <div className="mb-8">
                 <TapTalkLogo size="lg" className="justify-center" />
               </div>
-              <h1 className="text-3xl sm:text-4xl font-bold text-neutral-900 dark:text-white mb-4">
+              <h1 className="text-display-1 text-neutral-900 dark:text-white mb-4 font-display">
                 {language === 'ko' ? 'TapTalk에 오신 것을 환영합니다!' : 'Welcome to TapTalk!'}
               </h1>
               <p className="text-base text-neutral-600 dark:text-neutral-400 max-w-sm leading-relaxed mb-4">
@@ -266,7 +281,7 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
               <div className="mt-10 w-full max-w-xs">
                 <button
                   onClick={nextStep}
-                  className="btn-primary py-4 text-lg w-full"
+                  className="pressable btn-primary py-4 text-lg w-full rounded-2xl"
                 >
                   {language === 'ko' ? '시작하기' : 'Get Started'}
                 </button>
@@ -276,9 +291,9 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
 
           {/* Step 2: Profile Type */}
           {currentStep === 1 && (
-            <div className="flex flex-col px-6 py-4">
+            <div className="flex flex-col px-5 py-4 motion-safe:animate-fade-up">
               <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">
+                <h2 className="text-display-2 text-neutral-900 dark:text-white mb-2 font-display">
                   {language === 'ko' ? '나는 어떤 사람인가요?' : 'What describes you best?'}
                 </h2>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">
@@ -289,19 +304,24 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
               </div>
 
               <div className="grid grid-cols-2 gap-3 max-w-md mx-auto w-full">
-                {profileTypes.map(type => (
+                {profileTypes.map((type, i) => (
                   <button
                     key={type.id}
                     onClick={() => setSelectedProfile(type.id)}
                     className={`
-                      p-4 rounded-xl border-2 transition-all text-left
+                      pressable p-4 rounded-card border-2 transition-all text-left
+                      motion-safe:animate-fade-up
                       ${selectedProfile === type.id
-                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10 shadow-md shadow-primary-500/10'
-                        : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-dark-surface hover:border-neutral-300 dark:hover:border-neutral-600'
+                        ? 'border-violet-500 bg-violet-50 dark:bg-violet-500/10 shadow-card dark:shadow-card-dark'
+                        : 'border-neutral-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] hover:border-neutral-300 dark:hover:border-white/[0.12]'
                       }
                     `}
+                    style={{ animationDelay: `${i * 0.05}s`, animationFillMode: 'both' }}
                   >
-                    <svg className="w-8 h-8 mb-2 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                    <svg
+                      className={`w-7 h-7 mb-2.5 transition-colors ${selectedProfile === type.id ? 'text-violet-500' : 'text-neutral-400 dark:text-neutral-500'}`}
+                      fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} aria-hidden="true"
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" d={type.icon} />
                     </svg>
                     <span className="font-semibold text-neutral-900 dark:text-white block text-sm">
@@ -310,6 +330,16 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
                     <span className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 block leading-snug">
                       {language === 'ko' ? type.descKo : type.descEn}
                     </span>
+                    {selectedProfile === type.id && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute top-3 right-3 w-5 h-5 rounded-full bg-violet-500 flex items-center justify-center motion-safe:animate-ds-scale-in"
+                      >
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
@@ -318,7 +348,7 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
                 <button
                   onClick={nextStep}
                   disabled={!selectedProfile}
-                  className="btn-primary py-3 text-base w-full disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="pressable btn-primary py-3.5 text-base w-full rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {language === 'ko' ? '다음' : 'Next'}
                 </button>
@@ -328,9 +358,9 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
 
           {/* Step 3: Interests */}
           {currentStep === 2 && (
-            <div className="flex flex-col items-center px-6 py-4">
+            <div className="flex flex-col items-center px-5 py-4 motion-safe:animate-fade-up">
               <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">
+                <h2 className="text-display-2 text-neutral-900 dark:text-white mb-2 font-display">
                   {language === 'ko' ? '관심사를 선택하세요' : 'Select Your Interests'}
                 </h2>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">
@@ -341,17 +371,19 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
               </div>
 
               <div className="flex flex-wrap gap-2.5 justify-center max-w-md">
-                {interestOptions.map(interest => (
+                {interestOptions.map((interest, i) => (
                   <button
                     key={interest.id}
                     onClick={() => toggleInterest(interest.id)}
                     className={`
-                      px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200
+                      pressable px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200
+                      motion-safe:animate-fade-up
                       ${selectedInterests.includes(interest.id)
-                        ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20 scale-105'
-                        : 'bg-white dark:bg-dark-surface border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
+                        ? 'bg-brand-gradient text-white shadow-glow-sm'
+                        : 'bg-white dark:bg-white/[0.05] border border-neutral-200 dark:border-white/[0.08] text-neutral-700 dark:text-neutral-300 hover:border-violet-300 dark:hover:border-violet-500/40'
                       }
                     `}
+                    style={{ animationDelay: `${i * 0.03}s`, animationFillMode: 'both' }}
                   >
                     {language === 'ko' ? interest.labelKo : interest.labelEn}
                   </button>
@@ -359,7 +391,7 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
               </div>
 
               {selectedInterests.length > 0 && (
-                <p className="mt-4 text-sm text-primary-500 font-medium">
+                <p className="mt-4 text-sm text-violet-600 dark:text-violet-400 font-semibold motion-safe:animate-fade-up">
                   {language === 'ko'
                     ? `${selectedInterests.length}개 선택됨`
                     : `${selectedInterests.length} selected`}
@@ -369,7 +401,7 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
               <div className="mt-6 w-full max-w-xs">
                 <button
                   onClick={nextStep}
-                  className="btn-primary py-3 text-base w-full"
+                  className="pressable btn-primary py-3.5 text-base w-full rounded-2xl"
                 >
                   {selectedInterests.length > 0
                     ? (language === 'ko' ? '다음' : 'Next')
@@ -406,24 +438,31 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
 
           {/* Step 6: Ready */}
           {currentStep === 5 && (
-            <div className="flex flex-col items-center justify-center text-center px-6 py-8">
-              {/* Celebration animation */}
+            <div className="flex flex-col items-center justify-center text-center px-6 py-8 motion-safe:animate-fade-up">
+              {/* Celebration check medallion — gentle-bounce + count-pop pattern */}
               <div className="relative mb-8">
-                <div className="w-28 h-28 rounded-full bg-green-500/10 dark:bg-green-500/20 flex items-center justify-center">
-                  <svg className="w-14 h-14 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <div className="w-28 h-28 rounded-full bg-brand-gradient flex items-center justify-center shadow-float dark:shadow-float-dark motion-safe:animate-gentle-bounce">
+                  <svg
+                    className="w-14 h-14 text-white motion-safe:animate-count-pop"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                    aria-hidden="true"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                {/* Decorative particles */}
-                <div className="absolute -top-2 -left-2 w-4 h-4 rounded-full bg-amber-400 animate-bounce-soft" style={{ animationDelay: '0s' }} />
-                <div className="absolute -top-1 -right-3 w-3 h-3 rounded-full bg-pink-400 animate-bounce-soft" style={{ animationDelay: '0.3s' }} />
-                <div className="absolute -bottom-2 -left-4 w-3 h-3 rounded-full bg-blue-400 animate-bounce-soft" style={{ animationDelay: '0.6s' }} />
-                <div className="absolute -bottom-1 -right-2 w-4 h-4 rounded-full bg-green-400 animate-bounce-soft" style={{ animationDelay: '0.9s' }} />
-                <div className="absolute top-1/2 -left-6 w-2 h-2 rounded-full bg-purple-400 animate-bounce-soft" style={{ animationDelay: '0.15s' }} />
-                <div className="absolute top-1/2 -right-5 w-2.5 h-2.5 rounded-full bg-rose-400 animate-bounce-soft" style={{ animationDelay: '0.45s' }} />
+                {/* Decorative sparkle dots */}
+                <div aria-hidden="true" className="absolute -top-2 -left-2 w-3.5 h-3.5 rounded-full bg-amber-400 motion-safe:animate-bounce-soft" style={{ animationDelay: '0s' }} />
+                <div aria-hidden="true" className="absolute -top-1 -right-3 w-2.5 h-2.5 rounded-full bg-pink-400 motion-safe:animate-bounce-soft" style={{ animationDelay: '0.3s' }} />
+                <div aria-hidden="true" className="absolute -bottom-2 -left-4 w-2.5 h-2.5 rounded-full bg-sky-400 motion-safe:animate-bounce-soft" style={{ animationDelay: '0.6s' }} />
+                <div aria-hidden="true" className="absolute -bottom-1 -right-2 w-3.5 h-3.5 rounded-full bg-emerald-400 motion-safe:animate-bounce-soft" style={{ animationDelay: '0.9s' }} />
+                <div aria-hidden="true" className="absolute top-1/2 -left-6 w-2 h-2 rounded-full bg-violet-400 motion-safe:animate-bounce-soft" style={{ animationDelay: '0.15s' }} />
+                <div aria-hidden="true" className="absolute top-1/2 -right-5 w-2.5 h-2.5 rounded-full bg-rose-400 motion-safe:animate-bounce-soft" style={{ animationDelay: '0.45s' }} />
               </div>
 
-              <h1 className="text-3xl sm:text-4xl font-bold text-neutral-900 dark:text-white mb-3">
+              <h1 className="text-display-1 text-neutral-900 dark:text-white mb-3 font-display">
                 {language === 'ko' ? '모든 준비가 끝났어요!' : "You're All Set!"}
               </h1>
               <p className="text-base text-neutral-600 dark:text-neutral-400 max-w-sm leading-relaxed mb-2">
@@ -432,18 +471,18 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
                   : 'Start practicing English with your AI tutors. A little practice each day goes a long way!'}
               </p>
 
-              {/* Summary */}
+              {/* Summary card */}
               {(selectedProfile || selectedInterests.length > 0) && (
-                <div className="mt-4 mb-2 p-4 rounded-xl bg-white dark:bg-dark-surface border border-neutral-200 dark:border-neutral-700 max-w-sm w-full text-left">
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2 font-medium">
+                <div className="mt-4 mb-2 p-4 rounded-card bg-white/80 dark:bg-white/[0.04] backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.06] shadow-card dark:shadow-card-dark max-w-sm w-full text-left motion-safe:animate-fade-up" style={{ animationDelay: '0.3s', animationFillMode: 'both' }}>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-2 font-semibold">
                     {language === 'ko' ? '내 프로필' : 'Your Profile'}
                   </p>
                   {selectedProfile && (
                     <div className="flex items-center gap-2 mb-1">
-                      <svg className="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                      <svg className="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" d={profileTypes.find(p => p.id === selectedProfile)?.icon} />
                       </svg>
-                      <p className="text-sm text-neutral-700 dark:text-neutral-300">
+                      <p className="text-sm text-neutral-700 dark:text-neutral-300 font-medium">
                         {language === 'ko'
                           ? profileTypes.find(p => p.id === selectedProfile)?.labelKo
                           : profileTypes.find(p => p.id === selectedProfile)?.labelEn}
@@ -457,7 +496,7 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
                         return (
                           <span
                             key={id}
-                            className="text-xs px-2 py-1 rounded-full bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400"
+                            className="text-xs px-2 py-1 rounded-full bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 font-medium"
                           >
                             {language === 'ko' ? interest?.labelKo : interest?.labelEn}
                           </span>
@@ -471,7 +510,7 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
               <div className="mt-6 w-full max-w-xs">
                 <button
                   onClick={handleComplete}
-                  className="btn-primary py-4 text-lg w-full"
+                  className="pressable btn-primary py-4 text-lg w-full rounded-2xl"
                 >
                   {language === 'ko' ? '학습 시작하기' : 'Start Learning'}
                 </button>

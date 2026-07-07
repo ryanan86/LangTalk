@@ -29,6 +29,8 @@ import { getWarmupSet } from '@/lib/warmupPhrases';
 import type { VocabBookItem } from '@/lib/sheetTypes';
 import type { SpeakingEvaluationResponse } from '@/app/api/speaking-evaluate/route';
 import { track } from '@/lib/analytics';
+import Badge from '@/components/ui/Badge';
+import Skeleton from '@/components/ui/Skeleton';
 
 type Phase = 'ready' | 'mode-select' | 'topic-select' | 'warmup' | 'tutor-intro'
            | 'recording' | 'interview' | 'analysis' | 'review' | 'shadowing' | 'summary';
@@ -69,6 +71,73 @@ interface Analysis {
   levelDetails?: LevelDetails;
   encouragement: string;
   confidence?: 'high' | 'medium' | 'low';
+}
+
+// ─── Mic SVG Icon ─────────────────────────────────────────────────────────────
+function MicIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+    </svg>
+  );
+}
+
+function StopIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="6" y="6" width="12" height="12" rx="2" />
+    </svg>
+  );
+}
+
+function PlayIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  );
+}
+
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+    </svg>
+  );
+}
+
+function BackIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+    </svg>
+  );
+}
+
+function EyeIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+    </svg>
+  );
+}
+
+function EyeOffIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+    </svg>
+  );
+}
+
+function SpinnerIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" aria-hidden="true">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
+  );
 }
 
 function TalkContent() {
@@ -859,129 +928,163 @@ function TalkContent() {
       <audio ref={audioRef} onEnded={() => setIsPlaying(false)} />
       <audio ref={fillerAudioRef} />
 
-      {/* Header - Premium Glass Effect */}
-      <header style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }} className={`px-4 sm:px-6 pb-2 sm:pb-3 sticky top-0 z-50 transition-colors duration-500 ${
-        isDarkPhase
-          ? 'dark:bg-neutral-950/80 bg-white/90 backdrop-blur-xl border-b dark:border-white/5 border-black/[0.05]'
-          : 'bg-white/80 dark:bg-dark-surface/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800'
-      }`}>
-        <div className="max-w-3xl mx-auto flex justify-between items-center">
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <header
+        style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+        className={`px-4 sm:px-6 pb-2 sm:pb-3 sticky top-0 z-50 transition-colors duration-500 ${
+          isDarkPhase
+            ? 'bg-neutral-950/90 backdrop-blur-xl border-b border-white/[0.05]'
+            : 'bg-white/85 dark:bg-dark-surface/85 backdrop-blur-xl border-b border-black/[0.06] dark:border-white/[0.06]'
+        }`}
+      >
+        <div className="max-w-3xl mx-auto flex justify-between items-center gap-3">
+          {/* Back */}
           <button
             onClick={handleBackClick}
             aria-label="Go back"
-            className={`p-2 rounded-xl transition-colors ${
-              isDarkPhase ? 'dark:text-white/60 text-zinc-600 dark:hover:text-white hover:text-zinc-900 dark:hover:bg-white/5 hover:bg-black/[0.03]' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-white'
+            className={`pressable p-2 -ml-1 rounded-xl transition-colors ${
+              isDarkPhase
+                ? 'text-white/50 hover:text-white hover:bg-white/[0.06]'
+                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/[0.06]'
             }`}
           >
-            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+            <BackIcon className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
 
-          <div className="flex items-center gap-2">
-            <div
-              className="w-2 h-2 rounded-full flex-shrink-0"
-              style={{ backgroundColor: accentColor.primary }}
-            />
-            <div>
-              <h2 className={`font-semibold text-sm sm:text-base ${isDarkPhase ? 'dark:text-white text-zinc-900' : 'text-neutral-900'}`}>
+          {/* Tutor identity */}
+          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            {/* Speaking-state pulse ring around accent dot */}
+            <div className="relative flex-shrink-0">
+              {isPlaying && (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-0 rounded-full motion-safe:animate-pulse-ring-recording"
+                    style={{ backgroundColor: accentColor.primary, opacity: 0.5 }}
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-0 rounded-full motion-safe:animate-pulse-ring-recording"
+                    style={{ backgroundColor: accentColor.primary, opacity: 0.3, animationDelay: '0.5s' }}
+                  />
+                </>
+              )}
+              <span
+                className="relative w-2.5 h-2.5 rounded-full block"
+                style={{ backgroundColor: accentColor.primary }}
+              />
+            </div>
+            <div className="min-w-0">
+              <p className={`font-semibold text-sm sm:text-base leading-tight truncate ${
+                isDarkPhase ? 'text-white' : 'text-neutral-900 dark:text-white'
+              }`}>
                 {persona.name}
-              </h2>
-              <p className={`text-xs ${isDarkPhase ? 'dark:text-white/50 text-zinc-400' : 'text-neutral-500 dark:text-neutral-400'}`}>{getPhaseText()}</p>
+              </p>
+              <p className={`text-[11px] leading-tight truncate ${
+                isDarkPhase ? 'text-white/40' : 'text-neutral-500 dark:text-neutral-400'
+              }`}>
+                {getPhaseText()}
+              </p>
             </div>
           </div>
 
-          {phase === 'interview' && (
+          {/* Done button — only in interview */}
+          {phase === 'interview' ? (
             <button
               onClick={getAnalysis}
-              className="text-xs sm:text-sm text-primary-400 font-semibold hover:text-primary-300 px-3 py-1.5 rounded-lg dark:bg-white/5 bg-black/[0.03] dark:hover:bg-white/10 hover:bg-black/[0.06] transition-colors"
+              className={`pressable flex-shrink-0 text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-xl transition-all ${
+                isDarkPhase
+                  ? 'text-primary-300 bg-primary-500/15 hover:bg-primary-500/25 border border-primary-500/25'
+                  : 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10 hover:bg-primary-100 dark:hover:bg-primary-500/20 border border-primary-200 dark:border-primary-500/25'
+              }`}
             >
               {t.done}
             </button>
+          ) : (
+            <div className="w-12 sm:w-16 flex-shrink-0" />
           )}
-          {phase !== 'interview' && <div className="w-12 sm:w-20" />}
+        </div>
+
+        {/* ── Progress rail ───────────────────────────────────────────────── */}
+        <div className="max-w-3xl mx-auto mt-2.5 flex gap-1.5">
+          {['start', 'conversation', 'review', 'shadowing', 'summary'].map((step, idx) => {
+            const phaseOrder = ['ready', 'mode-select', 'topic-select', 'warmup', 'tutor-intro', 'recording', 'interview', 'analysis', 'review', 'shadowing', 'summary'];
+            const currentIdx = phaseOrder.indexOf(phase);
+            const stepThresholds = [4, 6, 7, 8, 9];
+            const filled = currentIdx >= stepThresholds[idx];
+            const active = idx === stepThresholds.findIndex((t, i) => currentIdx >= t && (i === stepThresholds.length - 1 || currentIdx < stepThresholds[i + 1]));
+            return (
+              <div
+                key={step}
+                className={`h-1 flex-1 rounded-full overflow-hidden transition-colors duration-300 ${
+                  isDarkPhase ? 'bg-white/[0.08]' : 'bg-neutral-200 dark:bg-white/[0.08]'
+                }`}
+              >
+                <div
+                  className={`h-full rounded-full origin-left transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                    filled ? 'bg-brand-gradient scale-x-100' : active ? 'bg-primary-400/50 scale-x-100 motion-safe:animate-pulse' : 'scale-x-0'
+                  }`}
+                />
+              </div>
+            );
+          })}
         </div>
       </header>
 
-      {/* Progress Bar - Adaptive Theme */}
-      <div className={`px-4 sm:px-6 py-3 transition-colors duration-500 ${
-        isDarkPhase ? 'bg-neutral-950' : 'bg-white dark:bg-dark-surface border-b border-neutral-100 dark:border-neutral-800'
-      }`}>
-        <div className="max-w-3xl mx-auto">
-          <div className="flex gap-1.5">
-            {['start', 'conversation', 'review', 'shadowing', 'summary'].map((step, idx) => {
-              const phaseOrder = ['ready', 'mode-select', 'topic-select', 'warmup', 'tutor-intro', 'recording', 'interview', 'analysis', 'review', 'shadowing', 'summary'];
-              const currentIdx = phaseOrder.indexOf(phase);
-              // Map progress bar segments to phase ranges
-              const stepThresholds = [4, 6, 7, 8, 9]; // tutor-intro, interview, analysis, review, shadowing
-              const filled = currentIdx >= stepThresholds[idx];
-              return (
-                <div
-                  key={step}
-                  className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                    filled
-                      ? ''
-                      : isDarkPhase ? 'bg-white/10' : 'bg-neutral-200 dark:bg-neutral-700'
-                  }`}
-                  style={filled ? { backgroundColor: accentColor.primary } : undefined}
-                />
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
+      {/* ── Main Content ─────────────────────────────────────────────────────── */}
       <main id="main-content" className="flex-1 flex flex-col max-w-3xl mx-auto w-full">
 
         {/* ========== READY PHASE ========== */}
         {phase === 'ready' && (
-          <div className="motion-safe:animate-fade-in flex-1 flex flex-col items-center justify-center p-4 sm:p-8 pb-32 sm:pb-8 text-center" style={{ paddingBottom: 'max(8rem, calc(2rem + env(safe-area-inset-bottom)))' }}>
-            <div className="mb-4 sm:mb-6 animate-bounce-soft">
-              <TutorAvatar
-                tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
-                size="xl"
-                showName
+          <div
+            className="motion-safe:animate-fade-up flex-1 flex flex-col items-center justify-center p-5 sm:p-8 text-center"
+            style={{ paddingBottom: 'max(8rem, calc(2rem + env(safe-area-inset-bottom)))' }}
+          >
+            {/* Elevated avatar with gentle-bounce and ambient glow */}
+            <div className="relative mb-6">
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 rounded-full blur-2xl scale-110 opacity-30"
+                style={{ background: `radial-gradient(circle, ${accentColor.primary} 0%, transparent 70%)` }}
               />
-            </div>
-
-            <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white mb-2">
-              {t.readyToStart.replace('{name}', persona.name)}
-            </h2>
-            <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-300 mb-6 sm:mb-8 max-w-md px-4">
-              {t.readyDescription}
-            </p>
-
-            <div className="bg-primary-50 dark:bg-primary-500/10 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 max-w-md w-full mx-4">
-              <h3 className="font-semibold text-primary-900 dark:text-primary-200 mb-3 text-sm sm:text-base">{t.sessionFlow}</h3>
-              <div className="space-y-2 text-xs sm:text-sm text-primary-700 dark:text-primary-300">
-                <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-primary-200 dark:bg-primary-500/30 rounded-full flex items-center justify-center text-xs font-bold">1</span>
-                  <span>{t.flowStep1}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-primary-200 dark:bg-primary-500/30 rounded-full flex items-center justify-center text-xs font-bold">2</span>
-                  <span>{t.flowStep2}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-primary-200 dark:bg-primary-500/30 rounded-full flex items-center justify-center text-xs font-bold">3</span>
-                  <span>{t.flowStep3}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-primary-200 dark:bg-primary-500/30 rounded-full flex items-center justify-center text-xs font-bold">4</span>
-                  <span>{t.flowStep4}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 sm:w-6 sm:h-6 bg-primary-200 dark:bg-primary-500/30 rounded-full flex items-center justify-center text-xs font-bold">5</span>
-                  <span>{t.flowStep5}</span>
-                </div>
+              <div className="relative motion-safe:animate-bounce-soft">
+                <TutorAvatar
+                  tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
+                  size="xl"
+                  showName
+                />
               </div>
             </div>
 
-            <button onClick={() => { setSelectedDecade(null); setShowUserInfoModal(true); }} className="btn-primary flex items-center gap-2 sm:gap-3 text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4">
-              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-              </svg>
+            <h2 className="text-display-2 text-neutral-900 dark:text-white mb-2">
+              {t.readyToStart.replace('{name}', persona.name)}
+            </h2>
+            <p className="text-sm sm:text-base text-neutral-500 dark:text-neutral-400 mb-7 max-w-sm">
+              {t.readyDescription}
+            </p>
+
+            {/* Session flow card */}
+            <div className="w-full max-w-sm mb-7 p-5 rounded-card-lg bg-white/80 dark:bg-white/[0.04] backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.06] shadow-card dark:shadow-card-dark text-left">
+              <p className="text-xs font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-3">
+                {t.sessionFlow}
+              </p>
+              <div className="space-y-2.5">
+                {[t.flowStep1, t.flowStep2, t.flowStep3, t.flowStep4, t.flowStep5].map((step, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-500/20 flex items-center justify-center text-[10px] font-bold text-primary-600 dark:text-primary-400 mt-0.5">
+                      {i + 1}
+                    </span>
+                    <span className="text-sm text-neutral-700 dark:text-neutral-300 leading-snug">{step}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={() => { setSelectedDecade(null); setShowUserInfoModal(true); }}
+              className="pressable btn-primary flex items-center gap-2.5 text-base px-7 py-3.5 rounded-2xl"
+            >
+              <MicIcon className="w-5 h-5" />
               {t.startFreeTalk}
             </button>
           </div>
@@ -989,26 +1092,26 @@ function TalkContent() {
 
         {/* ========== MODE SELECT PHASE ========== */}
         {phase === 'mode-select' && (
-          <div className="motion-safe:animate-slide-up flex-1 flex flex-col">
-          <StartModeSelector
-            tutorId={tutorId}
-            tutorName={persona.name}
-            recommendedMode={recommendedMode}
-            onSelect={handleStartModeSelect}
-            onBack={() => setPhase('ready')}
-          />
+          <div className="motion-safe:animate-fade-up flex-1 flex flex-col">
+            <StartModeSelector
+              tutorId={tutorId}
+              tutorName={persona.name}
+              recommendedMode={recommendedMode}
+              onSelect={handleStartModeSelect}
+              onBack={() => setPhase('ready')}
+            />
           </div>
         )}
 
         {/* ========== TOPIC SELECT PHASE ========== */}
         {phase === 'topic-select' && (
-          <div className="motion-safe:animate-slide-up flex-1 flex flex-col">
-          <TopicSelector
-            topics={topicPool}
-            onSelect={handleTopicSelect}
-            onBack={() => setPhase('mode-select')}
-            onShuffle={() => setTopicPool(shuffleTopics([...topicPool]))}
-          />
+          <div className="motion-safe:animate-fade-up flex-1 flex flex-col">
+            <TopicSelector
+              topics={topicPool}
+              onSelect={handleTopicSelect}
+              onBack={() => setPhase('mode-select')}
+              onShuffle={() => setTopicPool(shuffleTopics([...topicPool]))}
+            />
           </div>
         )}
 
@@ -1027,26 +1130,28 @@ function TalkContent() {
         {/* ========== TUTOR INTRO PHASE ========== */}
         {phase === 'tutor-intro' && (
           <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 relative">
+            {/* Ambient glow */}
             <div
-              className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[300px] h-[300px] rounded-full blur-3xl"
+              aria-hidden="true"
+              className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[300px] h-[300px] rounded-full blur-3xl pointer-events-none"
               style={{ backgroundColor: accentColor.glow }}
             />
-            <div className="relative z-10 text-center">
+            <div className="relative z-10 text-center motion-safe:animate-fade-up">
               <TutorAvatarLarge
                 tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
                 speaking={true}
                 mouthOpen={0}
                 status="speaking"
               />
-              <p className="text-white/80 mt-6 mb-2 text-base sm:text-lg font-medium">
+              <p className="text-white/80 mt-6 mb-1 text-base sm:text-lg font-medium">
                 {language === 'ko'
                   ? `${persona.name}님이 말을 걸고 있어요...`
                   : `${persona.name} is starting the conversation...`}
               </p>
-              <p className="text-white/40 text-xs sm:text-sm">
+              <p className="text-white/40 text-xs sm:text-sm mb-4">
                 {language === 'ko' ? '잠시 기다려주세요' : 'Please wait a moment'}
               </p>
-              <div className="flex gap-2 justify-center mt-4">
+              <div className="flex gap-2 justify-center">
                 <div className="loading-dot" />
                 <div className="loading-dot" />
                 <div className="loading-dot" />
@@ -1055,41 +1160,41 @@ function TalkContent() {
           </div>
         )}
 
-        {/* ========== RECORDING PHASE - Dark Premium UI ========== */}
+        {/* ========== RECORDING PHASE ========== */}
         {phase === 'recording' && (
-          <div className="motion-safe:animate-scale-in flex-1 flex flex-col items-center justify-center p-4 sm:p-8 relative">
-            {/* Ambient Glow */}
+          <div className="motion-safe:animate-ds-scale-in flex-1 flex flex-col items-center justify-center p-4 sm:p-8 relative">
+            {/* Ambient glow */}
             <div
-              className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[300px] h-[300px] rounded-full blur-3xl"
-              style={{ backgroundColor: accentColor.glow }}
+              aria-hidden="true"
+              className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[320px] h-[320px] rounded-full blur-3xl opacity-25 pointer-events-none"
+              style={{ backgroundColor: accentColor.primary }}
             />
 
-            <div className="relative mb-8 sm:mb-10 z-10">
-              {/* Timer Ring */}
-              <div className="relative">
-                <svg className="w-36 h-36 sm:w-44 sm:h-44 timer-circle" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="45" stroke="rgba(255,255,255,0.1)" />
-                  <circle
-                    cx="50" cy="50" r="45"
-                    stroke={timeLeft >= 30 ? '#22C55E' : accentColor.primary}
-                    strokeDasharray={`${Math.min(timeLeft / 30, 1) * 283} 283`}
-                    className="transition-all duration-300"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className={`text-4xl sm:text-5xl font-bold ${timeLeft >= 30 ? 'text-green-400' : 'text-white'}`}>
-                    {formatTime(timeLeft)}
-                  </span>
-                </div>
+            {/* Hero record button with pulse rings */}
+            <div className="relative mb-10 z-10">
+              {/* Timer ring */}
+              <svg className="w-40 h-40 sm:w-48 sm:h-48 timer-circle" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" stroke="rgba(255,255,255,0.08)" />
+                <circle
+                  cx="50" cy="50" r="45"
+                  stroke={timeLeft >= 30 ? '#22C55E' : accentColor.primary}
+                  strokeDasharray={`${Math.min(timeLeft / 30, 1) * 283} 283`}
+                  className="transition-all duration-300"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className={`text-4xl sm:text-5xl font-bold tabular-nums ${timeLeft >= 30 ? 'text-green-400' : 'text-white'}`}>
+                  {formatTime(timeLeft)}
+                </span>
               </div>
             </div>
 
-            {/* Voice Visualizer */}
-            <div className="flex items-center justify-center gap-1.5 h-12 mb-6 relative z-10">
+            {/* Voice bars */}
+            <div className="flex items-center justify-center gap-1.5 h-12 mb-5 relative z-10">
               {[1,2,3,4,5,4,3,2,1].map((h, i) => (
                 <div
                   key={i}
-                  className="w-1 rounded-full animate-pulse"
+                  className="w-1 rounded-full motion-safe:animate-pulse"
                   style={{
                     height: `${h * 8}px`,
                     backgroundColor: accentColor.primary,
@@ -1101,95 +1206,122 @@ function TalkContent() {
             </div>
 
             {selectedTopic ? (
-              <>
-                <p className="text-white/80 mb-2 text-base sm:text-lg font-medium relative z-10">
+              <div className="relative z-10 text-center">
+                <p className="text-white/80 mb-1.5 text-base sm:text-lg font-medium">
                   {language === 'ko' ? selectedTopic.titleKo : selectedTopic.titleEn}
                 </p>
-                <p className="text-sm sm:text-base mb-2 relative z-10 font-mono" style={{ color: accentColor.primary }}>
+                <p className="text-sm sm:text-base mb-1.5 font-mono" style={{ color: accentColor.primary }}>
                   &ldquo;{selectedTopic.starterHint}&rdquo;
                 </p>
-                <p className="text-white/40 text-xs sm:text-sm mb-8 relative z-10">
+                <p className="text-white/40 text-xs sm:text-sm mb-8">
                   {language === 'ko' ? '이 힌트로 시작해보세요!' : 'Try starting with this hint!'}
                 </p>
-              </>
+              </div>
             ) : timeLeft < 30 ? (
-              <>
-                <p className="text-white/80 mb-2 text-base sm:text-lg font-medium relative z-10">{t.speakFreely}</p>
-                <p className="text-white/40 text-xs sm:text-sm mb-8 relative z-10">{t.keepGoing30}</p>
-              </>
+              <div className="relative z-10 text-center mb-8">
+                <p className="text-white/80 mb-1 text-base sm:text-lg font-medium">{t.speakFreely}</p>
+                <p className="text-white/40 text-xs sm:text-sm">{t.keepGoing30}</p>
+              </div>
             ) : (
-              <>
-                <p className="text-green-400 mb-2 text-base sm:text-lg font-semibold relative z-10">{t.greatKeepGoing}</p>
-                <p className="text-white/40 text-xs sm:text-sm mb-8 relative z-10">{t.moreYouShare}</p>
-              </>
+              <div className="relative z-10 text-center mb-8">
+                <p className="text-green-400 mb-1 text-base sm:text-lg font-semibold">{t.greatKeepGoing}</p>
+                <p className="text-white/40 text-xs sm:text-sm">{t.moreYouShare}</p>
+              </div>
             )}
 
             <button
               onClick={() => stopRecording()}
-              className="relative z-10 px-8 py-4 rounded-2xl font-semibold transition-all bg-green-500 text-white hover:bg-green-400 shadow-lg shadow-green-500/30 hover:shadow-green-500/40 hover:-translate-y-0.5 text-base"
+              className="pressable relative z-10 px-8 py-4 rounded-2xl font-semibold transition-all bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/40 hover:-translate-y-0.5 text-base"
             >
               {t.doneSpeaking} ({formatTime(timeLeft)})
             </button>
           </div>
         )}
 
-        {/* ========== INTERVIEW PHASE - Premium Dark UI ========== */}
+        {/* ========== INTERVIEW PHASE ========== */}
         {phase === 'interview' && (
-          <div className="motion-safe:animate-scale-in flex-1 flex flex-col">
-            {/* Ambient Background Glow */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="motion-safe:animate-ds-scale-in flex-1 flex flex-col">
+            {/* Ambient radial glow shifts with state */}
+            <div aria-hidden="true" className="absolute inset-0 overflow-hidden pointer-events-none">
               <div
-                className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[400px] h-[400px] rounded-full opacity-20"
+                className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[400px] h-[400px] rounded-full opacity-15 transition-all duration-700"
                 style={{
                   background: `radial-gradient(circle, ${
-                    isRecordingReply ? 'rgba(239,68,68,0.4)' :
-                    isPlaying ? accentColor.glow.replace('0.2)', '0.4)') :
+                    isRecordingReply ? 'rgba(239,68,68,0.6)' :
+                    isPlaying ? accentColor.glow.replace('0.2)', '0.5)') :
                     accentColor.glow
                   } 0%, transparent 70%)`,
-                  transition: 'background 0.5s ease',
                 }}
               />
             </div>
 
             <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 relative z-10">
-              {/* Tutor Avatar with Status */}
-              <TutorAvatarLarge
-                tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
-                speaking={isPlaying}
-                mouthOpen={0}
-                status={
-                  isPlaying ? 'speaking' :
-                  isProcessing ? 'thinking' :
-                  isRecordingReply ? 'listening' : 'idle'
-                }
-              />
+              {/* ── Tutor avatar: elevated presence, speaking-state pulse ring ── */}
+              <div className="relative mb-6">
+                {/* Pulse rings when speaking */}
+                {isPlaying && (
+                  <>
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-0 rounded-full motion-safe:animate-pulse-ring-recording"
+                      style={{ backgroundColor: accentColor.primary, opacity: 0.35, transform: 'scale(1.18)' }}
+                    />
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-0 rounded-full motion-safe:animate-pulse-ring-recording"
+                      style={{ backgroundColor: accentColor.primary, opacity: 0.2, transform: 'scale(1.36)', animationDelay: '0.55s' }}
+                    />
+                  </>
+                )}
+                <TutorAvatarLarge
+                  tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
+                  speaking={isPlaying}
+                  mouthOpen={0}
+                  status={
+                    isPlaying ? 'speaking' :
+                    isProcessing ? 'thinking' :
+                    isRecordingReply ? 'listening' : 'idle'
+                  }
+                />
+              </div>
 
-              <div className="text-center mt-6 mb-8" aria-live="polite" aria-atomic="true">
-                {/* Show transcript toggle button when AI is speaking */}
+              {/* Name + level badges */}
+              <div className="flex items-center gap-2 mb-5">
+                <span className="font-semibold text-white text-sm">{persona.name}</span>
+                <Badge variant="info" size="sm">{persona.nationality ?? 'English'}</Badge>
+                {previousGrade && <Badge variant="default" size="sm">{previousGrade}</Badge>}
+              </div>
+
+              {/* State label area */}
+              <div className="text-center mb-6" aria-live="polite" aria-atomic="true">
+                {/* Streaming transcript panel */}
                 {(streamingText || isPlaying) && (
-                  <div className="mb-4 px-4">
+                  <div className="px-4 mb-2">
                     {showTranscript ? (
-                      <div className="dark:bg-white/5 bg-black/[0.03] backdrop-blur-xl rounded-2xl p-4 border dark:border-white/10 border-black/[0.08] max-w-sm mx-auto">
-                        <p className="dark:text-white/90 text-zinc-900 text-sm sm:text-base leading-relaxed">
+                      <div className="bg-white/[0.05] backdrop-blur-xl rounded-2xl p-4 border border-white/[0.08] max-w-sm mx-auto text-left motion-safe:animate-fade-up">
+                        <p className="text-white/90 text-sm sm:text-base leading-relaxed">
                           {streamingText || messages[messages.length - 1]?.content}
-                          {streamingText && <span className="inline-block w-1.5 h-4 ml-0.5 animate-pulse" style={{ backgroundColor: accentColor.primary }} />}
+                          {streamingText && (
+                            <span
+                              className="inline-block w-1.5 h-4 ml-0.5 motion-safe:animate-pulse rounded-sm"
+                              style={{ backgroundColor: accentColor.primary }}
+                            />
+                          )}
                         </p>
                         <button
                           onClick={() => setShowTranscript(false)}
-                          className="mt-3 text-xs dark:text-white/40 text-zinc-400 dark:hover:text-white/60 hover:text-zinc-600 transition-colors"
+                          className="mt-3 text-xs text-white/40 hover:text-white/60 transition-colors flex items-center gap-1"
                         >
+                          <EyeOffIcon className="w-3.5 h-3.5" />
                           {language === 'ko' ? '텍스트 숨기기' : 'Hide text'}
                         </button>
                       </div>
                     ) : (
                       <button
                         onClick={() => setShowTranscript(true)}
-                        className="text-xs dark:text-white/40 text-zinc-400 dark:hover:text-white/60 hover:text-zinc-600 flex items-center gap-1.5 mx-auto transition-colors"
+                        className="text-xs text-white/35 hover:text-white/55 flex items-center gap-1.5 mx-auto transition-colors"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
+                        <EyeIcon className="w-3.5 h-3.5" />
                         {language === 'ko' ? '텍스트 보기' : 'Show text'}
                       </button>
                     )}
@@ -1197,54 +1329,61 @@ function TalkContent() {
                 )}
 
                 {ttsLoading && !isPlaying && (
-                  <p className="dark:text-white/50 text-zinc-400 text-sm sm:text-base animate-pulse">
-                    {language === 'ko' ? 'AI 튀터가 준비 중이에요...' : 'Tutor is preparing...'}
+                  <p className="text-white/45 text-sm motion-safe:animate-pulse">
+                    {language === 'ko' ? 'AI 튜터가 준비 중이에요...' : 'Tutor is preparing...'}
                   </p>
                 )}
-                {isPlaying && (
-                  <p className="dark:text-white/70 text-zinc-600 font-medium text-sm sm:text-base">{persona.name}{t.speaking}</p>
+                {isPlaying && !streamingText && (
+                  <p className="text-white/65 font-medium text-sm">{persona.name}{t.speaking}</p>
                 )}
                 {isProcessing && !isPlaying && !streamingText && (
-                  <div className="flex flex-col items-center">
-                    <div className="flex gap-2 mb-3">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="flex gap-1.5">
                       {[1,2,3].map(i => (
-                        <div key={i} className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: accentColor.primary, animationDelay: `${i * 0.15}s` }} />
+                        <div
+                          key={i}
+                          className="w-2 h-2 rounded-full motion-safe:animate-pulse"
+                          style={{ backgroundColor: accentColor.primary, animationDelay: `${i * 0.15}s` }}
+                        />
                       ))}
                     </div>
-                    <p className="dark:text-white/50 text-zinc-400 text-sm sm:text-base">{t.thinking}</p>
+                    <p className="text-white/45 text-sm">{t.thinking}</p>
                   </div>
                 )}
                 {isRecordingReply && (
-                  <div className="flex flex-col items-center">
-                    <div className="flex items-center gap-1 h-10 mb-3">
-                      {[1,2,3,4,5].map((i, idx) => (
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="flex items-center gap-1 h-9">
+                      {[1,2,3,4,5].map((_, idx) => (
                         <div
-                          key={i}
-                          className="w-1 bg-red-500 rounded-full animate-pulse"
+                          key={idx}
+                          className="w-1 bg-red-500 rounded-full motion-safe:animate-pulse"
                           style={{
                             height: `${recordingBarHeights[idx]}px`,
-                            animationDelay: `${i * 0.1}s`,
+                            animationDelay: `${idx * 0.1}s`,
                             animationDuration: '0.4s'
                           }}
                         />
                       ))}
                     </div>
-                    <p className="text-red-400 font-medium text-sm sm:text-base">{t.recordingVoice}</p>
+                    <p className="text-red-400 font-medium text-sm">{t.recordingVoice}</p>
                   </div>
                 )}
                 {!isPlaying && !isProcessing && !isRecordingReply && !streamingText && (
-                  <p className="dark:text-white/40 text-zinc-400 text-sm sm:text-base">{t.tapToSpeak}</p>
+                  <p className="text-white/35 text-sm">{t.tapToSpeak}</p>
                 )}
               </div>
 
               <div ref={messagesEndRef} className="hidden" />
             </div>
 
-            {/* Bottom Control Panel - Premium Glass */}
-            <div className="p-4 sm:p-6 dark:bg-neutral-900/80 bg-neutral-100/90 backdrop-blur-xl border-t dark:border-white/5 border-black/[0.05]" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))' }}>
-              <div className="max-w-lg mx-auto">
+            {/* ── Bottom control panel ──────────────────────────────────────── */}
+            <div
+              className="px-4 sm:px-6 py-4 bg-neutral-900/85 dark:bg-black/50 backdrop-blur-xl border-t border-white/[0.05]"
+              style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))' }}
+            >
+              <div className="max-w-lg mx-auto space-y-3">
                 <div className="flex gap-3">
-                  {/* Replay last tutor message button */}
+                  {/* Replay last tutor message */}
                   {messages.length > 0 && (
                     <button
                       onClick={() => {
@@ -1252,70 +1391,77 @@ function TalkContent() {
                         if (lastAssistant) playTTS(lastAssistant.content);
                       }}
                       disabled={isPlaying || ttsLoading || isRecordingReply || isProcessing}
-                      aria-label={language === 'ko' ? '튀터 메시지 다시 듣기' : 'Replay tutor message'}
-                      className={`px-3 py-4 rounded-2xl flex items-center justify-center transition-all ${
+                      aria-label={language === 'ko' ? '튜터 메시지 다시 듣기' : 'Replay tutor message'}
+                      className={`pressable w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all ${
                         isPlaying || ttsLoading || isRecordingReply || isProcessing
-                          ? 'dark:bg-white/5 bg-black/[0.03] dark:text-white/20 text-zinc-400 cursor-not-allowed'
-                          : 'dark:bg-white/10 bg-black/[0.06] dark:text-white/70 text-zinc-600 dark:hover:bg-white/15 hover:bg-black/[0.08]'
+                          ? 'bg-white/[0.04] text-white/20 cursor-not-allowed'
+                          : 'bg-white/[0.08] text-white/60 hover:bg-white/[0.12] hover:text-white/80'
                       }`}
                     >
                       {ttsLoading ? (
-                        <div className="w-5 h-5 border-2 dark:border-white/30 border-zinc-400 border-t-transparent rounded-full animate-spin" />
+                        <SpinnerIcon className="w-5 h-5 animate-spin" />
                       ) : (
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z" />
-                        </svg>
+                        <PlayIcon className="w-5 h-5" />
                       )}
                     </button>
                   )}
 
-                  {/* Main Record Button */}
+                  {/* Hero mic button — gradient + pulse rings when recording */}
                   <button
                     onClick={recordReply}
                     disabled={isProcessing || isPlaying}
                     aria-label={isRecordingReply ? 'Stop recording' : 'Start recording'}
-                    className={`flex-1 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2.5 transition-all text-base ${
+                    className={`pressable relative flex-1 h-14 rounded-2xl font-semibold flex items-center justify-center gap-2.5 transition-all text-base overflow-hidden ${
                       isRecordingReply
-                        ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 recording-active'
+                        ? 'bg-red-500 text-white shadow-lg shadow-red-500/30'
                         : isProcessing || isPlaying
-                          ? 'dark:bg-white/5 bg-black/[0.03] dark:text-white/30 text-zinc-400 cursor-not-allowed'
-                          : 'text-white shadow-lg hover:-translate-y-0.5'
+                          ? 'bg-white/[0.04] text-white/25 cursor-not-allowed'
+                          : 'bg-brand-gradient text-white shadow-lg shadow-primary-500/35 hover:shadow-primary-500/50 hover:-translate-y-px'
                     }`}
                     style={
                       !isRecordingReply && !(isProcessing || isPlaying)
-                        ? {
-                            backgroundColor: accentColor.primary,
-                            boxShadow: `0 10px 15px -3px ${accentColor.glow}, 0 4px 6px -4px ${accentColor.glow}`,
-                          }
+                        ? { background: `linear-gradient(135deg, ${accentColor.primary} 0%, #7C3AED 100%)` }
                         : undefined
                     }
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                    </svg>
-                    {isRecordingReply ? t.stop : isPlaying ? t.listening : isProcessing ? t.processing : t.reply}
+                    {/* Pulse rings when recording */}
+                    {isRecordingReply && (
+                      <>
+                        <span aria-hidden="true" className="absolute inset-0 rounded-2xl bg-red-500/50 motion-safe:animate-pulse-ring-recording" />
+                        <span aria-hidden="true" className="absolute inset-0 rounded-2xl bg-red-400/30 motion-safe:animate-pulse-ring-recording" style={{ animationDelay: '0.5s' }} />
+                      </>
+                    )}
+                    <span className="relative z-10 flex items-center gap-2">
+                      {isRecordingReply ? (
+                        <StopIcon className="w-5 h-5" />
+                      ) : (
+                        <MicIcon className="w-5 h-5" />
+                      )}
+                      {isRecordingReply ? t.stop : isPlaying ? t.listening : isProcessing ? t.processing : t.reply}
+                    </span>
                   </button>
 
-                  {/* Done Button - always clickable except during recording */}
+                  {/* End session button */}
                   <button
                     onClick={getAnalysis}
                     disabled={isRecordingReply}
-                    className={`px-6 py-4 rounded-2xl font-semibold border transition-all text-base ${
+                    aria-label={t.done}
+                    className={`pressable w-14 h-14 rounded-2xl font-semibold flex items-center justify-center flex-shrink-0 border transition-all text-sm ${
                       isRecordingReply
-                        ? 'dark:bg-white/5 bg-black/[0.03] dark:text-white/30 text-zinc-400 dark:border-white/5 border-black/[0.05] cursor-not-allowed'
+                        ? 'bg-white/[0.04] text-white/20 border-white/[0.04] cursor-not-allowed'
                         : isProcessing || isPlaying
-                          ? 'bg-amber-500/20 text-amber-300 border-amber-400/30 hover:bg-amber-500/30'
-                          : 'dark:bg-white/10 bg-black/[0.06] dark:text-white text-zinc-900 dark:hover:bg-white/15 hover:bg-black/[0.08] dark:border-white/10 border-black/[0.08]'
+                          ? 'bg-amber-500/15 text-amber-300 border-amber-400/25 hover:bg-amber-500/25'
+                          : 'bg-white/[0.08] text-white border-white/[0.08] hover:bg-white/[0.14] hover:border-white/[0.14]'
                     }`}
                   >
                     {t.done}
                   </button>
                 </div>
 
-                {/* Timer */}
-                <div className="flex items-center justify-center gap-2 mt-4">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                  <p className="dark:text-white/40 text-zinc-400 text-sm font-medium tracking-wide">
+                {/* Conversation timer */}
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 motion-safe:animate-pulse" />
+                  <p className="text-white/35 text-xs font-medium tabular-nums tracking-wide">
                     {formatTime(conversationTime)} / {formatTime(maxConversationTime)}
                   </p>
                 </div>
@@ -1326,36 +1472,65 @@ function TalkContent() {
 
         {/* ========== ANALYSIS PHASE ========== */}
         {phase === 'analysis' && (
-          <div className="motion-safe:animate-fade-in-up flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
+          <div className="motion-safe:animate-fade-up flex-1 flex flex-col items-center justify-center p-4 sm:p-8 gap-6">
             <TutorAvatar
               tutorId={tutorId as 'emma' | 'james' | 'charlotte' | 'oliver'}
               size="lg"
             />
-            <h2 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white mb-2 text-center mt-4">{persona.name}{t.analyzing}</h2>
-            <p className="text-neutral-500 dark:text-neutral-400 mb-6 text-sm sm:text-base text-center">{t.analyzingDesc}</p>
-            <div className="flex gap-2">
-              <div className="loading-dot" />
-              <div className="loading-dot" />
-              <div className="loading-dot" />
+            {/* Skeleton placeholders for content-to-come */}
+            <div className="w-full max-w-xs space-y-3">
+              <Skeleton shape="line" width="60%" height={20} className="mx-auto" />
+              <Skeleton shape="line" width="85%" height={16} className="mx-auto" />
+              <Skeleton shape="rect" height={80} />
+              <Skeleton shape="rect" height={80} />
+            </div>
+            <div className="text-center">
+              <h2 className="text-base font-semibold text-neutral-900 dark:text-white mb-1">
+                {persona.name}{t.analyzing}
+              </h2>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t.analyzingDesc}</p>
+              <div className="flex gap-2 justify-center mt-4">
+                <div className="loading-dot" />
+                <div className="loading-dot" />
+                <div className="loading-dot" />
+              </div>
             </div>
           </div>
         )}
 
         {/* ========== REVIEW PHASE ========== */}
         {phase === 'review' && analysis && (
-          <div className="motion-safe:animate-slide-up flex-1 flex flex-col p-4 sm:p-6 dark:bg-[#020617] bg-neutral-50">
-            <div className="text-center mb-4 sm:mb-6">
-              <span className="text-xs sm:text-sm dark:text-slate-500 text-zinc-400">
+          <div className="motion-safe:animate-fade-up flex-1 flex flex-col p-4 sm:p-6 bg-neutral-50 dark:bg-dark-bg">
+            {/* Phase header */}
+            <div className="text-center mb-4 sm:mb-5">
+              <p className="text-xs font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">
                 {correctionLevel <= 2
                   ? (language === 'ko' ? '오늘의 표현' : "Today's Expressions")
-                  : t.correction}{' '}
-                {safeReviewIndex + 1} {t.of} {analysis.corrections.length}
-              </span>
+                  : t.correction}
+                {' '}{safeReviewIndex + 1} / {analysis.corrections.length}
+              </p>
+              {/* Progress pip track */}
+              {analysis.corrections.length > 1 && (
+                <div className="flex items-center justify-center gap-1 mt-2">
+                  {analysis.corrections.map((_, i) => (
+                    <div
+                      key={i}
+                      className={`rounded-full transition-all duration-300 ${
+                        i < safeReviewIndex
+                          ? 'w-2 h-2 bg-emerald-500'
+                          : i === safeReviewIndex
+                            ? 'w-3 h-3 bg-primary-500'
+                            : 'w-2 h-2 bg-neutral-300 dark:bg-neutral-700'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
             {analysis.corrections.length > 0 ? (
               <div className="flex-1 flex flex-col justify-center">
-                <div className="mb-4 sm:mb-6">
+                <div className="mb-4 sm:mb-5 motion-safe:animate-fade-up">
                   <CorrectionCard
                     original={analysis.corrections[safeReviewIndex].original}
                     intended={analysis.corrections[safeReviewIndex].intended}
@@ -1365,7 +1540,6 @@ function TalkContent() {
                     isRepeated={repeatedCategories.has(analysis.corrections[safeReviewIndex].category)}
                     correctionIndex={safeReviewIndex}
                     correctionLevel={correctionLevel}
-
                     isPlaying={isPlaying}
                     onPlayCorrected={() => playTTS(analysis.corrections[safeReviewIndex].corrected, 0.85)}
                     onPlayExplanation={() => {
@@ -1380,36 +1554,41 @@ function TalkContent() {
                   <button
                     onClick={() => playTTS(analysis.corrections[safeReviewIndex].corrected, 0.85)}
                     disabled={isPlaying || ttsLoading}
-                    className="w-12 h-12 sm:w-14 sm:h-14 bg-emerald-500/15 rounded-xl flex items-center justify-center hover:bg-emerald-500/25 transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label={language === 'ko' ? '올바른 표현 듣기' : 'Listen to corrected form'}
+                    className="pressable w-12 h-12 sm:w-14 sm:h-14 bg-emerald-500/12 dark:bg-emerald-500/15 rounded-card flex items-center justify-center hover:bg-emerald-500/22 transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isPlaying || ttsLoading ? (
-                      <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                      <SpinnerIcon className="w-4 h-4 animate-spin text-emerald-500" />
                     ) : (
-                      <svg className="w-6 h-6 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
+                      <PlayIcon className="w-6 h-6 text-emerald-500" />
                     )}
                   </button>
-                  <button onClick={nextReview} className="btn-primary flex-1 text-sm sm:text-base py-3 sm:py-4">
+                  <button
+                    onClick={nextReview}
+                    className="pressable btn-primary flex-1 text-sm sm:text-base py-3 sm:py-3.5 rounded-2xl"
+                  >
                     {currentReviewIndex < analysis.corrections.length - 1 ? t.nextCorrection : t.startShadowing}
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-center">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-green-100 dark:bg-green-500/20 rounded-full flex items-center justify-center mb-4">
-                  <svg className="w-7 h-7 sm:w-8 sm:h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
+              /* No corrections — perfect session */
+              <div className="flex-1 flex flex-col items-center justify-center text-center motion-safe:animate-fade-up">
+                <div className="w-16 h-16 bg-brand-gradient rounded-full flex items-center justify-center mb-4 shadow-float dark:shadow-float-dark motion-safe:animate-gentle-bounce">
+                  <CheckIcon className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white mb-2">{language === 'ko' ? '훌륭해요!' : 'Great job!'}</h3>
-                <p className="text-neutral-600 dark:text-neutral-300 mb-6 text-sm sm:text-base">
+                <h3 className="text-display-2 text-neutral-900 dark:text-white mb-2">
+                  {language === 'ko' ? '훌륭해요!' : 'Great job!'}
+                </h3>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 max-w-xs">
                   {correctionLevel <= 2
                     ? (language === 'ko' ? '오늘은 아주 자연스럽게 대화했어요!' : 'You spoke very naturally today!')
                     : (language === 'ko' ? '주요 교정 사항이 없습니다.' : 'No major corrections needed.')}
                 </p>
-                <button onClick={() => setPhase('summary')} className="btn-primary text-sm sm:text-base">
+                <button
+                  onClick={() => setPhase('summary')}
+                  className="pressable btn-primary"
+                >
                   {t.viewSummary}
                 </button>
               </div>
@@ -1419,40 +1598,48 @@ function TalkContent() {
 
         {/* ========== SHADOWING PHASE ========== */}
         {phase === 'shadowing' && analysis && analysis.corrections.length > 0 && (
-          <div className="flex-1 flex flex-col p-4 sm:p-6">
-            <div className="text-center mb-4 sm:mb-6">
-              <span className="text-xs sm:text-sm text-neutral-500">{t.shadowing} {safeShadowingIndex + 1} {t.of} {analysis.corrections.length}</span>
+          <div className="motion-safe:animate-fade-up flex-1 flex flex-col p-4 sm:p-6">
+            <div className="text-center mb-4 sm:mb-5">
+              <p className="text-xs font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">
+                {t.shadowing} {safeShadowingIndex + 1} / {analysis.corrections.length}
+              </p>
             </div>
 
             <div className="flex-1 flex flex-col justify-center">
-              <div className="card-premium p-4 sm:p-6 mb-4 sm:mb-6 text-center">
-                <p className="text-xs sm:text-sm text-neutral-500 mb-3 sm:mb-4">{t.listenAndRepeat}</p>
-                <p className="text-xl sm:text-2xl font-medium text-neutral-900 dark:text-white dark:text-white mb-4 sm:mb-6">
+              {/* Card: sentence to shadow */}
+              <div className="p-5 sm:p-7 mb-5 rounded-card-lg bg-white/80 dark:bg-white/[0.04] backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.06] shadow-card dark:shadow-card-dark text-center">
+                <p className="text-xs font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-4">
+                  {t.listenAndRepeat}
+                </p>
+                <p className="text-xl sm:text-2xl font-medium text-neutral-900 dark:text-white leading-relaxed mb-6">
                   {analysis.corrections[safeShadowingIndex].corrected}
                 </p>
 
+                {/* Play button — brand gradient, elevated */}
                 <button
                   onClick={() => playTTS(analysis.corrections[safeShadowingIndex].corrected, 0.8)}
                   disabled={isPlaying || ttsLoading}
-                  className="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-primary-100 rounded-full flex items-center justify-center hover:bg-primary-200 transition-colors mb-4 sm:mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label={language === 'ko' ? '문장 듣기' : 'Listen to sentence'}
+                  className="pressable w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-brand-gradient rounded-full flex items-center justify-center shadow-float dark:shadow-float-dark disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-card-hover"
                 >
                   {ttsLoading ? (
-                    <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                    <SpinnerIcon className="w-7 h-7 sm:w-8 sm:h-8 animate-spin text-white" />
                   ) : isPlaying ? (
-                    <div className="flex items-center gap-1 h-8">
+                    <div className="flex items-center gap-1 h-7">
                       {[...Array(5)].map((_, i) => (<div key={i} className="voice-bar" />))}
                     </div>
                   ) : (
-                    <svg className="w-8 h-8 sm:w-10 sm:h-10 text-primary-600" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
+                    <PlayIcon className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
                   )}
                 </button>
 
-                <p className="text-xs sm:text-sm text-neutral-400">{t.practiceAloud}</p>
+                <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-4">{t.practiceAloud}</p>
               </div>
 
-              <button onClick={nextShadowing} className="btn-primary w-full text-sm sm:text-base py-3 sm:py-4">
+              <button
+                onClick={nextShadowing}
+                className="pressable btn-primary w-full text-sm sm:text-base py-3.5 rounded-2xl"
+              >
                 {shadowingIndex < analysis.corrections.length - 1 ? t.nextSentence : t.viewSummary}
               </button>
             </div>
@@ -1461,9 +1648,10 @@ function TalkContent() {
 
         {/* ========== SUMMARY PHASE ========== */}
         {phase === 'summary' && (
-          <div className="motion-safe:animate-fade-in flex-1 flex flex-col">
+          <div className="motion-safe:animate-fade-up flex-1 flex flex-col">
+            {/* XP chip — celebration-adjacent with count-pop */}
             {earnedXP > 0 && (
-              <div className="flex justify-center pt-3">
+              <div className="flex justify-center pt-3 motion-safe:animate-count-pop">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20 text-xs font-semibold text-violet-700 dark:text-violet-300">
                   +{earnedXP} XP
                 </span>
@@ -1511,21 +1699,26 @@ function TalkContent() {
         />
       )}
 
-      {/* Exit Session Confirmation Modal */}
+      {/* ── Exit Session Confirmation Modal ──────────────────────────────── */}
       {showExitConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+        <div
+          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="exit-dialog-title"
+        >
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowExitConfirm(false)}
           />
-          <div className="relative bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden animate-in fade-in zoom-in duration-200">
+          <div className="relative bg-white dark:bg-neutral-900 rounded-card-lg shadow-float dark:shadow-float-dark w-full max-w-xs overflow-hidden motion-safe:animate-ds-scale-in">
             <div className="p-6 text-center">
               <div className="w-14 h-14 mx-auto mb-4 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
-                <svg className="w-7 h-7 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-7 h-7 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-neutral-900 dark:text-white mb-2">
+              <h3 id="exit-dialog-title" className="text-lg font-bold text-neutral-900 dark:text-white mb-2">
                 {t.exitSessionTitle}
               </h3>
               <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6">
@@ -1534,7 +1727,7 @@ function TalkContent() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowExitConfirm(false)}
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-medium text-sm hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                  className="pressable flex-1 py-2.5 px-4 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-medium text-sm hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                 >
                   {t.exitSessionCancel}
                 </button>
@@ -1543,7 +1736,7 @@ function TalkContent() {
                     setShowExitConfirm(false);
                     router.push('/');
                   }}
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-red-500 text-white font-medium text-sm hover:bg-red-600 transition-colors"
+                  className="pressable flex-1 py-2.5 px-4 rounded-xl bg-red-500 text-white font-medium text-sm hover:bg-red-600 transition-colors"
                 >
                   {t.exitSessionConfirm}
                 </button>
@@ -1553,28 +1746,31 @@ function TalkContent() {
         </div>
       )}
 
-      {/* User Info Modal - Birth Year & Name */}
+      {/* ── User Info Modal ───────────────────────────────────────────────── */}
       {showUserInfoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
-          {/* Backdrop */}
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="user-info-title"
+        >
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowUserInfoModal(false)}
           />
 
-          {/* Modal */}
-          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
+          <div className="relative bg-white dark:bg-neutral-900 rounded-card-lg shadow-float dark:shadow-float-dark w-full max-w-sm overflow-hidden motion-safe:animate-ds-scale-in">
             {/* Header */}
-            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-center">
+            <div className="bg-brand-gradient p-6 text-center">
               <div className="w-16 h-16 mx-auto mb-3 bg-white/20 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-white">
+              <h3 id="user-info-title" className="text-xl font-bold text-white">
                 {language === 'ko' ? '학습자 정보' : 'Learner Info'}
               </h3>
-              <p className="text-white/80 text-sm mt-1">
+              <p className="text-white/75 text-sm mt-1">
                 {language === 'ko' ? '나이에 맞는 평가를 위해 입력해주세요' : 'For age-appropriate evaluation'}
               </p>
             </div>
@@ -1591,30 +1787,27 @@ function TalkContent() {
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
                   placeholder={language === 'ko' ? '예: Emma, James' : 'e.g. Emma, James'}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 focus:border-indigo-500 focus:ring-0 transition-colors text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 dark:bg-neutral-800"
+                  className="w-full px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 focus:border-primary-500 focus:outline-none transition-colors text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 bg-white dark:bg-neutral-800"
                 />
               </div>
 
-              {/* Birth Year - 2-Step Selector */}
+              {/* Birth Year — 2-Step Selector */}
               <div>
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   {t.birthYear}
                 </label>
 
                 {selectedDecade === null ? (
-                  /* Step 1: Decade Selection */
                   <>
-                    <p className="text-xs text-neutral-500 mb-2 text-center">
-                      {t.selectDecade}
-                    </p>
+                    <p className="text-xs text-neutral-500 mb-2 text-center">{t.selectDecade}</p>
                     <div className="grid grid-cols-4 gap-2">
                       {[1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020].map((decade) => (
                         <button
                           key={decade}
                           onClick={() => setSelectedDecade(decade)}
-                          className={`py-2.5 rounded-xl text-sm font-medium transition-all ${
+                          className={`pressable py-2.5 rounded-xl text-sm font-medium transition-all ${
                             birthYear !== null && birthYear >= decade && birthYear < decade + 10
-                              ? 'bg-indigo-500 text-white shadow-lg scale-105'
+                              ? 'bg-brand-gradient text-white shadow-card'
                               : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
                           }`}
                         >
@@ -1624,21 +1817,16 @@ function TalkContent() {
                     </div>
                   </>
                 ) : (
-                  /* Step 2: Year Selection within Decade */
                   <>
                     <div className="flex items-center gap-2 mb-2">
                       <button
                         onClick={() => setSelectedDecade(null)}
-                        className="flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                        className="pressable flex items-center gap-1 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 font-medium"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
+                        <BackIcon className="w-4 h-4" />
                         {selectedDecade}s
                       </button>
-                      <span className="text-xs text-neutral-500">
-                        {t.selectYear}
-                      </span>
+                      <span className="text-xs text-neutral-500">{t.selectYear}</span>
                     </div>
                     <div className="grid grid-cols-5 gap-2">
                       {Array.from({ length: 10 }, (_, i) => selectedDecade + i)
@@ -1647,9 +1835,9 @@ function TalkContent() {
                         <button
                           key={year}
                           onClick={() => setBirthYear(year)}
-                          className={`py-2.5 rounded-xl text-sm font-medium transition-all ${
+                          className={`pressable py-2.5 rounded-xl text-sm font-medium transition-all ${
                             birthYear === year
-                              ? 'bg-indigo-500 text-white shadow-lg scale-105'
+                              ? 'bg-brand-gradient text-white shadow-card'
                               : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
                           }`}
                         >
@@ -1674,17 +1862,17 @@ function TalkContent() {
                   setPhase('mode-select');
                 }}
                 disabled={!birthYear}
-                className={`w-full py-4 rounded-xl font-semibold text-white transition-all ${
+                className={`pressable w-full py-4 rounded-xl font-semibold text-white transition-all ${
                   birthYear
-                    ? 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-lg'
-                    : 'bg-neutral-300 cursor-not-allowed'
+                    ? 'bg-brand-gradient shadow-card hover:shadow-card-hover'
+                    : 'bg-neutral-300 dark:bg-neutral-700 cursor-not-allowed'
                 }`}
               >
                 {language === 'ko' ? '시작하기' : 'Start Session'}
               </button>
               <button
                 onClick={() => setShowUserInfoModal(false)}
-                className="w-full py-3 text-neutral-500 hover:text-neutral-700 text-sm"
+                className="pressable w-full py-3 text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 text-sm transition-colors"
               >
                 {language === 'ko' ? '취소' : 'Cancel'}
               </button>
@@ -1699,11 +1887,11 @@ function TalkContent() {
 export default function TalkPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-dark-bg">
-        <div className="flex gap-2">
-          <div className="loading-dot" />
-          <div className="loading-dot" />
-          <div className="loading-dot" />
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-neutral-50 dark:bg-dark-bg">
+        <Skeleton shape="circle" width={80} height={80} />
+        <div className="space-y-2 w-48">
+          <Skeleton shape="line" height={16} />
+          <Skeleton shape="line" width="70%" height={12} className="mx-auto" />
         </div>
       </div>
     }>

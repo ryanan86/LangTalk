@@ -7,6 +7,7 @@ import { useLanguage } from '@/lib/i18n';
 import ScheduleSettings from '@/components/settings/ScheduleSettings';
 import BottomNav from '@/components/BottomNav';
 import { SHOP_ITEMS } from '@/lib/shopItems';
+import { Card } from '@/components/ui';
 
 const ADMIN_EMAILS = ['ryan@nuklabs.com', 'taewoongan@gmail.com'];
 
@@ -77,6 +78,15 @@ const interestOptions = [
   { id: 'art', labelEn: 'Art & Design', labelKo: '예술 & 디자인' },
   { id: 'science', labelEn: 'Science', labelKo: '과학' },
 ];
+
+// ── Chevron icon reused across settings rows ───────────────────────────────────
+function ChevronRight() {
+  return (
+    <svg className="w-4 h-4 text-neutral-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+    </svg>
+  );
+}
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -186,10 +196,8 @@ export default function ProfilePage() {
   };
 
   const handleSave = async () => {
-    // Show warning if schedule has unsaved changes
     if (hasUnsavedSchedule) {
       setShowScheduleWarning(true);
-      // Auto-hide after 5 seconds, tracked via ref for cleanup
       if (scheduleWarningTimeoutRef.current !== null) {
         clearTimeout(scheduleWarningTimeoutRef.current);
       }
@@ -199,7 +207,6 @@ export default function ProfilePage() {
       }, 5000);
       return;
     }
-
     await saveProfile();
   };
 
@@ -239,7 +246,7 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-dark-bg">
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
         <div className="flex gap-2">
           <div className="loading-dot" />
           <div className="loading-dot" />
@@ -250,61 +257,99 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-dark-bg">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
       {/* Header */}
-      <header className="bg-white/80 dark:bg-dark-surface/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800 px-4 sm:px-6 py-4 sticky top-0 z-50">
-        <div className="max-w-3xl mx-auto flex justify-between items-center">
+      <header className="bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl border-b border-black/[0.06] dark:border-white/[0.06] px-4 sm:px-6 py-4 sticky top-0 z-50 safe-top">
+        <div className="max-w-2xl mx-auto flex justify-between items-center">
           <button
             onClick={() => router.push('/')}
-            className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 p-1"
+            className="pressable p-2 -ml-2 text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
+            aria-label="뒤로가기"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">
+          <h1 className="text-base font-semibold text-neutral-900 dark:text-white">
             {language === 'ko' ? '학습 프로필 설정' : 'Learning Profile'}
           </h1>
           <div className="w-8" />
         </div>
       </header>
 
-      <main id="main-content" className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8">
-        {/* Notice */}
-        <div className="p-4 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl">
-          <p className="text-sm text-blue-800 dark:text-blue-300">
+      <main id="main-content" className="max-w-2xl mx-auto px-4 sm:px-6 py-6 space-y-8 motion-safe:animate-fade-up">
+
+        {/* ── Account hero card ─────────────────────────────────────────────── */}
+        {session?.user && (
+          <Card variant="default" padding="md" className="flex items-center gap-4">
+            {session.user.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={session.user.image}
+                alt=""
+                className="w-14 h-14 rounded-full ring-2 ring-violet-500/20 flex-shrink-0"
+              />
+            ) : (
+              <div className="w-14 h-14 rounded-full bg-brand-gradient flex items-center justify-center flex-shrink-0">
+                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z" />
+                </svg>
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-neutral-900 dark:text-white truncate">{session.user.name}</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{session.user.email}</p>
+            </div>
+          </Card>
+        )}
+
+        {/* ── Notice banner ─────────────────────────────────────────────────── */}
+        <div className="flex items-start gap-3 p-4 bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/20 rounded-card">
+          <svg className="w-4 h-4 text-sky-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-sm text-sky-800 dark:text-sky-300">
             {language === 'ko'
               ? '개인화된 맞춤 학습을 위해 계정당 하나의 프로필만 지원합니다.'
               : 'Only one profile per account is supported for personalized learning.'}
           </p>
         </div>
 
-        {/* Profile Type Section */}
+        {/* ── Profile Type Section ──────────────────────────────────────────── */}
         <section>
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
-            {language === 'ko' ? '나는 어떤 사람인가요?' : 'What describes you best?'}
-          </h2>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-            {language === 'ko'
-              ? '선택하신 유형에 맞는 어휘와 상황을 우선 학습합니다.'
-              : 'We\'ll prioritize vocabulary and scenarios relevant to you.'}
-          </p>
+          <div className="mb-4">
+            <h2 className="text-base font-semibold text-neutral-900 dark:text-white mb-1">
+              {language === 'ko' ? '나는 어떤 사람인가요?' : 'What describes you best?'}
+            </h2>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              {language === 'ko'
+                ? '선택하신 유형에 맞는 어휘와 상황을 우선 학습합니다.'
+                : 'We\'ll prioritize vocabulary and scenarios relevant to you.'}
+            </p>
+          </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {profileTypes.map(type => (
               <button
                 key={type.id}
                 onClick={() => setSelectedType(type.id)}
-                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                className={`pressable relative p-4 rounded-card border-2 transition-all text-left ${
                   selectedType === type.id
-                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10'
-                    : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-dark-surface hover:border-neutral-300 dark:hover:border-neutral-600'
+                    ? 'border-violet-500 bg-violet-50 dark:bg-violet-500/10 shadow-card dark:shadow-card-dark'
+                    : 'border-neutral-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] hover:border-neutral-300 dark:hover:border-white/[0.12]'
                 }`}
               >
-                <span className="font-medium text-neutral-900 dark:text-white block text-sm">
+                {selectedType === type.id && (
+                  <span aria-hidden="true" className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-violet-500 flex items-center justify-center motion-safe:animate-ds-scale-in">
+                    <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </span>
+                )}
+                <span className="font-semibold text-neutral-900 dark:text-white block text-sm">
                   {language === 'ko' ? type.labelKo : type.labelEn}
                 </span>
-                <span className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 block">
+                <span className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 block leading-snug">
                   {language === 'ko' ? type.descKo : type.descEn}
                 </span>
               </button>
@@ -312,26 +357,28 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* Interests Section */}
+        {/* ── Interests Section ─────────────────────────────────────────────── */}
         <section>
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
-            {language === 'ko' ? '관심사 선택' : 'Select Your Interests'}
-          </h2>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-            {language === 'ko'
-              ? '대화 주제를 맞춤화하는 데 사용됩니다. (복수 선택 가능)'
-              : 'Used to personalize conversation topics. (Select multiple)'}
-          </p>
+          <div className="mb-4">
+            <h2 className="text-base font-semibold text-neutral-900 dark:text-white mb-1">
+              {language === 'ko' ? '관심사 선택' : 'Select Your Interests'}
+            </h2>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              {language === 'ko'
+                ? '대화 주제를 맞춤화하는 데 사용됩니다. (복수 선택 가능)'
+                : 'Used to personalize conversation topics. (Select multiple)'}
+            </p>
+          </div>
 
           <div className="flex flex-wrap gap-2">
             {interestOptions.map(interest => (
               <button
                 key={interest.id}
                 onClick={() => toggleInterest(interest.id)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`pressable px-4 py-2 rounded-full text-sm font-medium transition-all ${
                   selectedInterests.includes(interest.id)
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-white dark:bg-dark-surface border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
+                    ? 'bg-brand-gradient text-white shadow-glow-sm'
+                    : 'bg-white dark:bg-white/[0.05] border border-neutral-200 dark:border-white/[0.08] text-neutral-700 dark:text-neutral-300 hover:border-violet-300 dark:hover:border-violet-500/40'
                 }`}
               >
                 {language === 'ko' ? interest.labelKo : interest.labelEn}
@@ -340,16 +387,18 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* Custom Context Section */}
+        {/* ── Custom Context Section ────────────────────────────────────────── */}
         <section>
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
-            {language === 'ko' ? '추가 정보 (선택)' : 'Additional Context (Optional)'}
-          </h2>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-            {language === 'ko'
-              ? '더 구체적인 상황이나 목표가 있다면 알려주세요.'
-              : 'Tell us about specific situations or goals you have.'}
-          </p>
+          <div className="mb-4">
+            <h2 className="text-base font-semibold text-neutral-900 dark:text-white mb-1">
+              {language === 'ko' ? '추가 정보 (선택)' : 'Additional Context (Optional)'}
+            </h2>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              {language === 'ko'
+                ? '더 구체적인 상황이나 목표가 있다면 알려주세요.'
+                : 'Tell us about specific situations or goals you have.'}
+            </p>
+          </div>
 
           <textarea
             value={customContext}
@@ -359,39 +408,41 @@ export default function ProfilePage() {
                 ? '예: 미국 회사와 협업 중이며, 화상 회의를 자주 합니다.'
                 : 'e.g., I work with US clients and have frequent video calls.'
             }
-            className="w-full p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-dark-surface text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+            className="w-full p-4 rounded-card border border-neutral-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.04] text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none transition-colors"
             rows={3}
           />
         </section>
 
-        {/* Difficulty Preference */}
+        {/* ── Difficulty Preference ─────────────────────────────────────────── */}
         <section>
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
-            {language === 'ko' ? '학습 난이도' : 'Learning Difficulty'}
-          </h2>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-            {language === 'ko'
-              ? '교정과 피드백의 난이도를 설정합니다.'
-              : 'Set the difficulty level for corrections and feedback.'}
-          </p>
+          <div className="mb-4">
+            <h2 className="text-base font-semibold text-neutral-900 dark:text-white mb-1">
+              {language === 'ko' ? '학습 난이도' : 'Learning Difficulty'}
+            </h2>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              {language === 'ko'
+                ? '교정과 피드백의 난이도를 설정합니다.'
+                : 'Set the difficulty level for corrections and feedback.'}
+            </p>
+          </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { id: 'easy', labelEn: 'Easy', labelKo: '쉬움', descEn: 'Simple corrections, basic vocabulary', descKo: '기본 교정, 쉬운 어휘' },
-              { id: 'medium', labelEn: 'Medium', labelKo: '보통', descEn: 'Balanced corrections and vocabulary', descKo: '균형 잡힌 교정과 어휘' },
-              { id: 'hard', labelEn: 'Hard', labelKo: '어려움', descEn: 'Advanced corrections, rich vocabulary', descKo: '고급 교정, 풍부한 어휘' },
-              { id: 'adaptive', labelEn: 'Adaptive', labelKo: '자동 조절', descEn: 'Adjusts based on your performance', descKo: '성과에 따라 자동 조절' },
+              { id: 'easy', labelEn: 'Easy', labelKo: '쉬움', descEn: 'Simple corrections', descKo: '기본 교정' },
+              { id: 'medium', labelEn: 'Medium', labelKo: '보통', descEn: 'Balanced', descKo: '균형 잡힘' },
+              { id: 'hard', labelEn: 'Hard', labelKo: '어려움', descEn: 'Advanced', descKo: '고급 교정' },
+              { id: 'adaptive', labelEn: 'Adaptive', labelKo: '자동 조절', descEn: 'Auto-adjusts', descKo: '자동 조절' },
             ].map(option => (
               <button
                 key={option.id}
                 onClick={() => setDifficultyPreference(option.id)}
-                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                className={`pressable relative p-4 rounded-card border-2 transition-all text-left ${
                   difficultyPreference === option.id
-                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10'
-                    : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-dark-surface hover:border-neutral-300 dark:hover:border-neutral-600'
+                    ? 'border-violet-500 bg-violet-50 dark:bg-violet-500/10 shadow-card dark:shadow-card-dark'
+                    : 'border-neutral-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] hover:border-neutral-300 dark:hover:border-white/[0.12]'
                 }`}
               >
-                <span className="font-medium text-neutral-900 dark:text-white block text-sm">
+                <span className="font-semibold text-neutral-900 dark:text-white block text-sm">
                   {language === 'ko' ? option.labelKo : option.labelEn}
                 </span>
                 <span className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 block">
@@ -402,18 +453,20 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* Correction Level */}
+        {/* ── Correction Level ──────────────────────────────────────────────── */}
         <section>
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
-            {language === 'ko' ? '교정 방식' : 'Correction Style'}
-          </h2>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-            {language === 'ko'
-              ? '대화 중 교정의 강도를 설정합니다.'
-              : 'Set how actively the tutor corrects your speech.'}
-          </p>
+          <div className="mb-4">
+            <h2 className="text-base font-semibold text-neutral-900 dark:text-white mb-1">
+              {language === 'ko' ? '교정 방식' : 'Correction Style'}
+            </h2>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              {language === 'ko'
+                ? '대화 중 교정의 강도를 설정합니다.'
+                : 'Set how actively the tutor corrects your speech.'}
+            </p>
+          </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {[
               { level: 1, labelEn: 'Just Chat', labelKo: '편하게 대화', descEn: 'No corrections — just natural conversation', descKo: '교정 없이 편하게 대화만' },
               { level: 2, labelEn: 'Gentle Echo', labelKo: '살짝 알려줘', descEn: 'Tutor naturally echoes the correct form', descKo: '올바른 표현을 자연스럽게 반복' },
@@ -423,21 +476,21 @@ export default function ProfilePage() {
               <button
                 key={option.level}
                 onClick={() => setCorrectionLevel(option.level)}
-                className={`w-full p-4 rounded-xl border-2 transition-all text-left flex items-center gap-3 ${
+                className={`pressable w-full p-4 rounded-card border-2 transition-all text-left flex items-center gap-3 ${
                   correctionLevel === option.level
-                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10'
-                    : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-dark-surface hover:border-neutral-300 dark:hover:border-neutral-600'
+                    ? 'border-violet-500 bg-violet-50 dark:bg-violet-500/10 shadow-card dark:shadow-card-dark'
+                    : 'border-neutral-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] hover:border-neutral-300 dark:hover:border-white/[0.12]'
                 }`}
               >
-                <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
+                <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 transition-colors ${
                   correctionLevel === option.level
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300'
+                    ? 'bg-brand-gradient text-white'
+                    : 'bg-neutral-100 dark:bg-white/[0.07] text-neutral-500 dark:text-neutral-400'
                 }`}>
                   {option.level}
                 </span>
                 <div>
-                  <span className="font-medium text-neutral-900 dark:text-white block text-sm">
+                  <span className="font-semibold text-neutral-900 dark:text-white block text-sm">
                     {language === 'ko' ? option.labelKo : option.labelEn}
                   </span>
                   <span className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 block">
@@ -449,8 +502,8 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* Schedule Settings */}
-        <div data-schedule-section className="p-4 bg-white dark:bg-dark-surface rounded-xl border border-neutral-200 dark:border-neutral-700">
+        {/* ── Schedule Settings ─────────────────────────────────────────────── */}
+        <div data-schedule-section className="p-5 bg-white dark:bg-white/[0.03] rounded-card-lg border border-neutral-200 dark:border-white/[0.06]">
           <ScheduleSettings
             language={language as 'ko' | 'en'}
             initialSchedule={schedule}
@@ -459,9 +512,9 @@ export default function ProfilePage() {
           />
         </div>
 
-        {/* Unsaved schedule warning */}
+        {/* ── Unsaved schedule warning ──────────────────────────────────────── */}
         {showScheduleWarning && (
-          <div className="p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 rounded-xl">
+          <div className="p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 rounded-card motion-safe:animate-fade-up">
             <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
               {language === 'ko'
                 ? '알림 스케줄이 아직 저장되지 않았습니다. 위의 "알림 설정 저장" 버튼을 먼저 눌러주세요.'
@@ -471,10 +524,9 @@ export default function ProfilePage() {
               <button
                 onClick={() => {
                   setShowScheduleWarning(false);
-                  // Scroll to schedule section
                   document.querySelector('[data-schedule-section]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }}
-                className="flex-1 py-2 rounded-lg bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 transition-colors"
+                className="pressable flex-1 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 transition-colors"
               >
                 {language === 'ko' ? '스케줄 저장하러 가기' : 'Go Save Schedule'}
               </button>
@@ -483,7 +535,7 @@ export default function ProfilePage() {
                   setShowScheduleWarning(false);
                   saveProfile();
                 }}
-                className="flex-1 py-2 rounded-lg border border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                className="pressable flex-1 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
               >
                 {language === 'ko' ? '프로필만 저장' : 'Save Profile Only'}
               </button>
@@ -491,12 +543,12 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Save Button */}
-        <div className="pt-4 pb-8">
+        {/* ── Save Button ───────────────────────────────────────────────────── */}
+        <div className="pt-2 pb-6">
           <button
             onClick={handleSave}
             disabled={isSaving || !selectedType}
-            className="w-full btn-primary py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="pressable w-full btn-primary py-4 text-base rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSaving
               ? (language === 'ko' ? '저장 중...' : 'Saving...')
@@ -504,22 +556,22 @@ export default function ProfilePage() {
           </button>
 
           {!selectedType && (
-            <p className="text-center text-sm text-neutral-500 dark:text-neutral-400 mt-3">
+            <p className="text-center text-sm text-neutral-400 dark:text-neutral-500 mt-3">
               {language === 'ko' ? '프로필 유형을 선택해주세요.' : 'Please select a profile type.'}
             </p>
           )}
         </div>
 
-        {/* Inventory Section */}
+        {/* ── Inventory Section ─────────────────────────────────────────────── */}
         {inventory.length > 0 && (
-          <section className="border-t border-neutral-200 dark:border-neutral-700 pt-6">
+          <section className="border-t border-neutral-200 dark:border-white/[0.06] pt-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+              <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
                 {language === 'ko' ? '내 아이템' : 'My Items'}
               </h2>
               <a
                 href="/shop"
-                className="text-sm text-primary-500 hover:text-primary-600 transition-colors"
+                className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors"
               >
                 {language === 'ko' ? '상점 가기' : 'Go to Shop'}
               </a>
@@ -529,10 +581,10 @@ export default function ProfilePage() {
                 const item = SHOP_ITEMS.find(s => s.id === inv.itemId);
                 if (!item) return null;
                 return (
-                  <div key={inv.itemId} className="flex items-center gap-3 p-3 bg-white dark:bg-dark-surface rounded-xl border border-neutral-200 dark:border-neutral-700">
-                    <span className="text-2xl">{item.icon}</span>
+                  <div key={inv.itemId} className="flex items-center gap-3 p-3 bg-white dark:bg-white/[0.04] rounded-card border border-neutral-200 dark:border-white/[0.06]">
+                    <span className="text-2xl flex-shrink-0">{item.icon}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
+                      <p className="text-sm font-semibold text-neutral-900 dark:text-white truncate">
                         {language === 'ko' ? item.name.ko : item.name.en}
                       </p>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400">x{inv.quantity}</p>
@@ -544,129 +596,111 @@ export default function ProfilePage() {
           </section>
         )}
 
-        {/* Account Section */}
-        <section className="border-t border-neutral-200 dark:border-neutral-700 pt-6">
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
+        {/* ── Account Section ───────────────────────────────────────────────── */}
+        <section className="border-t border-neutral-200 dark:border-white/[0.06] pt-6 space-y-2.5">
+          <h2 className="text-base font-semibold text-neutral-900 dark:text-white mb-4">
             {language === 'ko' ? '계정' : 'Account'}
           </h2>
 
-          {session?.user && (
-            <div className="flex items-center gap-3 mb-4 p-3 bg-white dark:bg-dark-surface rounded-xl border border-neutral-200 dark:border-neutral-700">
-              {session.user.image && (
-                <img src={session.user.image} alt="" className="w-10 h-10 rounded-full" />
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-neutral-900 dark:text-white text-sm truncate">{session.user.name}</p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{session.user.email}</p>
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-3">
-            {/* Admin Dashboard Button */}
-            {isAdmin && (
-              <button
-                onClick={() => router.push('/admin/users')}
-                className="w-full flex items-center gap-3 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-dark-surface hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-left"
-              >
-                <span className="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-4 h-4 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </span>
-                <div>
-                  <span className="font-medium text-neutral-900 dark:text-white text-sm">
-                    {language === 'ko' ? '관리자 대시보드' : 'Admin Dashboard'}
-                  </span>
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400 block">
-                    {language === 'ko' ? '사용자 관리, 구독 승인' : 'User management, subscription approval'}
-                  </span>
-                </div>
-                <svg className="w-5 h-5 text-neutral-400 ml-auto flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            )}
-
-            {/* Switch Account Button */}
+          {/* Admin Dashboard */}
+          {isAdmin && (
             <button
-              onClick={() => signOut({ callbackUrl: '/login' })}
-              className="w-full flex items-center gap-3 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-dark-surface hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-left"
+              onClick={() => router.push('/admin/users')}
+              className="pressable w-full flex items-center gap-3 p-4 rounded-card bg-white dark:bg-white/[0.03] border border-neutral-200 dark:border-white/[0.06] hover:bg-neutral-50 dark:hover:bg-white/[0.06] transition-colors text-left"
             >
-              <span className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              <span className="w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </span>
-              <div>
-                <span className="font-medium text-neutral-900 dark:text-white text-sm">
-                  {language === 'ko' ? '계정 전환' : 'Switch Account'}
+              <div className="flex-1 min-w-0">
+                <span className="font-semibold text-neutral-900 dark:text-white block text-sm">
+                  {language === 'ko' ? '관리자 대시보드' : 'Admin Dashboard'}
                 </span>
                 <span className="text-xs text-neutral-500 dark:text-neutral-400 block">
-                  {language === 'ko' ? '로그아웃 후 다른 계정으로 로그인' : 'Sign out and log in with another account'}
+                  {language === 'ko' ? '사용자 관리, 구독 승인' : 'User management, subscription approval'}
                 </span>
               </div>
-              <svg className="w-5 h-5 text-neutral-400 ml-auto flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <ChevronRight />
+            </button>
+          )}
+
+          {/* Switch Account */}
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="pressable w-full flex items-center gap-3 p-4 rounded-card bg-white dark:bg-white/[0.03] border border-neutral-200 dark:border-white/[0.06] hover:bg-neutral-50 dark:hover:bg-white/[0.06] transition-colors text-left"
+          >
+            <span className="w-9 h-9 rounded-full bg-sky-100 dark:bg-sky-500/20 flex items-center justify-center flex-shrink-0">
+              <svg className="w-4 h-4 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
               </svg>
-            </button>
-
-            {/* Logout Button */}
-            <button
-              onClick={() => signOut({ callbackUrl: '/' })}
-              className="w-full flex items-center gap-3 p-4 rounded-xl border border-red-200 dark:border-red-500/30 bg-white dark:bg-dark-surface hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors text-left"
-            >
-              <span className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                <svg className="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
+            </span>
+            <div className="flex-1 min-w-0">
+              <span className="font-semibold text-neutral-900 dark:text-white block text-sm">
+                {language === 'ko' ? '계정 전환' : 'Switch Account'}
               </span>
-              <span className="font-medium text-red-600 dark:text-red-400 text-sm">
-                {language === 'ko' ? '로그아웃' : 'Sign Out'}
+              <span className="text-xs text-neutral-500 dark:text-neutral-400 block">
+                {language === 'ko' ? '로그아웃 후 다른 계정으로 로그인' : 'Sign out and log in with another account'}
               </span>
-            </button>
+            </div>
+            <ChevronRight />
+          </button>
 
-            {/* Delete Account Button */}
+          {/* Logout */}
+          <button
+            onClick={() => signOut({ callbackUrl: '/' })}
+            className="pressable w-full flex items-center gap-3 p-4 rounded-card bg-white dark:bg-white/[0.03] border border-red-200 dark:border-red-500/20 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors text-left"
+          >
+            <span className="w-9 h-9 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center flex-shrink-0">
+              <svg className="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </span>
+            <span className="font-semibold text-red-600 dark:text-red-400 text-sm flex-1">
+              {language === 'ko' ? '로그아웃' : 'Sign Out'}
+            </span>
+          </button>
+
+          {/* ── Danger Zone ───────────────────────────────────────────────────── */}
+          <div className="mt-2 pt-2 border-t border-red-100 dark:border-red-500/10">
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="w-full flex items-center gap-3 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-dark-surface hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-left"
+              className="pressable w-full flex items-center gap-3 p-4 rounded-card bg-neutral-50 dark:bg-white/[0.02] border border-neutral-200 dark:border-white/[0.05] hover:bg-red-50 dark:hover:bg-red-500/10 hover:border-red-200 dark:hover:border-red-500/20 transition-all text-left"
             >
-              <span className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center flex-shrink-0">
-                <svg className="w-4 h-4 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-white/[0.06] flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </span>
-              <div>
-                <span className="font-medium text-neutral-600 dark:text-neutral-400 text-sm">
+              <div className="flex-1 min-w-0">
+                <span className="font-semibold text-neutral-600 dark:text-neutral-400 block text-sm">
                   {language === 'ko' ? '계정 삭제' : 'Delete Account'}
                 </span>
                 <span className="text-xs text-neutral-400 dark:text-neutral-500 block">
                   {language === 'ko' ? '모든 데이터가 영구적으로 삭제됩니다' : 'All data will be permanently deleted'}
                 </span>
               </div>
-              <svg className="w-5 h-5 text-neutral-400 ml-auto flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+              <ChevronRight />
             </button>
           </div>
         </section>
 
-        {/* Delete Account Confirmation Modal */}
+        {/* ── Delete Account Confirmation Modal ─────────────────────────────── */}
         {showDeleteConfirm && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white dark:bg-dark-surface rounded-2xl p-6 max-w-sm w-full shadow-xl">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white dark:bg-neutral-900 rounded-card-lg p-6 max-w-sm w-full shadow-float dark:shadow-float-dark border border-neutral-200 dark:border-white/[0.08] motion-safe:animate-ds-scale-in">
               <div className="flex justify-center mb-4">
-                <span className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span className="w-14 h-14 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center">
+                  <svg className="w-7 h-7 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                   </svg>
                 </span>
               </div>
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white text-center mb-2">
+              <h3 className="text-lg font-bold text-neutral-900 dark:text-white text-center mb-2">
                 {language === 'ko' ? '정말 계정을 삭제하시겠습니까?' : 'Delete your account?'}
               </h3>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center mb-6">
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center mb-6 leading-relaxed">
                 {language === 'ko'
                   ? '학습 기록, 교정 내역, 단어장 등 모든 데이터가 영구적으로 삭제되며 복구할 수 없습니다.'
                   : 'All your learning records, corrections, vocabulary, and other data will be permanently deleted and cannot be recovered.'}
@@ -675,7 +709,7 @@ export default function ProfilePage() {
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
                   disabled={isDeleting}
-                  className="flex-1 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                  className="pressable flex-1 py-3 rounded-xl border border-neutral-200 dark:border-white/[0.08] text-neutral-700 dark:text-neutral-300 text-sm font-semibold hover:bg-neutral-50 dark:hover:bg-white/[0.06] transition-colors disabled:opacity-50"
                 >
                   {language === 'ko' ? '취소' : 'Cancel'}
                 </button>
@@ -699,7 +733,7 @@ export default function ProfilePage() {
                     }
                   }}
                   disabled={isDeleting}
-                  className="flex-1 py-3 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                  className="pressable flex-1 py-3 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
                 >
                   {isDeleting
                     ? (language === 'ko' ? '삭제 중...' : 'Deleting...')
@@ -710,6 +744,7 @@ export default function ProfilePage() {
           </div>
         )}
       </main>
+
       {/* Bottom nav spacer */}
       <div className="h-20" style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }} />
       <BottomNav />
