@@ -4,6 +4,7 @@
  */
 
 import type { StudyPlan, StudyStats } from './studyTypes';
+import type { ExamHistoryItem } from './examTypes';
 
 // ============================================
 // Sheet 1: Users - Core user data (1 row per user)
@@ -104,6 +105,9 @@ export interface StatsData {
 
   // 3-month structured study program progress (언어 마스터 OS)
   study?: StudyStats;
+
+  // Exam mode history (OPIc / TOEIC Speaking mock exams)
+  examHistory?: ExamHistoryItem[];
 
   dailyQuestProgress?: {
     questId: string;
