@@ -11,39 +11,47 @@ const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_RES
 
 /**
  * Atomically increment a key and set its TTL on first write.
- * Uses a Lua EVAL so the INCR + EXPIRE are a single round-trip.
+ * Uses the Upstash REST /pipeline endpoint (widely supported, incl. Vercel
+ * Marketplace Redis): INCR + EXPIRE NX in one round-trip. EXPIRE NX only sets
+ * the TTL when the key has none — i.e. on the first hit of each window.
  * Returns the new count, or null on any error (fail-open).
  */
+let lastUpstashError: string | null = null;
+
 async function upstashIncr(key: string, windowSeconds: number): Promise<number | null> {
   if (!UPSTASH_URL || !UPSTASH_TOKEN) return null;
 
-  // EVAL script: INCR the key, then set EXPIRE only when the key is brand-new (count === 1)
-  const script = `
-    local n = redis.call("INCR", KEYS[1])
-    if n == 1 then
-      redis.call("EXPIRE", KEYS[1], ARGV[1])
-    end
-    return n
-  `;
-
   try {
-    const res = await fetch(`${UPSTASH_URL}/eval`, {
+    const res = await fetch(`${UPSTASH_URL}/pipeline`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${UPSTASH_TOKEN}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify([script, 1, key, String(windowSeconds)]),
+      body: JSON.stringify([
+        ['INCR', key],
+        ['EXPIRE', key, String(windowSeconds), 'NX'],
+      ]),
     });
 
     if (!res.ok) {
-      console.warn(`[rateLimit] Upstash EVAL returned ${res.status}, failing open`);
+      const bodySnippet = (await res.text().catch(() => '')).slice(0, 120);
+      lastUpstashError = `HTTP ${res.status}: ${bodySnippet}`;
+      console.warn(`[rateLimit] Upstash pipeline returned ${res.status}, failing open`, bodySnippet);
       return null;
     }
 
-    const json = await res.json() as { result?: number };
-    return typeof json.result === 'number' ? json.result : null;
+    const json = await res.json() as Array<{ result?: number; error?: string }>;
+    const incr = Array.isArray(json) ? json[0] : undefined;
+    if (incr?.error) {
+      lastUpstashError = `redis error: ${incr.error.slice(0, 120)}`;
+      console.warn('[rateLimit] Upstash INCR error, failing open:', incr.error);
+      return null;
+    }
+    lastUpstashError = null;
+    return typeof incr?.result === 'number' ? incr.result : null;
   } catch (err) {
+    lastUpstashError = `fetch: ${err instanceof Error ? err.message.slice(0, 120) : 'unknown'}`;
     console.warn('[rateLimit] Upstash fetch error, failing open:', err);
     return null;
   }
@@ -56,12 +64,17 @@ async function upstashIncr(key: string, windowSeconds: number): Promise<number |
 export async function getRateLimitBackendStatus(): Promise<{
   backend: 'redis' | 'memory';
   redisOk: boolean | null; // null = not configured
+  lastError?: string;      // sanitized upstream error snippet (no secrets)
 }> {
   if (!UPSTASH_URL || !UPSTASH_TOKEN) {
     return { backend: 'memory', redisOk: null };
   }
   const probe = await upstashIncr(`health:probe:${new Date().toISOString().slice(0, 13)}`, 120);
-  return { backend: probe !== null ? 'redis' : 'memory', redisOk: probe !== null };
+  return {
+    backend: probe !== null ? 'redis' : 'memory',
+    redisOk: probe !== null,
+    ...(probe === null && lastUpstashError ? { lastError: lastUpstashError } : {}),
+  };
 }
 
 // ---------------------------------------------------------------------------
