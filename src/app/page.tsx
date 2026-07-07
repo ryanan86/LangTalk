@@ -15,6 +15,7 @@ import QuickActions from '@/components/home/QuickActions';
 import LessonHistory from '@/components/home/LessonHistory';
 import XPBar from '@/components/gamification/XPBar';
 import OnboardingFlow from '@/components/onboarding/OnboardingFlow';
+import StudyModeCard from '@/components/study/StudyModeCard';
 import BottomNav from '@/components/BottomNav';
 import { getTodayQuests } from '@/lib/dailyChallenges';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
@@ -873,6 +874,9 @@ function HomePageContent() {
                   canAccessDebate={canAccessDebate}
                 />
               )}
+
+              {/* Study Mode - 3-month structured program entry point */}
+              {session && isSubscribed && <StudyModeCard />}
 
               {/* Subscription Expiry Info - For active OR expired subscribers */}
               {session && expiryDate && (() => {

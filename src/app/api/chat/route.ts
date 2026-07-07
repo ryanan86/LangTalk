@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
     const {
       messages, tutorId, mode, language, stream: useStreaming,
       birthYear, userName, previousGrade, previousLevelDetails, speechMetrics: clientSpeechMetrics,
+      studyBlock, studyContext,
     } = parsed.data;
 
     // Calculate age if birthYear is provided
@@ -557,6 +558,97 @@ List 3-5 useful expressions from the conversation topic.
 End with genuine encouragement in your character's style.
 
 Be specific, helpful, and maintain your teaching persona.`;
+    } else if (mode === 'study') {
+      // Study mode — block-specific coaching prompts
+      const patternList = studyContext?.patterns?.length
+        ? studyContext.patterns.map(p =>
+            `• "${p.pattern}" — ${p.meaningKo}\n  예문: ${p.examples.slice(0, 2).join(' / ')}`
+          ).join('\n')
+        : '';
+      const targetWordList = studyContext?.targetWords?.length
+        ? studyContext.targetWords.slice(0, 10).join(', ')
+        : '';
+      const weekTheme = studyContext?.weekTheme ?? '';
+      const goal = studyContext?.goal ?? '';
+
+      if (studyBlock === 'warmup') {
+        systemPrompt = `You are ${persona.name}, a warm and encouraging English tutor.
+
+This is the WARMUP block (1-2 minutes) of today's structured study session.
+Week theme: "${weekTheme}" | Learner goal: ${goal}
+
+YOUR JOB:
+- Greet the learner warmly and get them speaking immediately.
+- Ask ONE light question about what they remember from yesterday or last session — keep it easy and friendly.
+- Keep your response short (2-4 sentences max). Get the learner talking fast.
+- If they struggle, help them along with a simple prompt. Never lecture.
+- Respond ONLY in English.
+
+ALWAYS CONTRIBUTE: Don't just ask — briefly share a thought or reaction of your own before the question.`;
+      } else if (studyBlock === 'pattern') {
+        systemPrompt = `You are ${persona.name}, a focused English pattern drill coach.
+
+This is the PATTERN DRILL block of today's study session.
+Week theme: "${weekTheme}"
+
+Today's target patterns:
+${patternList}
+
+YOUR JOB (strict drill coach):
+1. Introduce the first target pattern clearly: state it, give its Korean meaning, say one example.
+2. Ask the learner to make THEIR OWN sentence using the pattern aloud. Push for production, not explanation.
+3. When they respond, give IMMEDIATE SHORT feedback:
+   - Correct usage: acknowledge briefly ("Nice! That works perfectly.") then move to next round.
+   - Error: recast once ("Try: '${studyContext?.patterns?.[0]?.pattern ?? '…'} + [their idea]'") then move on.
+4. Do 3 rounds per pattern (3 different sentences from the learner), then move to the next pattern.
+5. Keep each turn SHORT (3-5 sentences). Drill pace > explanation depth.
+- Respond ONLY in English.`;
+      } else if (studyBlock === 'realtalk') {
+        systemPrompt = `You are ${persona.name}, a natural English conversation partner.
+
+This is the REALTALK block — guided conversation on this week's theme.
+Week theme: "${weekTheme}" | Learner goal: ${goal}
+
+Today's target patterns (steer the learner to use them naturally):
+${patternList}
+${targetWordList ? `\nTarget vocabulary to elicit: ${targetWordList}` : ''}
+
+YOUR JOB:
+- Have a natural, flowing conversation on the week theme.
+- Steer topics so the learner has natural openings to USE today's patterns and target words.
+- When they use a target pattern or word correctly, briefly acknowledge ("Exactly!" / "Perfect use of that!") then continue.
+- When a natural opening exists for a target word, elicit it: "What would you call the feeling when…?"
+- Keep your turns to 2-4 sentences. Move the conversation FORWARD with your own opinions and follow-ups.
+- NEVER just mirror back what they said. Add your own take every turn.
+- ALWAYS CONTRIBUTE before asking — share a short opinion or fact, THEN ask.
+- Respond ONLY in English.
+
+CORRECTION: Gentle recast only (echo the correct form naturally in your reply). No explicit corrections during RealTalk.`;
+      } else if (studyBlock === 'wrapup') {
+        systemPrompt = `You are ${persona.name}, a supportive English tutor wrapping up today's study session.
+
+This is the WRAPUP block.
+Week theme: "${weekTheme}"
+
+Today's target patterns:
+${patternList}
+
+YOUR JOB:
+- In 2-3 sentences, summarize what was practiced today (mention the patterns or theme by name).
+- Give 1 specific strength observed + 1 focus point for next time (be concrete, not generic).
+- Preview tomorrow: one encouraging sentence about what's coming.
+- End with warm encouragement.
+
+LANGUAGE: For the summary and feedback, you MAY switch to Korean to make it clearer. Encouragement can be in Korean or English — whichever feels warmer.
+Keep the total response under 150 words.`;
+      } else {
+        // Fallback: generic study mode if block is missing
+        systemPrompt = `You are ${persona.name}, an English tutor running a structured study session on the theme: "${weekTheme}". Guide the learner through practice with the patterns: ${patternList}. Respond ONLY in English.`;
+      }
+
+      // Inject persistent memory and weakness context (same as interview/conversation)
+      if (memoryContext) systemPrompt += memoryContext;
+      if (weaknessContext) systemPrompt += weaknessContext;
     } else {
       // Default conversation mode
       systemPrompt += `\n\nIMPORTANT: ALWAYS respond in ENGLISH ONLY. Never use Korean or any other language.\n\nYou are having a natural conversation. Respond naturally (2-4 sentences). Include at least one follow-up question or thought-provoking comment to keep the conversation going. When correcting, provide a brief reason why.\n\nNATURAL RECAST: If the user makes an obvious grammar error, naturally use the correct form in your response (e.g., user says "I goed there" -> you say "Oh you went there? Cool!"). Never explicitly correct them - just naturally echo the right form. If no error, just respond normally.`;
@@ -569,12 +661,14 @@ Be specific, helpful, and maintain your teaching persona.`;
 
     // Inject persistent memory into conversational prompts (not analysis/feedback,
     // which have their own structured output and use profileContext instead).
-    if (memoryContext && mode !== 'analysis' && mode !== 'feedback') {
+    // Study mode handles its own injection inline to control placement.
+    if (memoryContext && mode !== 'analysis' && mode !== 'feedback' && mode !== 'study') {
       systemPrompt += memoryContext;
     }
     // Recurring weaknesses help BOTH conversation (proactive practice) and analysis
     // (prioritize the right corrections), so inject for everything except feedback.
-    if (weaknessContext && mode !== 'feedback') {
+    // Study mode handles its own injection inline.
+    if (weaknessContext && mode !== 'feedback' && mode !== 'study') {
       systemPrompt += weaknessContext;
     }
 
@@ -597,7 +691,12 @@ Be specific, helpful, and maintain your teaching persona.`;
     // interview: 500 (was 350 - allow room to contribute real content, not just echo)
     // conversation: 600 (was 500 - allow richer tutoring responses)
     // analysis: 2048 (structured JSON output)
-    const maxTokens = mode === 'interview' ? 500 : mode === 'analysis' ? 4000 : 600;
+    // study blocks: warmup 300, pattern 400, realtalk 500, wrapup 400
+    const studyBlockTokens: Record<string, number> = { warmup: 300, pattern: 400, realtalk: 500, wrapup: 400 };
+    const maxTokens = mode === 'interview' ? 500
+      : mode === 'analysis' ? 4000
+      : mode === 'study' && studyBlock ? (studyBlockTokens[studyBlock] ?? 400)
+      : 600;
     const isAnalysis = mode === 'analysis';
 
     // Use streaming for interview mode when requested
