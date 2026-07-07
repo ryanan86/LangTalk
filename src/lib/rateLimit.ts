@@ -49,6 +49,21 @@ async function upstashIncr(key: string, windowSeconds: number): Promise<number |
   }
 }
 
+/**
+ * Ops health check — reports which backend is active and whether Redis responds.
+ * Never exposes URLs or tokens.
+ */
+export async function getRateLimitBackendStatus(): Promise<{
+  backend: 'redis' | 'memory';
+  redisOk: boolean | null; // null = not configured
+}> {
+  if (!UPSTASH_URL || !UPSTASH_TOKEN) {
+    return { backend: 'memory', redisOk: null };
+  }
+  const probe = await upstashIncr(`health:probe:${new Date().toISOString().slice(0, 13)}`, 120);
+  return { backend: probe !== null ? 'redis' : 'memory', redisOk: probe !== null };
+}
+
 // ---------------------------------------------------------------------------
 // In-memory fallback (per-process — only effective for single-instance deploys)
 // ---------------------------------------------------------------------------
