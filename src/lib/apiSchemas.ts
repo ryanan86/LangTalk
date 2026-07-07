@@ -25,7 +25,7 @@ const correctionCategorySchema = z.enum([
 export const chatBodySchema = z.object({
   messages: z.array(messageSchema).min(1).max(100),
   tutorId: z.string().min(1).max(50),
-  mode: z.enum(['interview', 'analysis', 'feedback']).optional(),
+  mode: z.enum(['interview', 'analysis', 'feedback', 'study']).optional(),
   language: z.string().max(10).default('en'),
   stream: z.boolean().default(false),
   birthYear: z.number().int().min(1920).max(2025).optional(),
@@ -50,6 +50,19 @@ export const chatBodySchema = z.object({
   }).optional().nullable(),
   selectedTopic: z.string().max(200).optional(),
   startMode: z.enum(['free-talk', 'topic-guided', 'tutor-first', 'warmup']).optional(),
+  // Study mode fields
+  studyBlock: z.enum(['warmup', 'pattern', 'realtalk', 'wrapup']).optional(),
+  studyContext: z.object({
+    weekTheme: z.string().max(200),
+    patterns: z.array(z.object({
+      pattern: z.string().max(200),
+      meaningKo: z.string().max(500),
+      examples: z.array(z.string().max(500)),
+    })).max(10),
+    targetWords: z.array(z.string().max(200)).max(50).optional(),
+    dailyMinutes: z.number().int().min(1).max(180),
+    goal: z.string().max(100),
+  }).optional(),
 });
 
 export type ChatBody = z.infer<typeof chatBodySchema>;

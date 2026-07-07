@@ -3,6 +3,8 @@
  * JSON-based structure for efficient storage and retrieval
  */
 
+import type { StudyPlan, StudyStats } from './studyTypes';
+
 // ============================================
 // Sheet 1: Users - Core user data (1 row per user)
 // ============================================
@@ -52,6 +54,9 @@ export interface ProfileData {
   // (continuity is the core of "feels like a real conversation"). Stored in profile
   // JSON so no DB migration is needed.
   memory?: LearnerMemory;
+
+  // 3-month structured study program plan (언어 마스터 OS)
+  study?: StudyPlan;
 }
 
 export interface LearnerMemory {
@@ -96,6 +101,10 @@ export interface StatsData {
   dailyChallengeStreak: number;
   dailyChallengeLastDate?: string;
   weeklyXp: number[];            // Last 7 days XP [Sun..Sat]
+
+  // 3-month structured study program progress (언어 마스터 OS)
+  study?: StudyStats;
+
   dailyQuestProgress?: {
     questId: string;
     progress: number;
