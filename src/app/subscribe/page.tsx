@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import { PLANS, type PlanId } from '@/lib/plans';
 import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
 import { track } from '@/lib/analytics';
@@ -501,6 +502,19 @@ export default function SubscribePage() {
             {error}
           </div>
         )}
+
+        {/* ── Legal notice ─────────────────────────────────────────────────── */}
+        <p className="text-xs text-neutral-500 dark:text-neutral-500 text-center leading-relaxed">
+          구독은 자동 갱신되지 않으며, 결제일로부터 7일 이내 미사용 시 전액 환불됩니다.{' '}
+          <Link href="/terms" className="underline underline-offset-2 hover:text-neutral-700 dark:hover:text-neutral-300">
+            이용약관
+          </Link>{' '}
+          및{' '}
+          <Link href="/support" className="underline underline-offset-2 hover:text-neutral-700 dark:hover:text-neutral-300">
+            환불 안내
+          </Link>{' '}
+          참조.
+        </p>
 
         {/* ── Trust footer ─────────────────────────────────────────────────── */}
         <div className="flex items-center justify-center gap-2 text-xs text-neutral-400 dark:text-neutral-500">

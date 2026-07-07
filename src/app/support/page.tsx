@@ -14,7 +14,7 @@ export default function SupportPage() {
           href="/"
           className="text-blue-600 dark:text-blue-400 hover:underline mb-6 inline-block"
         >
-          {language === 'ko' ? '\u2190 \ud648\uc73c\ub85c' : '\u2190 Back to Home'}
+          {language === 'ko' ? '← 홈으로' : '← Back to Home'}
         </Link>
 
         {/* App Header */}
@@ -24,11 +24,11 @@ export default function SupportPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold">
-              {language === 'ko' ? 'TapTalk \uace0\uac1d\uc9c0\uc6d0' : 'TapTalk Support'}
+              {language === 'ko' ? 'TapTalk 고객지원' : 'TapTalk Support'}
             </h1>
             <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-1">
               {language === 'ko'
-                ? 'AI \uc601\uc5b4 \ud68c\ud654 \uc5f0\uc2b5 \uc571'
+                ? 'AI 영어 회화 연습 앱'
                 : 'AI English Conversation Practice'}
             </p>
           </div>
@@ -36,84 +36,167 @@ export default function SupportPage() {
 
         {language === 'ko' ? (
           <div className="prose prose-neutral max-w-none space-y-6">
+
             {/* Contact Section */}
             <section className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-6">
-              <h2 className="text-xl font-semibold mb-3">\ub3c4\uc6c0\uc774 \ud544\uc694\ud558\uc2e0\uac00\uc694?</h2>
+              <h2 className="text-xl font-semibold mb-3">도움이 필요하신가요?</h2>
               <p>
-                \uc544\ub798 \uc774\uba54\uc77c\ub85c \ubb38\uc758\ud574 \uc8fc\uc138\uc694. \uc601\uc5c5\uc77c \uae30\uc900 24\uc2dc\uac04 \uc774\ub0b4\uc5d0 \ub2f5\ubcc0\ub4dc\ub9bd\ub2c8\ub2e4.
+                아래 이메일로 문의해 주세요. 영업일 기준 24시간 이내에 답변드립니다.
               </p>
               <a
-                href="mailto:support@taptalk.xyz"
+                href="mailto:[고객센터 이메일 기입 필요]"
                 className="inline-block mt-3 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium no-underline"
               >
-                support@taptalk.xyz
+                <span className="font-bold text-amber-200">[고객센터 이메일 기입 필요]</span>
               </a>
               <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-3">
-                \uc751\ub2f5 \uc2dc\uac04: \uc601\uc5c5\uc77c \uae30\uc900 24\uc2dc\uac04 \uc774\ub0b4
+                응답 시간: 영업일 기준 24시간 이내
               </p>
+            </section>
+
+            {/* Refund & Cancellation Section */}
+            <section>
+              <h2 className="text-xl font-semibold mt-8 mb-4">환불 및 해지 안내</h2>
+
+              <div className="bg-neutral-50 dark:bg-neutral-800/50 rounded-lg p-5 space-y-4 text-sm">
+                <div>
+                  <h3 className="font-semibold text-neutral-800 dark:text-neutral-200 mb-1">자동 갱신 없음</h3>
+                  <p className="text-neutral-600 dark:text-neutral-400">
+                    TapTalk의 모든 구독 플랜은 자동으로 갱신되지 않습니다.
+                    구독 기간이 만료되면 서비스 이용이 제한되며, 계속 이용하려면 별도로 재결제하면 됩니다.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-neutral-800 dark:text-neutral-200 mb-1">7일 이내 전액 환불</h3>
+                  <p className="text-neutral-600 dark:text-neutral-400">
+                    결제일로부터 7일 이내이며 서비스를 거의 이용하지 않은 경우, 전액 환불을 받으실 수 있습니다.
+                    환불 신청은 고객센터 이메일로 접수해 주세요.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-neutral-800 dark:text-neutral-200 mb-1">7일 이후 일할 환불</h3>
+                  <p className="text-neutral-600 dark:text-neutral-400">
+                    결제일로부터 7일이 지났거나 서비스를 상당 부분 이용한 경우,
+                    잔여 기간에 대해 일할 계산하여 환불됩니다(콘텐츠산업진흥법 시행령 기준).
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-neutral-800 dark:text-neutral-200 mb-1">환불 처리 방법</h3>
+                  <p className="text-neutral-600 dark:text-neutral-400">
+                    고객센터 이메일로 결제 계정 이메일, 결제 일자, 주문번호, 환불 사유를 기재하여 신청해 주세요.
+                    접수 후 영업일 기준 3일 이내에 처리되며, 실제 환불 반영은 카드사에 따라 추가 영업일이 소요될 수 있습니다.
+                  </p>
+                </div>
+
+                <div className="pt-2">
+                  <Link
+                    href="/terms#제7조"
+                    className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                  >
+                    이용약관 제7조 (청약철회 및 환불) 전문 보기
+                  </Link>
+                </div>
+              </div>
             </section>
 
             {/* FAQ Section */}
             <section>
-              <h2 className="text-xl font-semibold mt-8 mb-4">\uc790\uc8fc \ubb3b\ub294 \uc9c8\ubb38 (FAQ)</h2>
+              <h2 className="text-xl font-semibold mt-8 mb-4">자주 묻는 질문 (FAQ)</h2>
 
               <div className="space-y-6">
                 <div>
-                  <h3 className="font-semibold text-lg mb-2">Q. TapTalk\uc740 \uc5b4\ub5bb\uac8c \uc0ac\uc6a9\ud558\ub098\uc694?</h3>
+                  <h3 className="font-semibold text-lg mb-2">Q. 환불은 어떻게 신청하나요?</h3>
                   <p className="text-neutral-700 dark:text-neutral-300">
-                    \ub85c\uadf8\uc778 \ud6c4 AI \ud29c\ud130\ub97c \uc120\ud0dd\ud558\uace0 \ub300\ud654\ub97c \uc2dc\uc791\ud558\uba74 \ub429\ub2c8\ub2e4.
-                    \ud14d\uc2a4\ud2b8 \ub610\ub294 \uc74c\uc131\uc73c\ub85c \uc601\uc5b4 \ud68c\ud654\ub97c \uc5f0\uc2b5\ud560 \uc218 \uc788\uc73c\uba70,
-                    AI\uac00 \uc2e4\uc2dc\uac04\uc73c\ub85c \ubb38\ubc95\uacfc \ud45c\ud604\uc744 \uad50\uc815\ud574 \uc90d\ub2c8\ub2e4.
+                    고객센터 이메일(<span className="font-bold text-amber-600 dark:text-amber-400">[고객센터 이메일 기입 필요]</span>)로
+                    결제 계정 이메일, 결제 일자, 주문번호, 환불 사유를 기재하여 신청하시면 됩니다.
+                    결제일로부터 7일 이내 미이용(또는 경미한 이용) 시 전액 환불, 이후에는 잔여 기간 일할 계산 환불이 적용됩니다.
+                    접수 후 영업일 기준 3일 이내에 처리됩니다.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-lg mb-2">Q. \uacc4\uc815\uc744 \uc0ad\uc81c\ud558\uace0 \uc2f6\uc5b4\uc694.</h3>
+                  <h3 className="font-semibold text-lg mb-2">Q. 가족 플랜에 구성원을 어떻게 추가하나요?</h3>
                   <p className="text-neutral-700 dark:text-neutral-300">
-                    \uc571 \ub0b4 \ud504\ub85c\ud544 &gt; \uacc4\uc815 \uc124\uc815\uc5d0\uc11c \uacc4\uc815 \uc0ad\uc81c\ub97c \uc9c4\ud589\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.
-                    \ub610\ub294 support@taptalk.xyz\ub85c \uacc4\uc815 \uc0ad\uc81c\ub97c \uc694\uccad\ud574 \uc8fc\uc138\uc694.
-                    \uc0ad\uc81c \ud6c4 30\uc77c \uc774\ub0b4\uc5d0 \ubaa8\ub4e0 \ub370\uc774\ud130\uac00 \uc601\uad6c \uc0ad\uc81c\ub429\ub2c8\ub2e4.
+                    가족 플랜을 구독하신 후, 앱 내 프로필 &gt; 가족 관리 메뉴에서 구성원을 초대할 수 있습니다.
+                    결제자 본인 포함 최대 4인까지 이용 가능하며, 구성원은 각자의 계정으로 로그인하여 독립적으로 학습합니다.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-lg mb-2">Q. \uad6c\ub3c5\uc744 \ud574\uc9c0\ud558\uace0 \uc2f6\uc5b4\uc694.</h3>
+                  <h3 className="font-semibold text-lg mb-2">Q. 7일 무료 체험이 끝나면 어떻게 되나요?</h3>
                   <p className="text-neutral-700 dark:text-neutral-300">
-                    iOS\uc758 \uacbd\uc6b0 \uc124\uc815 &gt; Apple ID &gt; \uad6c\ub3c5\uc5d0\uc11c TapTalk \uad6c\ub3c5\uc744 \ud574\uc9c0\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.
-                    \ud574\uc9c0 \ud6c4\uc5d0\ub3c4 \ud604\uc7ac \uad6c\ub3c5 \uae30\uac04\uc774 \ub05d\ub0a0 \ub54c\uae4c\uc9c0 \uc11c\ube44\uc2a4\ub97c \uc774\uc6a9\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.
+                    무료 체험이 종료되면 자동 과금은 발생하지 않습니다. 서비스 이용이 제한되며,
+                    계속 이용하시려면 구독 페이지에서 원하는 플랜을 선택하여 결제하시면 됩니다.
+                    결제수단 등록 없이 체험이 시작되므로 체험 종료 후 별도 취소 절차가 필요 없습니다.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-lg mb-2">Q. \ub9c8\uc774\ud06c\uac00 \uc791\ub3d9\ud558\uc9c0 \uc54a\uc544\uc694.</h3>
+                  <h3 className="font-semibold text-lg mb-2">Q. TapTalk은 어떻게 사용하나요?</h3>
                   <p className="text-neutral-700 dark:text-neutral-300">
-                    \ube0c\ub77c\uc6b0\uc800 \ub610\ub294 \uc571 \uc124\uc815\uc5d0\uc11c \ub9c8\uc774\ud06c \uad8c\ud55c\uc774 \ud5c8\uc6a9\ub418\uc5b4 \uc788\ub294\uc9c0 \ud655\uc778\ud574 \uc8fc\uc138\uc694.
-                    iOS\uc758 \uacbd\uc6b0 \uc124\uc815 &gt; \uac1c\uc778\uc815\ubcf4 \ubcf4\ud638 &gt; \ub9c8\uc774\ud06c\uc5d0\uc11c TapTalk\uc758 \uc811\uadfc\uc744 \ud5c8\uc6a9\ud574 \uc8fc\uc138\uc694.
-                    \ubb38\uc81c\uac00 \uc9c0\uc18d\ub418\uba74 \uc571\uc744 \uc7ac\uc2dc\uc791\ud558\uac70\ub098 \uae30\uae30\ub97c \uc7ac\ubd80\ud305\ud574 \ubcf4\uc138\uc694.
+                    로그인 후 AI 튜터를 선택하고 대화를 시작하면 됩니다.
+                    텍스트 또는 음성으로 영어 회화를 연습할 수 있으며,
+                    AI가 실시간으로 문법과 표현을 교정해 드립니다.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-lg mb-2">Q. AI \ud29c\ud130\uc758 \uad50\uc815\uc774 \uc815\ud655\ud55c\uac00\uc694?</h3>
+                  <h3 className="font-semibold text-lg mb-2">Q. 계정을 삭제하고 싶어요.</h3>
                   <p className="text-neutral-700 dark:text-neutral-300">
-                    AI \ud29c\ud130\ub294 \ub192\uc740 \uc218\uc900\uc758 \ubb38\ubc95 \ubc0f \ud45c\ud604 \uad50\uc815\uc744 \uc81c\uacf5\ud558\uc9c0\ub9cc,
-                    AI \ud2b9\uc131\uc0c1 100% \uc815\ud655\ud558\uc9c0 \uc54a\uc744 \uc218 \uc788\uc2b5\ub2c8\ub2e4.
-                    \ud559\uc2b5 \ubcf4\uc870 \ub3c4\uad6c\ub85c \ud65c\uc6a9\ud574 \uc8fc\uc138\uc694.
+                    앱 내 프로필 &gt; 계정 설정에서 계정 삭제를 진행할 수 있습니다.
+                    또는 <span className="font-bold text-amber-600 dark:text-amber-400">[고객센터 이메일 기입 필요]</span>로 계정 삭제를 요청해 주세요.
+                    삭제 후 30일 이내에 모든 데이터가 영구 삭제됩니다.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-lg mb-2">Q. \uc624\ud504\ub77c\uc778\uc5d0\uc11c\ub3c4 \uc0ac\uc6a9\ud560 \uc218 \uc788\ub098\uc694?</h3>
+                  <h3 className="font-semibold text-lg mb-2">Q. 마이크가 작동하지 않아요.</h3>
                   <p className="text-neutral-700 dark:text-neutral-300">
-                    TapTalk\uc740 AI \ub300\ud654\ub97c \uc704\ud574 \uc778\ud130\ub137 \uc5f0\uacb0\uc774 \ud544\uc694\ud569\ub2c8\ub2e4.
-                    \uc624\ud504\ub77c\uc778 \uc0c1\ud0dc\uc5d0\uc11c\ub294 \uc774\uc804 \ud559\uc2b5 \uae30\ub85d \ud655\uc778\ub9cc \uac00\ub2a5\ud569\ub2c8\ub2e4.
+                    브라우저 또는 앱 설정에서 마이크 권한이 허용되어 있는지 확인해 주세요.
+                    iOS의 경우 설정 &gt; 개인정보 보호 &gt; 마이크에서 TapTalk의 접근을 허용해 주세요.
+                    문제가 지속되면 앱을 재시작하거나 기기를 재부팅해 보세요.
                   </p>
                 </div>
               </div>
             </section>
+
+            {/* Business Info Section */}
+            <section className="mt-10 pt-6 border-t border-neutral-200 dark:border-neutral-700">
+              <h2 className="text-xl font-semibold mb-4">사업자 정보</h2>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                <div>
+                  <dt className="font-semibold text-neutral-700 dark:text-neutral-300">상호</dt>
+                  <dd className="text-neutral-600 dark:text-neutral-400">주식회사 누크랩스 (NUKLABS Co., Ltd.)</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-neutral-700 dark:text-neutral-300">대표자</dt>
+                  <dd className="font-bold text-amber-600 dark:text-amber-400">[대표자명 확인 필요]</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-neutral-700 dark:text-neutral-300">사업자등록번호</dt>
+                  <dd className="font-bold text-amber-600 dark:text-amber-400">[사업자등록번호 기입 필요]</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-neutral-700 dark:text-neutral-300">통신판매업신고번호</dt>
+                  <dd className="font-bold text-amber-600 dark:text-amber-400">[통신판매업신고번호 기입 필요]</dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="font-semibold text-neutral-700 dark:text-neutral-300">주소</dt>
+                  <dd className="text-neutral-600 dark:text-neutral-400">경기도 화성시 동탄영천로 150, B동 504호</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-neutral-700 dark:text-neutral-300">고객센터</dt>
+                  <dd className="font-bold text-amber-600 dark:text-amber-400">[고객센터 이메일 기입 필요]</dd>
+                </div>
+              </dl>
+            </section>
           </div>
         ) : (
           <div className="prose prose-neutral max-w-none space-y-6">
+
             {/* Contact Section */}
             <section className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-6">
               <h2 className="text-xl font-semibold mb-3">Need Help?</h2>
@@ -121,14 +204,62 @@ export default function SupportPage() {
                 Send us an email and we will get back to you within 24 business hours.
               </p>
               <a
-                href="mailto:support@taptalk.xyz"
+                href="mailto:[고객센터 이메일 기입 필요]"
                 className="inline-block mt-3 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium no-underline"
               >
-                support@taptalk.xyz
+                <span className="font-bold text-amber-200">[Customer support email required]</span>
               </a>
               <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-3">
                 Response time: within 24 business hours
               </p>
+            </section>
+
+            {/* Refund & Cancellation Section */}
+            <section>
+              <h2 className="text-xl font-semibold mt-8 mb-4">Refunds &amp; Cancellation</h2>
+
+              <div className="bg-neutral-50 dark:bg-neutral-800/50 rounded-lg p-5 space-y-4 text-sm">
+                <div>
+                  <h3 className="font-semibold text-neutral-800 dark:text-neutral-200 mb-1">No Auto-Renewal</h3>
+                  <p className="text-neutral-600 dark:text-neutral-400">
+                    All TapTalk subscription plans do not auto-renew.
+                    When your subscription expires, access is restricted until you manually purchase a new plan.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-neutral-800 dark:text-neutral-200 mb-1">Full Refund within 7 Days</h3>
+                  <p className="text-neutral-600 dark:text-neutral-400">
+                    You may request a full refund within 7 days of payment if you have not used or have only
+                    minimally used the Service. Contact customer support to initiate the request.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-neutral-800 dark:text-neutral-200 mb-1">Pro-rata Refund after 7 Days</h3>
+                  <p className="text-neutral-600 dark:text-neutral-400">
+                    After 7 days or after substantial use, refunds are calculated on a pro-rata basis
+                    for the remaining subscription period.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-neutral-800 dark:text-neutral-200 mb-1">How to Request</h3>
+                  <p className="text-neutral-600 dark:text-neutral-400">
+                    Email customer support with your account email, payment date, order number, and reason.
+                    Refunds are processed within 3 business days.
+                  </p>
+                </div>
+
+                <div className="pt-2">
+                  <Link
+                    href="/terms"
+                    className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                  >
+                    View full refund policy in Terms of Service (Section 7)
+                  </Link>
+                </div>
+              </div>
             </section>
 
             {/* FAQ Section */}
@@ -136,6 +267,33 @@ export default function SupportPage() {
               <h2 className="text-xl font-semibold mt-8 mb-4">Frequently Asked Questions (FAQ)</h2>
 
               <div className="space-y-6">
+                <div>
+                  <h3 className="font-semibold text-lg mb-2">Q. How do I request a refund?</h3>
+                  <p className="text-neutral-700 dark:text-neutral-300">
+                    Email customer support with your account email, payment date, order number, and refund reason.
+                    Full refunds are available within 7 days of payment if the Service has not been substantially used.
+                    After 7 days, a pro-rata refund applies. Refunds are processed within 3 business days.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-lg mb-2">Q. How do I add members to a Family Plan?</h3>
+                  <p className="text-neutral-700 dark:text-neutral-300">
+                    After subscribing to a Family Plan, go to Profile &gt; Family Management in the app to invite members.
+                    Up to 4 users (including the plan owner) can use the service.
+                    Each member signs in with their own account and has independent learning records.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-lg mb-2">Q. What happens when my free trial ends?</h3>
+                  <p className="text-neutral-700 dark:text-neutral-300">
+                    When your 7-day free trial ends, no charge is applied automatically. Service access becomes restricted.
+                    To continue, select a paid plan on the subscription page.
+                    No cancellation action is needed since no payment method was registered during the trial.
+                  </p>
+                </div>
+
                 <div>
                   <h3 className="font-semibold text-lg mb-2">Q. How do I use TapTalk?</h3>
                   <p className="text-neutral-700 dark:text-neutral-300">
@@ -149,16 +307,8 @@ export default function SupportPage() {
                   <h3 className="font-semibold text-lg mb-2">Q. How do I delete my account?</h3>
                   <p className="text-neutral-700 dark:text-neutral-300">
                     You can delete your account in the app under Profile &gt; Account Settings.
-                    Alternatively, email support@taptalk.xyz to request account deletion.
+                    Alternatively, email customer support to request account deletion.
                     All data will be permanently deleted within 30 days.
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">Q. How do I cancel my subscription?</h3>
-                  <p className="text-neutral-700 dark:text-neutral-300">
-                    On iOS, go to Settings &gt; Apple ID &gt; Subscriptions to cancel your TapTalk subscription.
-                    You can continue using the service until the end of your current billing period.
                   </p>
                 </div>
 
@@ -170,24 +320,38 @@ export default function SupportPage() {
                     If the issue persists, try restarting the app or rebooting your device.
                   </p>
                 </div>
-
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">Q. Are the AI tutor&apos;s corrections accurate?</h3>
-                  <p className="text-neutral-700 dark:text-neutral-300">
-                    Our AI tutor provides high-quality grammar and expression corrections,
-                    but due to the nature of AI, it may not be 100% accurate.
-                    Please use it as a learning aid.
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">Q. Can I use TapTalk offline?</h3>
-                  <p className="text-neutral-700 dark:text-neutral-300">
-                    TapTalk requires an internet connection for AI conversations.
-                    In offline mode, you can only review your previous learning history.
-                  </p>
-                </div>
               </div>
+            </section>
+
+            {/* Business Info Section */}
+            <section className="mt-10 pt-6 border-t border-neutral-200 dark:border-neutral-700">
+              <h2 className="text-xl font-semibold mb-4">Business Information</h2>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                <div>
+                  <dt className="font-semibold text-neutral-700 dark:text-neutral-300">Company</dt>
+                  <dd className="text-neutral-600 dark:text-neutral-400">NUKLABS Co., Ltd. (주식회사 누크랩스)</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-neutral-700 dark:text-neutral-300">Representative</dt>
+                  <dd className="font-bold text-amber-600 dark:text-amber-400">[Representative name required]</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-neutral-700 dark:text-neutral-300">Business Registration No.</dt>
+                  <dd className="font-bold text-amber-600 dark:text-amber-400">[Business registration number required]</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-neutral-700 dark:text-neutral-300">Mail-Order Sales Report No.</dt>
+                  <dd className="font-bold text-amber-600 dark:text-amber-400">[Mail-order sales report number required]</dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="font-semibold text-neutral-700 dark:text-neutral-300">Address</dt>
+                  <dd className="text-neutral-600 dark:text-neutral-400">150 Dongtanyeongcheon-ro, B-dong 504, Hwaseong-si, Gyeonggi-do, Republic of Korea</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-neutral-700 dark:text-neutral-300">Customer Support</dt>
+                  <dd className="font-bold text-amber-600 dark:text-amber-400">[Customer support email required]</dd>
+                </div>
+              </dl>
             </section>
           </div>
         )}
@@ -195,10 +359,10 @@ export default function SupportPage() {
         {/* Footer Links */}
         <div className="mt-12 pt-6 border-t border-neutral-200 dark:border-neutral-700 flex flex-col sm:flex-row gap-4">
           <Link href="/terms" className="text-blue-600 dark:text-blue-400 hover:underline">
-            {language === 'ko' ? '\uc774\uc6a9\uc57d\uad00 \ubcf4\uae30' : 'Terms of Service'}
+            {language === 'ko' ? '이용약관 보기' : 'Terms of Service'}
           </Link>
           <Link href="/privacy" className="text-blue-600 dark:text-blue-400 hover:underline">
-            {language === 'ko' ? '\uac1c\uc778\uc815\ubcf4\ucc98\ub9ac\ubc29\uce68 \ubcf4\uae30' : 'Privacy Policy'}
+            {language === 'ko' ? '개인정보처리방침 보기' : 'Privacy Policy'}
           </Link>
         </div>
       </div>
