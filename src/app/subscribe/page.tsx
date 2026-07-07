@@ -12,6 +12,8 @@ interface SubscriptionInfo {
   status: string;
   expiryDate?: string;
   plan?: string;
+  familyRole?: 'owner' | 'member';
+  familyOwnerEmail?: string;
 }
 
 // ── SVG check icon (no emoji) ──────────────────────────────────────────────────
@@ -32,6 +34,26 @@ function ShieldIcon({ className }: { className?: string }) {
   );
 }
 
+// ── Users icon for family tab ──────────────────────────────────────────────────
+function UsersIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>
+  );
+}
+
+// ── Person icon for personal tab ───────────────────────────────────────────────
+function PersonIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+    </svg>
+  );
+}
+
+type PlanTab = 'personal' | 'family';
+
 export default function SubscribePage() {
   const router = useRouter();
   const { data: session, status: authStatus } = useSession();
@@ -40,6 +62,14 @@ export default function SubscribePage() {
   const [error, setError] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const [checkingStatus, setCheckingStatus] = useState(true);
+
+  // Initialise tab from ?tab=family query param (for CTA links from /family page)
+  const [activeTab, setActiveTab] = useState<PlanTab>(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search).get('tab') === 'family' ? 'family' : 'personal';
+    }
+    return 'personal';
+  });
 
   useEffect(() => {
     if (authStatus === 'unauthenticated') {
@@ -66,6 +96,8 @@ export default function SubscribePage() {
           status: data.status,
           expiryDate: data.expiryDate,
           plan: data.plan,
+          familyRole: data.familyRole,
+          familyOwnerEmail: data.familyOwnerEmail,
         });
       }
     } catch {
@@ -142,6 +174,12 @@ export default function SubscribePage() {
   const yearlyMonthlyPrice = Math.round(PLANS.yearly.price / 12);
   const savingsPercent = Math.round((1 - yearlyMonthlyPrice / monthlyPrice) * 100);
 
+  const familyYearlyMonthlyPrice = Math.round(PLANS['family-yearly'].price / 12);
+  const familyYearlyPerPersonMonthly = Math.round(familyYearlyMonthlyPrice / 4);
+  const familyYearlySavingsPercent = Math.round(
+    (1 - familyYearlyMonthlyPrice / PLANS['family-monthly'].price) * 100
+  );
+
   if (authStatus === 'loading' || checkingStatus) {
     return (
       <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center">
@@ -191,7 +229,7 @@ export default function SubscribePage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <p className={`font-bold text-sm ${isTrial ? 'text-indigo-900 dark:text-indigo-200' : 'text-emerald-900 dark:text-emerald-200'}`}>
-                    {isTrial ? '무료 체험 중' : subscription?.plan === 'yearly' ? '연간 이용권 활성화' : subscription?.plan === 'monthly' ? '월간 이용권 활성화' : '구독 활성화'}
+                    {isTrial ? '무료 체험 중' : subscription?.plan === 'yearly' ? '연간 이용권 활성화' : subscription?.plan === 'monthly' ? '월간 이용권 활성화' : subscription?.plan === 'family-yearly' ? '가족 연간 이용권 활성화' : subscription?.plan === 'family-monthly' ? '가족 월간 이용권 활성화' : '구독 활성화'}
                   </p>
                   {/* D-n badge using the Badge primitive */}
                   <Badge
@@ -226,101 +264,236 @@ export default function SubscribePage() {
           </p>
         </div>
 
+        {/* ── 개인 / 가족 segmented toggle ──────────────────────────────────── */}
+        <div className="flex items-center gap-1 p-1 rounded-2xl bg-neutral-100 dark:bg-white/[0.06]" role="tablist" aria-label="플랜 종류 선택">
+          <button
+            role="tab"
+            aria-selected={activeTab === 'personal'}
+            onClick={() => setActiveTab('personal')}
+            className={`pressable flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === 'personal'
+                ? 'bg-white dark:bg-white/[0.10] text-neutral-900 dark:text-white shadow-card dark:shadow-card-dark'
+                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+            }`}
+          >
+            <PersonIcon className="w-4 h-4 flex-shrink-0" />
+            개인
+          </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'family'}
+            onClick={() => setActiveTab('family')}
+            className={`pressable flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === 'family'
+                ? 'bg-white dark:bg-white/[0.10] text-neutral-900 dark:text-white shadow-card dark:shadow-card-dark'
+                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+            }`}
+          >
+            <UsersIcon className="w-4 h-4 flex-shrink-0" />
+            가족
+          </button>
+        </div>
+
         {/* ── Plan cards ────────────────────────────────────────────────────── */}
-        <div className="space-y-3">
+        {activeTab === 'personal' ? (
+          <div className="space-y-3">
 
-          {/* ── Yearly (featured / 인기) ────────────────────────────────────── */}
-          <button
-            onClick={() => handlePayment('yearly')}
-            disabled={loading}
-            className="pressable w-full text-left p-5 rounded-card-lg border-2 border-violet-500 dark:border-violet-400 bg-white dark:bg-white/[0.04] relative overflow-hidden transition-all hover:shadow-card-hover dark:hover:shadow-card-hover-dark disabled:opacity-50 group"
-            aria-label={`연간 플랜 ${PLANS.yearly.label} 선택`}
-          >
-            {/* subtle gradient wash on hover */}
-            <div aria-hidden="true" className="absolute inset-0 bg-brand-gradient opacity-0 group-hover:opacity-[0.04] transition-opacity duration-300 pointer-events-none" />
+            {/* ── Yearly (featured / 인기) ────────────────────────────────────── */}
+            <button
+              onClick={() => handlePayment('yearly')}
+              disabled={loading}
+              className="pressable w-full text-left p-5 rounded-card-lg border-2 border-violet-500 dark:border-violet-400 bg-white dark:bg-white/[0.04] relative overflow-hidden transition-all hover:shadow-card-hover dark:hover:shadow-card-hover-dark disabled:opacity-50 group"
+              aria-label={`연간 플랜 ${PLANS.yearly.label} 선택`}
+            >
+              {/* subtle gradient wash on hover */}
+              <div aria-hidden="true" className="absolute inset-0 bg-brand-gradient opacity-0 group-hover:opacity-[0.04] transition-opacity duration-300 pointer-events-none" />
 
-            {/* 인기 badge — top right */}
-            <div className="absolute top-0 right-0">
-              <div className="bg-brand-gradient text-white text-[11px] font-bold px-3 py-1 rounded-bl-xl tracking-wide">
-                인기
+              {/* 인기 badge — top right */}
+              <div className="absolute top-0 right-0">
+                <div className="bg-brand-gradient text-white text-[11px] font-bold px-3 py-1 rounded-bl-xl tracking-wide">
+                  인기
+                </div>
               </div>
+
+              <div className="flex items-start justify-between pr-12">
+                <div>
+                  <p className="font-bold text-neutral-900 dark:text-white text-lg leading-tight">{PLANS.yearly.name}</p>
+                  <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-1">
+                    월 {yearlyMonthlyPrice.toLocaleString()}원 (자동 갱신 없음)
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-display-2 font-display font-extrabold text-violet-600 dark:text-violet-400 tabular-nums">
+                    {PLANS.yearly.label}
+                  </p>
+                </div>
+              </div>
+
+              {/* Savings callout */}
+              <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-50 dark:bg-violet-500/15 border border-violet-200 dark:border-violet-500/30">
+                <svg className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm2.5 3a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm6.207.293a1 1 0 00-1.414 0l-6 6a1 1 0 101.414 1.414l6-6a1 1 0 000-1.414zM12.5 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" clipRule="evenodd" />
+                </svg>
+                <span className="text-xs font-bold text-violet-700 dark:text-violet-300">월간 대비 {savingsPercent}% 절약</span>
+              </div>
+
+              {loading && selectedPlan === 'yearly' && (
+                <div className="mt-3 flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm text-violet-500">결제 준비 중...</span>
+                </div>
+              )}
+            </button>
+
+            {/* ── Monthly ─────────────────────────────────────────────────────── */}
+            <button
+              onClick={() => handlePayment('monthly')}
+              disabled={loading}
+              className="pressable w-full text-left p-5 rounded-card-lg border-2 border-neutral-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] hover:border-neutral-300 dark:hover:border-white/[0.12] transition-all disabled:opacity-50"
+              aria-label={`월간 플랜 ${PLANS.monthly.label} 선택`}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-bold text-neutral-900 dark:text-white text-lg leading-tight">{PLANS.monthly.name}</p>
+                  <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-1">매월 자동 갱신 없음</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-display-2 font-display font-extrabold text-neutral-900 dark:text-white tabular-nums">
+                    {PLANS.monthly.label}
+                  </p>
+                </div>
+              </div>
+              {loading && selectedPlan === 'monthly' && (
+                <div className="mt-3 flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm text-violet-500">결제 준비 중...</span>
+                </div>
+              )}
+            </button>
+          </div>
+        ) : (
+          /* ── Family plan cards ──────────────────────────────────────────────── */
+          <div className="space-y-3">
+
+            {/* ── Family value proposition ──────────────────────────────────── */}
+            <div className="p-4 rounded-card bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20">
+              <p className="text-sm font-semibold text-violet-800 dark:text-violet-300 mb-1">최대 4인 · 인당 약 {familyYearlyPerPersonMonthly.toLocaleString()}원/월</p>
+              <p className="text-xs text-violet-700/80 dark:text-violet-400/80">가족 모두 함께 영어를 배우는 가장 경제적인 방법</p>
             </div>
 
-            <div className="flex items-start justify-between pr-12">
-              <div>
-                <p className="font-bold text-neutral-900 dark:text-white text-lg leading-tight">{PLANS.yearly.name}</p>
-                <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-1">
-                  월 {yearlyMonthlyPrice.toLocaleString()}원 (자동 갱신 없음)
-                </p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-display-2 font-display font-extrabold text-violet-600 dark:text-violet-400 tabular-nums">
-                  {PLANS.yearly.label}
-                </p>
-              </div>
-            </div>
+            {/* ── Family Yearly (featured / 인기) ──────────────────────────── */}
+            <button
+              onClick={() => handlePayment('family-yearly')}
+              disabled={loading}
+              className="pressable w-full text-left p-5 rounded-card-lg border-2 border-violet-500 dark:border-violet-400 bg-white dark:bg-white/[0.04] relative overflow-hidden transition-all hover:shadow-card-hover dark:hover:shadow-card-hover-dark disabled:opacity-50 group"
+              aria-label={`가족 연간 플랜 ${PLANS['family-yearly'].label} 선택`}
+            >
+              <div aria-hidden="true" className="absolute inset-0 bg-brand-gradient opacity-0 group-hover:opacity-[0.04] transition-opacity duration-300 pointer-events-none" />
 
-            {/* Savings callout */}
-            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-50 dark:bg-violet-500/15 border border-violet-200 dark:border-violet-500/30">
-              <svg className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm2.5 3a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm6.207.293a1 1 0 00-1.414 0l-6 6a1 1 0 101.414 1.414l6-6a1 1 0 000-1.414zM12.5 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" clipRule="evenodd" />
-              </svg>
-              <span className="text-xs font-bold text-violet-700 dark:text-violet-300">월간 대비 {savingsPercent}% 절약</span>
-            </div>
+              {/* 인기 badge */}
+              <div className="absolute top-0 right-0">
+                <div className="bg-brand-gradient text-white text-[11px] font-bold px-3 py-1 rounded-bl-xl tracking-wide">
+                  인기
+                </div>
+              </div>
 
-            {loading && selectedPlan === 'yearly' && (
-              <div className="mt-3 flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm text-violet-500">결제 준비 중...</span>
+              <div className="flex items-start justify-between pr-12">
+                <div>
+                  <p className="font-bold text-neutral-900 dark:text-white text-lg leading-tight">{PLANS['family-yearly'].name}</p>
+                  <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-1">
+                    월 {familyYearlyMonthlyPrice.toLocaleString()}원 (자동 갱신 없음)
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-display-2 font-display font-extrabold text-violet-600 dark:text-violet-400 tabular-nums">
+                    {PLANS['family-yearly'].label}
+                  </p>
+                </div>
               </div>
-            )}
-          </button>
 
-          {/* ── Monthly ─────────────────────────────────────────────────────── */}
-          <button
-            onClick={() => handlePayment('monthly')}
-            disabled={loading}
-            className="pressable w-full text-left p-5 rounded-card-lg border-2 border-neutral-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] hover:border-neutral-300 dark:hover:border-white/[0.12] transition-all disabled:opacity-50"
-            aria-label={`월간 플랜 ${PLANS.monthly.label} 선택`}
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="font-bold text-neutral-900 dark:text-white text-lg leading-tight">{PLANS.monthly.name}</p>
-                <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-1">매월 자동 갱신 없음</p>
+              {/* Savings callout */}
+              <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-50 dark:bg-violet-500/15 border border-violet-200 dark:border-violet-500/30">
+                <svg className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm2.5 3a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm6.207.293a1 1 0 00-1.414 0l-6 6a1 1 0 101.414 1.414l6-6a1 1 0 000-1.414zM12.5 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" clipRule="evenodd" />
+                </svg>
+                <span className="text-xs font-bold text-violet-700 dark:text-violet-300">월간 대비 {familyYearlySavingsPercent}% 절약</span>
               </div>
-              <div className="text-right shrink-0">
-                <p className="text-display-2 font-display font-extrabold text-neutral-900 dark:text-white tabular-nums">
-                  {PLANS.monthly.label}
-                </p>
-              </div>
-            </div>
-            {loading && selectedPlan === 'monthly' && (
-              <div className="mt-3 flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm text-violet-500">결제 준비 중...</span>
-              </div>
-            )}
-          </button>
-        </div>
 
-        {/* ── Benefits checklist ────────────────────────────────────────────── */}
-        <div className="p-5 rounded-card bg-white dark:bg-white/[0.03] border border-neutral-200 dark:border-white/[0.06] space-y-3">
-          <h3 className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-widest mb-4">포함 기능</h3>
-          {[
-            'AI 튜터와 무제한 회화 연습',
-            '6명의 원어민 AI 튜터',
-            '실시간 교정 및 피드백',
-            '토론 모드 & 복습 시스템',
-            '단어장 자동 생성',
-          ].map((feature) => (
-            <div key={feature} className="flex items-center gap-3">
-              <span className="w-5 h-5 rounded-full bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center flex-shrink-0">
-                <CheckIcon className="w-3 h-3 text-violet-600 dark:text-violet-400" />
-              </span>
-              <span className="text-sm text-neutral-700 dark:text-neutral-300">{feature}</span>
+              {loading && selectedPlan === 'family-yearly' && (
+                <div className="mt-3 flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm text-violet-500">결제 준비 중...</span>
+                </div>
+              )}
+            </button>
+
+            {/* ── Family Monthly ───────────────────────────────────────────── */}
+            <button
+              onClick={() => handlePayment('family-monthly')}
+              disabled={loading}
+              className="pressable w-full text-left p-5 rounded-card-lg border-2 border-neutral-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] hover:border-neutral-300 dark:hover:border-white/[0.12] transition-all disabled:opacity-50"
+              aria-label={`가족 월간 플랜 ${PLANS['family-monthly'].label} 선택`}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-bold text-neutral-900 dark:text-white text-lg leading-tight">{PLANS['family-monthly'].name}</p>
+                  <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-1">매월 자동 갱신 없음</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-display-2 font-display font-extrabold text-neutral-900 dark:text-white tabular-nums">
+                    {PLANS['family-monthly'].label}
+                  </p>
+                </div>
+              </div>
+              {loading && selectedPlan === 'family-monthly' && (
+                <div className="mt-3 flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm text-violet-500">결제 준비 중...</span>
+                </div>
+              )}
+            </button>
+
+            {/* ── Family benefits list ──────────────────────────────────────── */}
+            <div className="p-5 rounded-card bg-white dark:bg-white/[0.03] border border-neutral-200 dark:border-white/[0.06] space-y-3">
+              <h3 className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-widest mb-4">가족 플랜 혜택</h3>
+              {[
+                '부모 대시보드 — 자녀 학습 현황 한눈에 확인',
+                '각자의 개인 플랜과 진도로 맞춤 학습',
+                '한 번의 결제로 최대 4인 동시 이용',
+                'AI 튜터와 무제한 회화 연습',
+                '실시간 교정 및 피드백',
+              ].map((feature) => (
+                <div key={feature} className="flex items-center gap-3">
+                  <span className="w-5 h-5 rounded-full bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center flex-shrink-0">
+                    <CheckIcon className="w-3 h-3 text-violet-600 dark:text-violet-400" />
+                  </span>
+                  <span className="text-sm text-neutral-700 dark:text-neutral-300">{feature}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        )}
+
+        {/* ── Benefits checklist (개인 탭) ──────────────────────────────────── */}
+        {activeTab === 'personal' && (
+          <div className="p-5 rounded-card bg-white dark:bg-white/[0.03] border border-neutral-200 dark:border-white/[0.06] space-y-3">
+            <h3 className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-widest mb-4">포함 기능</h3>
+            {[
+              'AI 튜터와 무제한 회화 연습',
+              '6명의 원어민 AI 튜터',
+              '실시간 교정 및 피드백',
+              '토론 모드 & 복습 시스템',
+              '단어장 자동 생성',
+            ].map((feature) => (
+              <div key={feature} className="flex items-center gap-3">
+                <span className="w-5 h-5 rounded-full bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center flex-shrink-0">
+                  <CheckIcon className="w-3 h-3 text-violet-600 dark:text-violet-400" />
+                </span>
+                <span className="text-sm text-neutral-700 dark:text-neutral-300">{feature}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* ── Error ─────────────────────────────────────────────────────────── */}
         {error && (

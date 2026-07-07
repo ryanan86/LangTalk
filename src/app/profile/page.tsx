@@ -7,7 +7,7 @@ import { useLanguage } from '@/lib/i18n';
 import ScheduleSettings from '@/components/settings/ScheduleSettings';
 import BottomNav from '@/components/BottomNav';
 import { SHOP_ITEMS } from '@/lib/shopItems';
-import { Card } from '@/components/ui';
+import { Card, Badge } from '@/components/ui'; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 const ADMIN_EMAILS = ['ryan@nuklabs.com', 'taewoongan@gmail.com'];
 
@@ -113,6 +113,8 @@ export default function ProfilePage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const scheduleWarningTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [inventory, setInventory] = useState<{ itemId: string; quantity: number; acquiredAt: string }[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [familyRole, setFamilyRole] = useState<'owner' | 'member' | null>(null);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -149,6 +151,17 @@ export default function ProfilePage() {
         if (shopRes.ok) {
           const shopData = await shopRes.json();
           setInventory(shopData.inventory || []);
+        }
+
+        // Fetch family role for the settings row badge
+        try {
+          const subRes = await fetch('/api/check-subscription');
+          if (subRes.ok) {
+            const subData = await subRes.json();
+            setFamilyRole(subData.familyRole ?? null);
+          }
+        } catch {
+          // ignore — badge is cosmetic
         }
       } catch (error) {
         console.error('Failed to load profile:', error);
@@ -601,6 +614,35 @@ export default function ProfilePage() {
           <h2 className="text-base font-semibold text-neutral-900 dark:text-white mb-4">
             {language === 'ko' ? '계정' : 'Account'}
           </h2>
+
+          {/* Family Plan */}
+          <button
+            onClick={() => router.push('/family')}
+            className="pressable w-full flex items-center gap-3 p-4 rounded-card bg-white dark:bg-white/[0.03] border border-neutral-200 dark:border-white/[0.06] hover:bg-neutral-50 dark:hover:bg-white/[0.06] transition-colors text-left"
+          >
+            <span className="w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center flex-shrink-0">
+              <svg className="w-4 h-4 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-neutral-900 dark:text-white block text-sm">
+                  {language === 'ko' ? '가족 플랜' : 'Family Plan'}
+                </span>
+                {familyRole === 'owner' && (
+                  <Badge variant="info" size="sm">운영 중</Badge>
+                )}
+                {familyRole === 'member' && (
+                  <Badge variant="success" size="sm">참여 중</Badge>
+                )}
+              </div>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400 block">
+                {language === 'ko' ? '가족 구성원 관리 및 학습 현황' : 'Manage family members and learning progress'}
+              </span>
+            </div>
+            <ChevronRight />
+          </button>
 
           {/* Admin Dashboard */}
           {isAdmin && (

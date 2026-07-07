@@ -14,10 +14,15 @@ export interface SubscriptionData {
   expiryDate: string;
   signupDate: string;
   name: string;
-  plan?: 'free' | 'beta' | 'premium' | 'monthly' | 'yearly' | 'trial';
+  plan?: 'free' | 'beta' | 'premium' | 'monthly' | 'yearly' | 'trial' | 'family-monthly' | 'family-yearly';
   paymentKey?: string;
   orderId?: string;
   startedAt?: string;
+  // Family plan linkage (JSONB-only, no migration):
+  // owner: familyMembers = linked member emails (max 3, excluding owner)
+  // member: familyOwnerEmail = payer's email; access inherits owner's subscription live
+  familyMembers?: string[];
+  familyOwnerEmail?: string;
 }
 
 export interface ProfileData {
