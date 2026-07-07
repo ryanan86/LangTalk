@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n';
+import { track } from '@/lib/analytics';
 import { moderator, debaters } from '@/lib/debatePersonas';
 import {
   DebatePhase,
@@ -296,6 +297,7 @@ function DebateContent() {
     turnIndexRef.current = 0;
     setTurnIndex(0);
     setPhase('opening');
+    track('debate_start', { team: userTeam });
 
     // Start first turn
     setTimeout(() => executeTurn(turns, 0, participants), 500);

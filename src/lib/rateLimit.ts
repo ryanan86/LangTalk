@@ -1,8 +1,59 @@
 import { NextResponse } from 'next/server';
 
-// NOTE: This in-memory rate limiter is per-process only.
+// ---------------------------------------------------------------------------
+// Upstash Redis REST backend (durable across serverless instances)
+// Falls back to in-memory Map when env vars are absent.
+// ---------------------------------------------------------------------------
+
+const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL;
+const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+/**
+ * Atomically increment a key and set its TTL on first write.
+ * Uses a Lua EVAL so the INCR + EXPIRE are a single round-trip.
+ * Returns the new count, or null on any error (fail-open).
+ */
+async function upstashIncr(key: string, windowSeconds: number): Promise<number | null> {
+  if (!UPSTASH_URL || !UPSTASH_TOKEN) return null;
+
+  // EVAL script: INCR the key, then set EXPIRE only when the key is brand-new (count === 1)
+  const script = `
+    local n = redis.call("INCR", KEYS[1])
+    if n == 1 then
+      redis.call("EXPIRE", KEYS[1], ARGV[1])
+    end
+    return n
+  `;
+
+  try {
+    const res = await fetch(`${UPSTASH_URL}/eval`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${UPSTASH_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify([script, 1, key, String(windowSeconds)]),
+    });
+
+    if (!res.ok) {
+      console.warn(`[rateLimit] Upstash EVAL returned ${res.status}, failing open`);
+      return null;
+    }
+
+    const json = await res.json() as { result?: number };
+    return typeof json.result === 'number' ? json.result : null;
+  } catch (err) {
+    console.warn('[rateLimit] Upstash fetch error, failing open:', err);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// In-memory fallback (per-process — only effective for single-instance deploys)
+// ---------------------------------------------------------------------------
+
+// NOTE: When Upstash env vars are not set this in-memory store is used.
 // In serverless environments (Vercel), each function instance has its own store.
-// For production, replace with a distributed store (e.g., Upstash Redis).
 interface RateLimitEntry {
   count: number;
   resetAt: number;
@@ -47,19 +98,50 @@ export const RATE_LIMITS = {
 /**
  * Check rate limit for a given identifier (usually user email or IP).
  * Returns null if allowed, or a NextResponse with 429 if rate limited.
+ *
+ * Uses Upstash Redis REST when UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN
+ * are set (durable across serverless instances). Falls back to in-memory Map.
+ * Upstash errors fail-open (allow the request) with a console.warn.
  */
-export function checkRateLimit(
+export async function checkRateLimit(
   identifier: string,
   config: RateLimitConfig
-): NextResponse | null {
+): Promise<NextResponse | null> {
+  // --- Upstash path ---
+  if (UPSTASH_URL && UPSTASH_TOKEN) {
+    const rlKey = `rl:${identifier}`;
+    const count = await upstashIncr(rlKey, config.windowSeconds);
+
+    if (count === null) {
+      // Upstash error: fail-open
+      return null;
+    }
+
+    if (count > config.limit) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(config.windowSeconds),
+            'X-RateLimit-Limit': String(config.limit),
+            'X-RateLimit-Remaining': '0',
+          },
+        }
+      );
+    }
+
+    return null;
+  }
+
+  // --- In-memory fallback ---
   cleanup();
 
   const now = Date.now();
-  const key = identifier;
-  const entry = store.get(key);
+  const entry = store.get(identifier);
 
   if (!entry || entry.resetAt < now) {
-    store.set(key, { count: 1, resetAt: now + config.windowSeconds * 1000 });
+    store.set(identifier, { count: 1, resetAt: now + config.windowSeconds * 1000 });
     return null;
   }
 

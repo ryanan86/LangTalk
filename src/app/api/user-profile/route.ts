@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     }
 
     // Rate limit
-    const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
+    const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
     if (rateLimitResult) return rateLimitResult;
 
     const email = session.user.email;
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
 
     // Rate limit
     if (session?.user?.email) {
-      const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
+      const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
       if (rateLimitResult) return rateLimitResult;
     }
 

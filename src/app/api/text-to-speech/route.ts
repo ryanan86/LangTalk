@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limit
-    const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.audio);
+    const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.audio);
     if (rateLimitResult) return rateLimitResult;
 
     const { text, voice = 'shimmer', speed, provider: requestedProvider } = await request.json();

@@ -5,6 +5,7 @@ import { useState, useCallback, useEffect } from 'react';
 import TapTalkLogo from '@/components/TapTalkLogo';
 import MicTestStep from './MicTestStep';
 import TutorIntroCarousel from './TutorIntroCarousel';
+import { track } from '@/lib/analytics';
 
 interface OnboardingFlowProps {
   onComplete: () => void;
@@ -169,6 +170,7 @@ export default function OnboardingFlow({ onComplete, language }: OnboardingFlowP
       localStorage.setItem('taptalk-selected-tutor', selectedTutor);
     }
 
+    track('onboarding_complete');
     onComplete();
   };
 

@@ -52,14 +52,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
     }
 
-    const rateLimitResult = checkRateLimit(
+    const rateLimitResult = await checkRateLimit(
       getRateLimitId(session.user.email, request),
       RATE_LIMITS.ai
     );
     if (rateLimitResult) return rateLimitResult;
 
     const rawBody = await request.json() as SaveDayResultRequest;
-    const { result } = rawBody;
+    const { result, monthlyAssessment } = rawBody;
 
     if (!result || !result.date || typeof result.week !== 'number' || typeof result.day !== 'number') {
       return NextResponse.json({ error: '필수 학습 결과 데이터가 누락되었습니다.' }, { status: 400 });
@@ -71,6 +71,10 @@ export async function POST(request: NextRequest) {
     const prev = (userData?.stats?.study as StudyStats | undefined) ?? emptyStudyStats();
     const today = result.date; // YYYY-MM-DD from client
 
+    // Program cadence — used for month-boundary detection.
+    const daysPerWeek = (userData?.profile?.study as { profile?: { studyDaysPerWeek?: number } } | undefined)
+      ?.profile?.studyDaysPerWeek ?? 5;
+
     // Dedup: don't double-count a date already in recentDays
     const alreadyCounted = prev.recentDays.some((d: StudyDayResult) => d.date === today);
 
@@ -78,8 +82,19 @@ export async function POST(request: NextRequest) {
       ? prev.currentStreak
       : computeStreak(prev.currentStreak, prev.lastStudyDate, today);
 
+    const newTotalDays = alreadyCounted ? prev.totalDaysCompleted : prev.totalDaysCompleted + 1;
+
+    // Month boundary = end of weeks 4/8/12 => totalDaysCompleted is a multiple of 4*daysPerWeek.
+    const daysPerMonth = 4 * daysPerWeek;
+    const crossedMonth = !alreadyCounted && newTotalDays > 0 && newTotalDays % daysPerMonth === 0;
+    const monthReached = crossedMonth ? Math.min(3, newTotalDays / daysPerMonth) : null;
+
+    // A monthly assessment result was submitted with this save — record it and clear the pending flag.
+    const appendingAssessment =
+      monthlyAssessment && typeof monthlyAssessment.month === 'number' && typeof monthlyAssessment.cefr === 'string';
+
     const updated: StudyStats = {
-      totalDaysCompleted: alreadyCounted ? prev.totalDaysCompleted : prev.totalDaysCompleted + 1,
+      totalDaysCompleted: newTotalDays,
       currentStreak: newStreak,
       longestStreak: Math.max(prev.longestStreak, newStreak),
       totalSpokenSentences: prev.totalSpokenSentences + (result.spokenSentences ?? 0),
@@ -91,7 +106,17 @@ export async function POST(request: NextRequest) {
             { week: result.week, score: result.weeklyTestScore, date: today },
           ]
         : prev.weeklyTestScores,
-      monthlyAssessments: prev.monthlyAssessments,
+      monthlyAssessments: appendingAssessment
+        ? [
+            ...prev.monthlyAssessments,
+            {
+              month: monthlyAssessment!.month,
+              cefr: monthlyAssessment!.cefr,
+              date: monthlyAssessment!.date || today,
+              summary: monthlyAssessment!.summary,
+            },
+          ]
+        : prev.monthlyAssessments,
       shadowingHistory: result.shadowingAccuracy != null
         ? [
             ...prev.shadowingHistory,
@@ -102,6 +127,10 @@ export async function POST(request: NextRequest) {
         ? prev.recentDays.map((d: StudyDayResult) => d.date === today ? result : d)
         : [...prev.recentDays, result].slice(-MAX_RECENT_DAYS),
       lastStudyDate: alreadyCounted ? prev.lastStudyDate : today,
+      // Set on month boundary; cleared once the assessment result is submitted.
+      pendingMonthlyAssessment: appendingAssessment
+        ? undefined
+        : monthReached ?? prev.pendingMonthlyAssessment,
     };
 
     // XP award — consistent with existing stats.xp pattern
@@ -118,7 +147,14 @@ export async function POST(request: NextRequest) {
 
     timings['total.ms'] = since(t0);
 
-    return NextResponse.json({ studyStats: updated, xpGained: alreadyCounted ? 0 : xpGain, meta: { rid, timings } });
+    return NextResponse.json({
+      stats: updated,
+      studyStats: updated,
+      xpGained: alreadyCounted ? 0 : xpGain,
+      monthlyAssessmentDue: monthReached != null,
+      month: monthReached ?? undefined,
+      meta: { rid, timings },
+    });
   } catch (error) {
     console.error('[study/day] error:', error);
     return NextResponse.json(

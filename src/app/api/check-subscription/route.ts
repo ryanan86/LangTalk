@@ -105,6 +105,12 @@ export async function GET(_request: NextRequest) {
       return nextReview <= today;
     }).length;
 
+    // Only return today's quest progress to keep payload small
+    const todayStr = today.toISOString().slice(0, 10);
+    const todayQuestProgress = (stats.dailyQuestProgress || []).filter(
+      (p) => p.date === todayStr
+    );
+
     return NextResponse.json({
       subscribed: true,
       status: 'active',
@@ -122,6 +128,7 @@ export async function GET(_request: NextRequest) {
       level: stats.level || 1,
       achievements: stats.achievements || [],
       weeklyXp: stats.weeklyXp || [0, 0, 0, 0, 0, 0, 0],
+      dailyQuestProgress: todayQuestProgress,
       profile,
       // Dashboard extras
       dueCorrectionsCount,

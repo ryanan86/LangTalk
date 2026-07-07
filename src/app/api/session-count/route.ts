@@ -9,6 +9,7 @@ import type { GamificationState } from '@/lib/gamification';
 import { getUserData, updateUserFields } from '@/lib/dataHelper';
 import { useSupabase } from '@/lib/dataBackend';
 import { getSessionCount, incrementSessionCount } from '@/lib/supabaseHelper';
+import { getTodayQuests } from '@/lib/dailyChallenges';
 
 export const preferredRegion = 'icn1'; // Seoul — closest to Korean users
 
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
     }
 
     // Rate limit
-    const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
+    const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
     if (rateLimitResult) return rateLimitResult;
 
     const email = session.user.email;
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limit
-    const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
+    const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
     if (rateLimitResult) return rateLimitResult;
 
     const email = session.user.email;
@@ -126,12 +127,16 @@ export async function POST(request: NextRequest) {
     let levelDetails: { grammar: number; vocabulary: number; fluency: number; comprehension: number } | null = null;
     let tutorId: string | undefined;
     let correctionsCount: number | undefined;
+    let completedQuestIds: string[] = [];
     try {
       const body = await request.json();
       evaluatedGrade = body.evaluatedGrade || null;
       levelDetails = body.levelDetails || null;
       tutorId = body.tutorId;
       correctionsCount = body.correctionsCount;
+      if (Array.isArray(body.completedQuestIds)) {
+        completedQuestIds = body.completedQuestIds.filter((id: unknown) => typeof id === 'string');
+      }
     } catch {
       // No body provided, just increment session count
     }
@@ -244,6 +249,33 @@ export async function POST(request: NextRequest) {
       const streakDays = stats.currentStreak + 1;
       xpEarned += calculateXP('streak_bonus', { streakDays });
 
+      // Quest rewards — award XP for newly-completed quests, deduped by today's date
+      const today = new Date().toISOString().slice(0, 10);
+      const todayQuestSet = getTodayQuests();
+      const existingProgress = (stats.dailyQuestProgress || []).filter(
+        (p) => p.date === today
+      );
+      const alreadyRewardedIds = new Set(
+        existingProgress.filter((p) => p.completed).map((p) => p.questId)
+      );
+      let questXpEarned = 0;
+      const newQuestEntries: typeof existingProgress = [];
+      for (const questId of completedQuestIds) {
+        if (alreadyRewardedIds.has(questId)) continue;
+        const quest = todayQuestSet.quests.find((q) => q.id === questId);
+        if (!quest) continue;
+        questXpEarned += quest.xpReward;
+        newQuestEntries.push({ questId, progress: 1, completed: true, date: today });
+      }
+      xpEarned += questXpEarned;
+
+      // Merge quest progress (keep prior entries for today, append newly completed)
+      const mergedQuestProgress = [
+        ...(stats.dailyQuestProgress || []).filter((p) => p.date !== today),
+        ...existingProgress,
+        ...newQuestEntries,
+      ];
+
       // Check level up
       const totalXP = (stats.xp || 0) + xpEarned;
       const levelCheck = checkLevelUp(stats.xp || 0, xpEarned);
@@ -291,6 +323,7 @@ export async function POST(request: NextRequest) {
           tutorsUsed,
           perfectSessions: gamificationState.perfectSessions,
           weeklyXp,
+          dailyQuestProgress: mergedQuestProgress,
         },
       });
     } catch (gamError) {

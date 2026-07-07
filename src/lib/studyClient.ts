@@ -294,6 +294,24 @@ export async function fetchStudyState(signal?: AbortSignal): Promise<StudyState>
   };
 }
 
+/**
+ * Read the learner's already-assessed CEFR grade from prior talk sessions.
+ * Reuses the existing home-page data source (`/api/check-subscription` exposes
+ * `stats.currentLevel` as `evaluatedGrade`) rather than adding a new endpoint.
+ * Returns null on any failure — placement pre-selection is a soft enhancement.
+ */
+export async function fetchAssessedCEFR(signal?: AbortSignal): Promise<string | null> {
+  try {
+    const res = await fetch('/api/check-subscription', { signal });
+    // 401 still returns JSON; only bail on genuine transport failures.
+    if (!res.ok && res.status !== 401) return null;
+    const data = await res.json();
+    return (data?.evaluatedGrade as string) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Whether today's session is already completed. */
 export function isTodayCompleted(stats: StudyStats | null): boolean {
   if (!stats?.recentDays?.length) return false;

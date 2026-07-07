@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense, useState, useCallback, useEffect } from 'react';
 import TapTalkLogo from '@/components/TapTalkLogo';
 import { useLanguage } from '@/lib/i18n';
+import { track } from '@/lib/analytics';
 
 // Check if running in TapTalk native app (via User-Agent)
 function isNativeApp(): boolean {
@@ -67,6 +68,7 @@ function LoginContent() {
         });
 
         if (signInResult?.ok) {
+          track('sign_up_complete', { method: 'google_native' });
           window.location.href = callbackUrl;
         } else {
           setAuthError(language === 'ko'
@@ -108,6 +110,7 @@ function LoginContent() {
         });
 
         if (signInResult?.ok) {
+          track('sign_up_complete', { method: 'apple_native' });
           window.location.href = callbackUrl;
         } else {
           setAuthError('Apple Sign-In failed. Please try again.');

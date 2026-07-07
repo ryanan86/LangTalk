@@ -100,6 +100,12 @@ export interface StudyStats {
   shadowingHistory: { date: string; accuracy: number }[];  // last 30 entries
   recentDays: StudyDayResult[]; // last 14 day results
   lastStudyDate?: string;
+  /**
+   * Set when a completed day crosses a program month boundary (end of weeks 4/8/12).
+   * Signals the next session's realtalk block to run a CEFR reassessment. Cleared
+   * once the assessment result is saved. Additive/optional — safe to omit.
+   */
+  pendingMonthlyAssessment?: number; // 1 | 2 | 3 (program month)
 }
 
 export const MAX_SHADOWING_HISTORY = 30;
@@ -141,6 +147,21 @@ export interface GeneratePlanResponse {
 
 export interface SaveDayResultRequest {
   result: StudyDayResult;
+  /**
+   * Optional monthly CEFR reassessment outcome, appended to stats.study.monthlyAssessments
+   * and clears stats.study.pendingMonthlyAssessment. Additive — omit for normal days.
+   */
+  monthlyAssessment?: { month: number; cefr: string; date: string; summary?: string };
+}
+
+/** Map a CEFR grade string to the wizard's coarse self-level. Beginner covers A1/A2. */
+export function cefrToSelfLevel(cefr: string | null | undefined): StudyProfile['selfLevel'] | null {
+  if (!cefr) return null;
+  const c = cefr.trim().toUpperCase();
+  if (c.startsWith('PRE-A1') || c === 'A1' || c === 'A2') return 'beginner';
+  if (c === 'B1') return 'intermediate';
+  if (c === 'B2' || c === 'C1' || c === 'C2') return 'advanced';
+  return null;
 }
 
 /** Compute today's (week, day) position from plan start date and completed days. */

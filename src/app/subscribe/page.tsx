@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { PLANS, type PlanId } from '@/lib/plans';
 import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
+import { track } from '@/lib/analytics';
 
 interface SubscriptionInfo {
   status: string;
@@ -26,6 +27,10 @@ export default function SubscribePage() {
       router.push('/login');
     }
   }, [authStatus, router]);
+
+  useEffect(() => {
+    track('paywall_view');
+  }, []);
 
   useEffect(() => {
     if (!session?.user?.email) return;
@@ -54,6 +59,7 @@ export default function SubscribePage() {
     setLoading(true);
     setError(null);
     setSelectedPlan(planId);
+    track('checkout_start', { plan: planId });
 
     let stage = 'init';
     try {

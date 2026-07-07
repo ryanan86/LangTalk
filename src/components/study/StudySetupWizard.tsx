@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import type { StudyProfile, StudyGoal, StudyPlan } from '@/lib/studyTypes';
+import { cefrToSelfLevel } from '@/lib/studyTypes';
+import { track } from '@/lib/analytics';
 import {
   STUDY_GOALS,
   LEVEL_META,
@@ -13,6 +15,8 @@ import {
 interface StudySetupWizardProps {
   /** interests from the user's existing profile, forwarded to plan generation. */
   interests?: string[];
+  /** CEFR grade from prior talk-session analysis, used to pre-select the level step. */
+  assessedCEFR?: string | null;
   onComplete: (plan: StudyPlan) => void;
   onCancel: () => void;
 }
@@ -21,15 +25,25 @@ type WizardStep = 0 | 1 | 2 | 3;
 
 const STEP_TITLES = ['목표 선택', '현재 수준', '하루 학습 시간', '주 학습일'];
 
-export default function StudySetupWizard({ interests, onComplete, onCancel }: StudySetupWizardProps) {
+export default function StudySetupWizard({ interests, assessedCEFR, onComplete, onCancel }: StudySetupWizardProps) {
   const [step, setStep] = useState<WizardStep>(0);
+
+  // Recommended level derived from prior conversation analysis (may be null).
+  const recommendedLevel = cefrToSelfLevel(assessedCEFR);
 
   // Wizard answers
   const [goal, setGoal] = useState<StudyGoal | null>(null);
   const [goalDetail, setGoalDetail] = useState('');
-  const [selfLevel, setSelfLevel] = useState<StudyProfile['selfLevel'] | null>(null);
+  const [selfLevel, setSelfLevel] = useState<StudyProfile['selfLevel'] | null>(recommendedLevel);
   const [dailyMinutes, setDailyMinutes] = useState<StudyProfile['dailyMinutes'] | null>(null);
   const [studyDaysPerWeek, setStudyDaysPerWeek] = useState<number>(5);
+
+  // Pre-select the recommended level once it becomes available (async load),
+  // but never override a choice the user has already made.
+  useEffect(() => {
+    if (recommendedLevel && selfLevel === null) setSelfLevel(recommendedLevel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recommendedLevel]);
 
   // Plan generation state
   const [generating, setGenerating] = useState(false);
@@ -74,6 +88,7 @@ export default function StudySetupWizard({ interests, onComplete, onCancel }: St
       goal,
       goalDetail: goalDetail.trim() || undefined,
       selfLevel,
+      assessedCEFR: assessedCEFR ?? undefined,
       dailyMinutes,
       studyDaysPerWeek,
       startDate: localDateString(),
@@ -88,6 +103,7 @@ export default function StudySetupWizard({ interests, onComplete, onCancel }: St
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (!data.plan) throw new Error('플랜 데이터가 비어 있습니다');
+      track('study_plan_created', { goal, selfLevel, dailyMinutes, studyDaysPerWeek });
       onComplete(data.plan as StudyPlan);
     } catch (e) {
       console.error('Plan generation failed:', e);
@@ -215,6 +231,7 @@ export default function StudySetupWizard({ interests, onComplete, onCancel }: St
               <div className="grid gap-3">
                 {LEVEL_META.map((l) => {
                   const selected = selfLevel === l.value;
+                  const recommended = recommendedLevel === l.value;
                   return (
                     <button
                       key={l.value}
@@ -225,14 +242,26 @@ export default function StudySetupWizard({ interests, onComplete, onCancel }: St
                           : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-dark-surface hover:border-primary-300 dark:hover:border-primary-500/40'
                       }`}
                     >
-                      <p className={`font-semibold ${selected ? 'text-primary-700 dark:text-primary-300' : 'text-neutral-900 dark:text-white'}`}>
-                        {l.title}
-                      </p>
+                      <div className="flex items-center justify-between">
+                        <p className={`font-semibold ${selected ? 'text-primary-700 dark:text-primary-300' : 'text-neutral-900 dark:text-white'}`}>
+                          {l.title}
+                        </p>
+                        {recommended && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary-100 dark:bg-primary-500/20 text-primary-600 dark:text-primary-400">
+                            기존 대화 분석 기반 추천 레벨
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{l.description}</p>
                     </button>
                   );
                 })}
               </div>
+              {recommendedLevel && (
+                <p className="mt-3 text-xs text-primary-600 dark:text-primary-400">
+                  기존 대화 분석 기반 추천 레벨이 미리 선택되어 있어요. 원하면 직접 바꿀 수 있어요.
+                </p>
+              )}
             </div>
           )}
 

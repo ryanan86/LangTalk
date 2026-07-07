@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n';
 import BottomNav from '@/components/BottomNav';
+import { track } from '@/lib/analytics';
 
 interface Correction {
   correctionId: string;
@@ -205,6 +206,7 @@ export default function ReviewPage() {
         setShowAnswer(false);
       } else {
         // All done
+        track('review_complete', { count: completedCount + 1 });
         setCorrections([]);
       }
     } catch (error) {

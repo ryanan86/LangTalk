@@ -1,13 +1,19 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { track } from '@/lib/analytics';
 
 function FailContent() {
   const searchParams = useSearchParams();
   const errorCode = searchParams.get('code') || '';
   const errorMessage = searchParams.get('message') || '결제가 취소되었거나 실패했습니다.';
+
+  useEffect(() => {
+    track('purchase_fail', { code: errorCode });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 flex items-center justify-center px-4">

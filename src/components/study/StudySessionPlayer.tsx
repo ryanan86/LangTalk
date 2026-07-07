@@ -27,6 +27,7 @@ import {
   CONVERSATION_BLOCKS,
 } from '@/lib/studyClient';
 import { useStudyVoice, type StudyChatContext, type StudyMessage } from '@/hooks/useStudyVoice';
+import { track } from '@/lib/analytics';
 
 interface StudySessionPlayerProps {
   plan: StudyPlan;
@@ -53,6 +54,20 @@ export default function StudySessionPlayer({ plan, stats, tutorId = 'emma', onEx
   const week = plan.weeks.find((w) => w.week === pos.week) ?? plan.weeks[0];
   const isWeeklyTestDay = pos.day === plan.profile.studyDaysPerWeek;
   const dayIndexAbsolute = (pos.week - 1) * plan.profile.studyDaysPerWeek + (pos.day - 1);
+
+  // Monthly CEFR reassessment: if a prior day crossed a month boundary, this
+  // session's realtalk block runs an open assessment conversation instead.
+  const assessmentMonth = stats?.pendingMonthlyAssessment ?? null;
+  const isAssessmentSession = assessmentMonth != null;
+
+  // Fire session-start analytics once per mount.
+  const startTrackedRef = useRef(false);
+  useEffect(() => {
+    if (startTrackedRef.current) return;
+    startTrackedRef.current = true;
+    track('study_session_start', { week: pos.week, day: pos.day, isWeeklyTest: isWeeklyTestDay, isAssessment: isAssessmentSession });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const blocks = useMemo<StudyBlockSpec[]>(() => buildBlockSequence(plan.profile.dailyMinutes), [plan.profile.dailyMinutes]);
 
@@ -87,9 +102,13 @@ export default function StudySessionPlayer({ plan, stats, tutorId = 'emma', onEx
   const [saveError, setSaveError] = useState<string | null>(null);
   const [savedResult, setSavedResult] = useState<StudyDayResult | null>(null);
   const [updatedStats, setUpdatedStats] = useState<StudyStats | null>(null);
+  // Set when the just-saved day crossed a month boundary (celebration card).
+  const [monthlyDue, setMonthlyDue] = useState<number | null>(null);
 
   const countersRef = useRef<SessionCounters>({ spokenSentences: 0, newWordsLearned: 0, shadowingScores: [], startedAt: Date.now() });
   const completedBlocksRef = useRef<StudyBlockType[]>([]);
+  // Latest realtalk transcript — used to derive the monthly CEFR assessment.
+  const realtalkTranscriptRef = useRef<StudyMessage[]>([]);
 
   const currentBlock = blocks[blockIndex];
 
@@ -106,6 +125,7 @@ export default function StudySessionPlayer({ plan, stats, tutorId = 'emma', onEx
     if (!completedBlocksRef.current.includes(completedType)) {
       completedBlocksRef.current.push(completedType);
     }
+    track('study_block_complete', { block: completedType });
     if (blockIndex < blocks.length - 1) {
       setBlockIndex((i) => i + 1);
     } else {
@@ -137,19 +157,65 @@ export default function StudySessionPlayer({ plan, stats, tutorId = 'emma', onEx
     return result;
   }, [pos.week, pos.day, isWeeklyTestDay]);
 
+  /**
+   * Derive a monthly CEFR assessment from the realtalk transcript by reusing the
+   * exact talk-page analysis path (POST /api/chat mode:'analysis'). Returns null
+   * on any failure so the session save is never blocked (graceful degradation).
+   */
+  const deriveMonthlyAssessment = useCallback(async (
+    month: number,
+  ): Promise<{ month: number; cefr: string; date: string; summary?: string } | null> => {
+    const transcript = realtalkTranscriptRef.current;
+    // Need at least one user utterance to assess.
+    if (!transcript.some((m) => m.role === 'user')) return null;
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: transcript,
+          tutorId,
+          mode: 'analysis',
+        }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      const cefr: string | undefined = data?.analysis?.evaluatedGrade ?? data?.analysis?.overallLevel;
+      if (!cefr) return null;
+      return {
+        month,
+        cefr,
+        date: localDateString(),
+        summary: typeof data?.analysis?.encouragement === 'string' ? data.analysis.encouragement : undefined,
+      };
+    } catch (e) {
+      console.error('Monthly assessment analysis failed:', e);
+      return null;
+    }
+  }, [tutorId]);
+
   const saveResult = useCallback(async (result: StudyDayResult) => {
     setPhase('saving');
     setSaveError(null);
+
+    // If this session is the monthly reassessment, derive CEFR from the realtalk
+    // transcript first. Failure is non-fatal — we still save the day result.
+    let monthlyAssessment: { month: number; cefr: string; date: string; summary?: string } | null = null;
+    if (isAssessmentSession && assessmentMonth != null) {
+      monthlyAssessment = await deriveMonthlyAssessment(assessmentMonth);
+    }
+
     try {
       const res = await fetch('/api/study/day', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ result }),
+        body: JSON.stringify(monthlyAssessment ? { result, monthlyAssessment } : { result }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const newStats = (data.stats ?? data) as StudyStats;
       setUpdatedStats(newStats);
+      if (data.monthlyAssessmentDue && typeof data.month === 'number') setMonthlyDue(data.month);
       setSavedResult(result);
       setPhase('celebration');
     } catch (e) {
@@ -158,10 +224,14 @@ export default function StudySessionPlayer({ plan, stats, tutorId = 'emma', onEx
       setPhase('celebration');
       setSavedResult(result);
     }
-  }, []);
+  }, [isAssessmentSession, assessmentMonth, deriveMonthlyAssessment]);
 
   const finalizeSession = useCallback(async () => {
     const result = buildResult();
+    track('study_session_complete', { week: result.week, day: result.day, minutes: result.minutes });
+    if (result.isWeeklyTest && typeof result.weeklyTestScore === 'number') {
+      track('study_weekly_test_complete', { score: result.weeklyTestScore });
+    }
     await saveResult(result);
   }, [buildResult, saveResult]);
 
@@ -261,6 +331,7 @@ export default function StudySessionPlayer({ plan, stats, tutorId = 'emma', onEx
             updatedStats={updatedStats}
             prevStats={stats}
             saveError={saveError}
+            monthlyAssessmentDue={monthlyDue}
             nextPreview={
               pos.day < plan.profile.studyDaysPerWeek
                 ? `${pos.week}주차 ${pos.day + 1}일차`
@@ -295,6 +366,17 @@ export default function StudySessionPlayer({ plan, stats, tutorId = 'emma', onEx
                   blockType={currentBlock.type}
                   isWeeklyTest={isWeeklyTestDay && currentBlock.type === 'realtalk'}
                   weeklyTestTopic={week?.weeklyTestTopic}
+                  isAssessment={isAssessmentSession && currentBlock.type === 'realtalk'}
+                  assessmentTopic={
+                    isAssessmentSession && currentBlock.type === 'realtalk'
+                      ? 'level assessment: open conversation covering past month\'s themes'
+                      : undefined
+                  }
+                  onTranscript={
+                    currentBlock.type === 'realtalk'
+                      ? (msgs) => { realtalkTranscriptRef.current = msgs; }
+                      : undefined
+                  }
                   studyContext={studyContext}
                   voice={voice}
                   onSpoke={incrementSpoken}
@@ -437,6 +519,9 @@ function ConversationBlock({
   blockType,
   isWeeklyTest,
   weeklyTestTopic,
+  isAssessment = false,
+  assessmentTopic,
+  onTranscript,
   studyContext,
   voice,
   onSpoke,
@@ -445,6 +530,10 @@ function ConversationBlock({
   blockType: StudyBlockType;
   isWeeklyTest: boolean;
   weeklyTestTopic?: string;
+  isAssessment?: boolean;
+  assessmentTopic?: string;
+  /** Surface the running transcript to the parent (for monthly assessment). */
+  onTranscript?: (messages: StudyMessage[]) => void;
   studyContext: StudyChatContext;
   voice: VoiceApi;
   onSpoke: () => void;
@@ -456,10 +545,17 @@ function ConversationBlock({
   const endRef = useRef<HTMLDivElement>(null);
 
   const promptLabel =
+    isAssessment ? '월간 레벨 평가: 지난 한 달의 주제로 자유롭게 대화해요' :
     isWeeklyTest ? '주간 테스트' :
     blockType === 'warmup' ? '어제 배운 내용을 떠올리며 가볍게 대화해요' :
     blockType === 'wrapup' ? '오늘 배운 내용을 정리하며 마무리해요' :
     '오늘의 패턴과 어휘로 실전 대화를 나눠요';
+
+  // Report every transcript change up to the parent.
+  useEffect(() => {
+    onTranscript?.(messages);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
 
   // Kick off with an assistant opener from the study endpoint.
   useEffect(() => {
@@ -469,9 +565,11 @@ function ConversationBlock({
       setThinking(true);
       const seed: StudyMessage[] = [{
         role: 'user',
-        content: isWeeklyTest && weeklyTestTopic
-          ? `Let's begin the weekly speaking test. Topic: ${weeklyTestTopic}.`
-          : `Let's start the ${blockType} for today's lesson.`,
+        content: isAssessment
+          ? `Let's begin the monthly level assessment. ${assessmentTopic ? `Focus: ${assessmentTopic}.` : ''} Ask me open questions about what I've been learning this past month.`
+          : isWeeklyTest && weeklyTestTopic
+            ? `Let's begin the weekly speaking test. Topic: ${weeklyTestTopic}.`
+            : `Let's start the ${blockType} for today's lesson.`,
       }];
       const reply = await voice.sendStudyChat(blockType, studyContext, seed);
       if (reply) setMessages([{ role: 'assistant', content: reply }]);
@@ -497,7 +595,13 @@ function ConversationBlock({
 
   return (
     <div className="flex-1 flex flex-col">
-      {isWeeklyTest && weeklyTestTopic && (
+      {isAssessment && (
+        <div className="mb-3 p-3 rounded-xl bg-primary-50 dark:bg-primary-500/10 border border-primary-200 dark:border-primary-500/30">
+          <p className="text-xs font-medium text-primary-600 dark:text-primary-400 uppercase tracking-wider mb-0.5">월간 레벨 평가</p>
+          <p className="text-sm text-primary-800 dark:text-primary-200">지난 한 달 동안 배운 내용을 바탕으로 자유롭게 대화하며 실력을 점검해요.</p>
+        </div>
+      )}
+      {!isAssessment && isWeeklyTest && weeklyTestTopic && (
         <div className="mb-3 p-3 rounded-xl bg-primary-50 dark:bg-primary-500/10 border border-primary-200 dark:border-primary-500/30">
           <p className="text-xs font-medium text-primary-600 dark:text-primary-400 uppercase tracking-wider mb-0.5">주간 테스트 주제</p>
           <p className="text-sm text-primary-800 dark:text-primary-200">{weeklyTestTopic}</p>
@@ -878,6 +982,7 @@ function CelebrationScreen({
   updatedStats,
   prevStats,
   saveError,
+  monthlyAssessmentDue,
   nextPreview,
   onDone,
 }: {
@@ -885,6 +990,7 @@ function CelebrationScreen({
   updatedStats: StudyStats | null;
   prevStats: StudyStats | null;
   saveError: string | null;
+  monthlyAssessmentDue?: number | null;
   nextPreview: string;
   onDone: () => void;
 }) {
@@ -934,6 +1040,20 @@ function CelebrationScreen({
         <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">연속 학습</p>
         <p className="text-lg font-bold text-neutral-900 dark:text-white">{streak}일째</p>
       </div>
+
+      {monthlyAssessmentDue != null && (
+        <div className="w-full max-w-xs p-4 rounded-2xl bg-primary-50 dark:bg-primary-500/10 border border-primary-200 dark:border-primary-500/30 mb-4 text-left">
+          <div className="flex items-center gap-2 mb-1">
+            <svg className="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+            <p className="text-sm font-semibold text-primary-700 dark:text-primary-300">월간 레벨 평가</p>
+          </div>
+          <p className="text-xs text-primary-700/80 dark:text-primary-300/80 leading-relaxed">
+            {monthlyAssessmentDue}개월 차 학습을 마쳤어요. 다음 세션은 지난 한 달의 주제로 자유롭게 대화하는 레벨 점검으로 시작해요.
+          </p>
+        </div>
+      )}
 
       <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6">다음: {nextPreview}</p>
 

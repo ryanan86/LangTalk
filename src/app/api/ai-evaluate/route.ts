@@ -399,7 +399,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limit
-    const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.ai);
+    const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.ai);
     if (rateLimitResult) return rateLimitResult;
 
     const body = await request.json();

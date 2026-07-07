@@ -50,6 +50,7 @@ export default function StudyDashboard({ plan, stats, onStartSession }: StudyDas
   const maxAcc = 100;
 
   const weeklyTests = stats?.weeklyTestScores ?? [];
+  const monthlyAssessments = stats?.monthlyAssessments ?? [];
 
   return (
     <div className="flex-1 overflow-y-auto pb-8">
@@ -205,6 +206,26 @@ export default function StudyDashboard({ plan, stats, onStartSession }: StudyDas
             <div className="flex justify-between mt-2 text-xs text-neutral-400 dark:text-neutral-500">
               <span>{recentShadowing[0]?.date.slice(5)}</span>
               <span>{recentShadowing[recentShadowing.length - 1]?.date.slice(5)}</span>
+            </div>
+          </section>
+        )}
+
+        {/* ===== Monthly CEFR assessment history ===== */}
+        {monthlyAssessments.length > 0 && (
+          <section className="p-4 rounded-2xl bg-white dark:bg-dark-surface border border-neutral-100 dark:border-neutral-800">
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-3">월간 레벨 평가</h3>
+            <div className="flex flex-wrap gap-2">
+              {monthlyAssessments.map((m) => (
+                <div
+                  key={`${m.month}-${m.date}`}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary-50 dark:bg-primary-500/10 border border-primary-200 dark:border-primary-500/30"
+                  title={m.summary}
+                >
+                  <span className="text-[10px] font-medium text-primary-500/70 dark:text-primary-400/70">{m.month}개월</span>
+                  <span className="text-sm font-bold text-primary-700 dark:text-primary-300">{m.cefr}</span>
+                  <span className="text-[10px] text-neutral-400 dark:text-neutral-500">{m.date.slice(5)}</span>
+                </div>
+              ))}
             </div>
           </section>
         )}

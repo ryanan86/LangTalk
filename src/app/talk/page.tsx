@@ -28,6 +28,7 @@ import { getTopicSuggestions, shuffleTopics, type TopicCard } from '@/lib/topicS
 import { getWarmupSet } from '@/lib/warmupPhrases';
 import type { VocabBookItem } from '@/lib/sheetTypes';
 import type { SpeakingEvaluationResponse } from '@/app/api/speaking-evaluate/route';
+import { track } from '@/lib/analytics';
 
 type Phase = 'ready' | 'mode-select' | 'topic-select' | 'warmup' | 'tutor-intro'
            | 'recording' | 'interview' | 'analysis' | 'review' | 'shadowing' | 'summary';
@@ -544,6 +545,19 @@ function TalkContent() {
     }
   }, [phase, analysis]);
 
+  // Analytics: session start / complete
+  const sessionStartFiredRef = useRef(false);
+  useEffect(() => {
+    if (phase === 'interview' && !sessionStartFiredRef.current) {
+      sessionStartFiredRef.current = true;
+      track('talk_session_start', { tutor: tutorId });
+    }
+    if (phase === 'summary') {
+      track('talk_session_complete', { tutor: tutorId, durationMin: Math.round(conversationTimeRef.current / 60) });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
   // Gamification: calculate XP, check achievements, check level-up on session completion
   useEffect(() => {
     if (phase !== 'summary' || !analysis || gamificationTriggeredRef.current) return;
@@ -791,6 +805,7 @@ function TalkContent() {
   const resetSession = () => {
     isEndingSessionRef.current = false;
     gamificationTriggeredRef.current = false;
+    sessionStartFiredRef.current = false;
     resetSessionSaved();
     setMessages([]);
     setConversationTime(0);

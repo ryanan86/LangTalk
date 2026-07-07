@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { track } from '@/lib/analytics';
 
 function PaymentConfirm() {
   const searchParams = useSearchParams();
@@ -43,6 +44,7 @@ function PaymentConfirm() {
         }
         setPlanName(data.plan === 'yearly' ? '연간 이용권' : '월간 이용권');
         setExpiresAt(data.expiresAt ? new Date(data.expiresAt).toLocaleDateString('ko-KR') : '');
+        track('purchase_complete', { plan: data.plan });
         setStatus('success');
       })
       .catch((err) => {

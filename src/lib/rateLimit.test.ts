@@ -79,6 +79,7 @@ describe('getRateLimitId', () => {
 });
 
 // ===== checkRateLimit =====
+// checkRateLimit is async — uses in-memory fallback when Upstash env vars are absent
 
 describe('checkRateLimit', () => {
   // Use unique identifiers per test so tests don't bleed into each other
@@ -87,51 +88,51 @@ describe('checkRateLimit', () => {
     return `test-user-${Date.now()}-${counter++}`;
   }
 
-  it('returns null (allowed) for the first request', () => {
-    const result = checkRateLimit(uniqueId(), { limit: 5, windowSeconds: 60 });
+  it('returns null (allowed) for the first request', async () => {
+    const result = await checkRateLimit(uniqueId(), { limit: 5, windowSeconds: 60 });
     expect(result).toBeNull();
   });
 
-  it('returns null when under the limit', () => {
+  it('returns null when under the limit', async () => {
     const id = uniqueId();
     const config = { limit: 5, windowSeconds: 60 };
     for (let i = 0; i < 5; i++) {
-      const result = checkRateLimit(id, config);
+      const result = await checkRateLimit(id, config);
       expect(result).toBeNull();
     }
   });
 
-  it('returns a response when over the limit', () => {
+  it('returns a response when over the limit', async () => {
     const id = uniqueId();
     const config = { limit: 2, windowSeconds: 60 };
     // First 2 allowed
-    checkRateLimit(id, config);
-    checkRateLimit(id, config);
+    await checkRateLimit(id, config);
+    await checkRateLimit(id, config);
     // 3rd exceeds limit
-    const result = checkRateLimit(id, config);
+    const result = await checkRateLimit(id, config);
     expect(result).not.toBeNull();
   });
 
-  it('the returned response has status 429', () => {
+  it('the returned response has status 429', async () => {
     const id = uniqueId();
     const config = { limit: 1, windowSeconds: 60 };
-    checkRateLimit(id, config); // first OK
+    await checkRateLimit(id, config); // first OK
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = checkRateLimit(id, config) as any;
+    const result = await checkRateLimit(id, config) as any;
     expect(result).not.toBeNull();
     // Our mock returns { body, init } — check init.status
     expect(result.init?.status).toBe(429);
   });
 
-  it('different identifiers have separate rate limit buckets', () => {
+  it('different identifiers have separate rate limit buckets', async () => {
     const config = { limit: 1, windowSeconds: 60 };
     const id1 = uniqueId();
     const id2 = uniqueId();
-    checkRateLimit(id1, config); // exhaust id1
-    checkRateLimit(id1, config); // id1 over limit
+    await checkRateLimit(id1, config); // exhaust id1
+    await checkRateLimit(id1, config); // id1 over limit
 
     // id2 should still be allowed
-    const result = checkRateLimit(id2, config);
+    const result = await checkRateLimit(id2, config);
     expect(result).toBeNull();
   });
 });

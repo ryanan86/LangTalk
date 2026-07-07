@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import type { StudyPlan, StudyStats } from '@/lib/studyTypes';
-import { fetchStudyState } from '@/lib/studyClient';
+import { fetchStudyState, fetchAssessedCEFR } from '@/lib/studyClient';
 import StudySetupWizard from '@/components/study/StudySetupWizard';
 import StudyDashboard from '@/components/study/StudyDashboard';
 import StudySessionPlayer from '@/components/study/StudySessionPlayer';
@@ -17,18 +17,25 @@ export default function StudyPage() {
   const [plan, setPlan] = useState<StudyPlan | null>(null);
   const [stats, setStats] = useState<StudyStats | null>(null);
   const [interests, setInterests] = useState<string[]>([]);
+  const [assessedCEFR, setAssessedCEFR] = useState<string | null>(null);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     setView('loading');
     try {
-      // Load study state + user interests (for plan personalization) in parallel.
-      const [state, profileRes] = await Promise.allSettled([
+      // Load study state + user interests (for plan personalization) + prior
+      // CEFR assessment (for placement pre-selection) in parallel.
+      const [state, profileRes, cefrRes] = await Promise.allSettled([
         fetchStudyState(signal),
         fetch('/api/user-profile', { signal }).then((r) => (r.ok ? r.json() : null)),
+        fetchAssessedCEFR(signal),
       ]);
 
       if (profileRes.status === 'fulfilled' && profileRes.value?.profile?.interests) {
         setInterests(profileRes.value.profile.interests);
+      }
+
+      if (cefrRes.status === 'fulfilled' && cefrRes.value) {
+        setAssessedCEFR(cefrRes.value);
       }
 
       if (state.status === 'fulfilled') {
@@ -126,6 +133,7 @@ export default function StudyPage() {
         {view === 'wizard' && (
           <StudySetupWizard
             interests={interests}
+            assessedCEFR={assessedCEFR}
             onComplete={handlePlanCreated}
             onCancel={() => router.push('/')}
           />

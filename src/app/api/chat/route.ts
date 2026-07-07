@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limit
-    const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.ai);
+    const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.ai);
     if (rateLimitResult) return rateLimitResult;
 
     const rawBody = await request.json();
@@ -1033,10 +1033,31 @@ Keep the total response under 150 words.`;
         timings['total.ms'] = since(t0);
         return NextResponse.json({ analysis: data, meta: { rid, timings } });
       } else {
-        // JSON extraction completely failed - return raw message
+        // JSON extraction completely failed — return a minimal valid analysis object so
+        // the client can still save the session (corrections array empty but session not lost).
         console.error('Analysis JSON extraction failed. Raw response:', assistantMessage.slice(0, 200));
+        const fallbackAnalysis = {
+          corrections: [],
+          patterns: [],
+          strengths: [isKorean ? '영어로 대화를 시도했습니다' : 'You attempted to converse in English'],
+          overallLevel: 'intermediate',
+          evaluatedGrade: 'A2',
+          levelDetails: {
+            grammar: 50,
+            vocabulary: 50,
+            fluency: 50,
+            comprehension: 50,
+            summary: isKorean
+              ? '분석 중 오류가 발생하여 이번 세션의 상세 분석을 완료하지 못했습니다. 세션 기록은 저장되었습니다.'
+              : 'Analysis could not be completed for this session. Your session has been saved.',
+          },
+          encouragement: isKorean
+            ? '오늘도 열심히 연습하셨어요! 꾸준히 연습하면 반드시 실력이 향상됩니다.'
+            : 'Great effort today! Keep practicing and you will improve.',
+          confidence: 'low' as const,
+        };
         timings['total.ms'] = since(t0);
-        return NextResponse.json({ message: assistantMessage, parseError: true, meta: { rid, timings } });
+        return NextResponse.json({ analysis: fallbackAnalysis, parseError: true, meta: { rid, timings } });
       }
     }
 

@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ items: [], total: 0, dueToday: 0, error: 'Not logged in' }, { status: 401 });
     }
 
-    const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
+    const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
     if (rateLimitResult) return rateLimitResult;
 
     const scope = request.nextUrl.searchParams.get('scope') || 'today';
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const rateLimitResult = checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
+    const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
     if (rateLimitResult) return rateLimitResult;
 
     const rawBody = await request.json();
