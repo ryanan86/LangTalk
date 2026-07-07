@@ -5,8 +5,9 @@ import { NextResponse } from 'next/server';
 // Falls back to in-memory Map when env vars are absent.
 // ---------------------------------------------------------------------------
 
-const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL;
-const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+// Upstash 직접 연동(UPSTASH_*) 또는 Vercel Marketplace/KV 연동(KV_REST_API_*) 모두 지원
+const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 
 /**
  * Atomically increment a key and set its TTL on first write.
