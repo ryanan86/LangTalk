@@ -9,6 +9,7 @@ const navLinks = [
   { href: '/admin/topics', label: 'Topics' },
   { href: '/admin/analytics', label: 'Analytics' },
   { href: '/admin/tts-test', label: 'TTS Test' },
+  { href: '/admin/ai-status', label: 'AI 엔진 현황' },
   { href: '/admin/setup', label: 'Setup' },
 ];
 
