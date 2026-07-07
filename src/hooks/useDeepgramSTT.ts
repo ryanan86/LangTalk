@@ -27,7 +27,7 @@ export function useDeepgramSTT(): UseDeepgramSTTReturn {
       const apiKey = deepgramKeyRef.current!;
 
       const socket = new WebSocket(
-        'wss://api.deepgram.com/v1/listen?model=nova-2&language=en&smart_format=true&punctuate=true&interim_results=false&endpointing=300',
+        'wss://api.deepgram.com/v1/listen?model=nova-3&language=en&smart_format=true&punctuate=true&interim_results=false&endpointing=300',
         ['token', apiKey]
       );
 

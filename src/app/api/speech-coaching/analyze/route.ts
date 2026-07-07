@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
     if (gemini) {
       try {
         const model = gemini.getGenerativeModel({
-          model: 'gemini-2.0-flash',
+          model: 'gemini-3-flash-preview',
           systemInstruction: { role: 'user', parts: [{ text: systemPrompt }] },
           generationConfig: {
             temperature: 0.4,
@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
         const result = await withTimeoutAbort(
           async () => {
             const completion = await openai.chat.completions.create({
-              model: 'gpt-4o-mini',
+              model: 'gpt-5.4-mini',
               messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userContent },

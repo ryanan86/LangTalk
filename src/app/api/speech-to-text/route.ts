@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       (signal) =>
         getOpenAI().audio.transcriptions.create({
           file: audioFile,
-          model: 'whisper-1',
+          model: 'gpt-4o-mini-transcribe',
           prompt: 'This is an English conversation practice. The speaker may have a Korean accent.',
         }, { signal }),
       15000,

@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
     if (gemini) {
       try {
         const model = gemini.getGenerativeModel({
-          model: 'gemini-2.0-flash',
+          model: 'gemini-3-flash-preview',
           generationConfig: { temperature: 0.2, maxOutputTokens: 2048 },
         });
         const result = await withTimeoutAbort(
@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
           (signal) =>
             getOpenAI().chat.completions.create(
               {
-                model: 'gpt-4o-mini',
+                model: 'gpt-5.4-mini',
                 max_tokens: 2048,
                 temperature: 0.2,
                 messages: [

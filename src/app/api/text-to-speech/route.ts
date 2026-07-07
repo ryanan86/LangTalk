@@ -116,7 +116,7 @@ async function generateWithOpenAI(text: string, voice: string, timings?: Record<
   const mp3 = await withTimeoutAbort(
     (signal) =>
       getOpenAI().audio.speech.create({
-        model: 'tts-1-hd',
+        model: 'gpt-4o-mini-tts',
         voice: openaiVoice as 'nova' | 'onyx' | 'alloy' | 'echo' | 'fable' | 'shimmer',
         input: text,
         speed: 1.0,

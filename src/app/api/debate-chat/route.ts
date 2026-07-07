@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
     const maxTokens = (phase === 'opening' || phase === 'closing') ? 350 : 250;
 
     const response = await getOpenAI().chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-5.4-mini',
       max_tokens: maxTokens,
       temperature: 0.8,
       presence_penalty: 0.6,

@@ -707,7 +707,7 @@ Keep the total response under 150 words.`;
         // Gemini 2.0 Flash streaming (primary)
         try {
           const model = gemini.getGenerativeModel({
-            model: 'gemini-2.0-flash',
+            model: 'gemini-3-flash-preview',
             systemInstruction: { role: 'user', parts: [{ text: systemPrompt }] },
             generationConfig: { temperature: 0.8, maxOutputTokens: maxTokens },
           });
@@ -746,7 +746,7 @@ Keep the total response under 150 words.`;
 
       // OpenAI fallback for streaming
       const stream = await getOpenAI().chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5.4-mini',
         max_tokens: maxTokens,
         temperature: 0.8,
         presence_penalty: 0.6,
@@ -789,7 +789,7 @@ Keep the total response under 150 words.`;
       if (gemini) {
         try {
           const model = gemini.getGenerativeModel({
-            model: 'gemini-2.0-flash',
+            model: 'gemini-3-flash-preview',
             systemInstruction: { role: 'user', parts: [{ text: systemPrompt }] },
             generationConfig: {
               temperature: 0.5,
@@ -836,7 +836,7 @@ Keep the total response under 150 words.`;
       if (gemini) {
         try {
           const model = gemini.getGenerativeModel({
-            model: 'gemini-2.0-flash',
+            model: 'gemini-3-flash-preview',
             systemInstruction: { role: 'user', parts: [{ text: systemPrompt }] },
             generationConfig: {
               temperature: 0.8,
@@ -861,7 +861,7 @@ Keep the total response under 150 words.`;
         try {
           const response = await withTimeoutAbort(
             (signal) => getOpenAI().chat.completions.create({
-              model: 'gpt-4o-mini',
+              model: 'gpt-5.4-mini',
               max_tokens: maxTokens,
               temperature: 0.8,
               presence_penalty: 0.6,
