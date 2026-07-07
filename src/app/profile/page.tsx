@@ -99,6 +99,8 @@ export default function ProfilePage() {
   } | undefined>(undefined);
   const [hasUnsavedSchedule, setHasUnsavedSchedule] = useState(false);
   const [showScheduleWarning, setShowScheduleWarning] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const scheduleWarningTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [inventory, setInventory] = useState<{ itemId: string; quantity: number; acquiredAt: string }[]>([]);
 
@@ -624,8 +626,89 @@ export default function ProfilePage() {
                 {language === 'ko' ? '로그아웃' : 'Sign Out'}
               </span>
             </button>
+
+            {/* Delete Account Button */}
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="w-full flex items-center gap-3 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-dark-surface hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-left"
+            >
+              <span className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </span>
+              <div>
+                <span className="font-medium text-neutral-600 dark:text-neutral-400 text-sm">
+                  {language === 'ko' ? '계정 삭제' : 'Delete Account'}
+                </span>
+                <span className="text-xs text-neutral-400 dark:text-neutral-500 block">
+                  {language === 'ko' ? '모든 데이터가 영구적으로 삭제됩니다' : 'All data will be permanently deleted'}
+                </span>
+              </div>
+              <svg className="w-5 h-5 text-neutral-400 ml-auto flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
           </div>
         </section>
+
+        {/* Delete Account Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white dark:bg-dark-surface rounded-2xl p-6 max-w-sm w-full shadow-xl">
+              <div className="flex justify-center mb-4">
+                <span className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </span>
+              </div>
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white text-center mb-2">
+                {language === 'ko' ? '정말 계정을 삭제하시겠습니까?' : 'Delete your account?'}
+              </h3>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center mb-6">
+                {language === 'ko'
+                  ? '학습 기록, 교정 내역, 단어장 등 모든 데이터가 영구적으로 삭제되며 복구할 수 없습니다.'
+                  : 'All your learning records, corrections, vocabulary, and other data will be permanently deleted and cannot be recovered.'}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={isDeleting}
+                  className="flex-1 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                >
+                  {language === 'ko' ? '취소' : 'Cancel'}
+                </button>
+                <button
+                  onClick={async () => {
+                    setIsDeleting(true);
+                    try {
+                      const res = await fetch('/api/account/delete', { method: 'DELETE' });
+                      const data = await res.json();
+                      if (data.success) {
+                        await signOut({ callbackUrl: '/login' });
+                      } else {
+                        alert(language === 'ko' ? '계정 삭제에 실패했습니다.' : 'Failed to delete account.');
+                        setShowDeleteConfirm(false);
+                      }
+                    } catch {
+                      alert(language === 'ko' ? '계정 삭제에 실패했습니다.' : 'Failed to delete account.');
+                      setShowDeleteConfirm(false);
+                    } finally {
+                      setIsDeleting(false);
+                    }
+                  }}
+                  disabled={isDeleting}
+                  className="flex-1 py-3 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                >
+                  {isDeleting
+                    ? (language === 'ko' ? '삭제 중...' : 'Deleting...')
+                    : (language === 'ko' ? '계정 삭제' : 'Delete')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
       {/* Bottom nav spacer */}
       <div className="h-20" style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }} />

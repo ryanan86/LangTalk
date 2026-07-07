@@ -67,7 +67,10 @@ export const authOptions: NextAuthOptions = {
         try {
           const ticket = await googleClient.verifyIdToken({
             idToken: credentials.idToken,
-            audience: process.env.GOOGLE_CLIENT_ID,
+            audience: [
+              process.env.GOOGLE_CLIENT_ID!,
+              process.env.GOOGLE_IOS_CLIENT_ID || '670234764770-7s17o1cfit5vkb3hbf29uh0r42j52gdh.apps.googleusercontent.com',
+            ],
           });
           const payload = ticket.getPayload();
 
