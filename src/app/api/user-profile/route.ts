@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getAuthUser } from '@/lib/miniappAuth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getUserData, updateUserFields } from '@/lib/dataHelper';
 import { ProfileData } from '@/lib/sheetTypes';
@@ -9,22 +8,22 @@ import { userProfileBodySchema, parseBody } from '@/lib/apiSchemas';
 import { useSupabase } from '@/lib/dataBackend';
 
 // GET: Retrieve user profile
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const rid = makeRid('prof');
   const t0 = nowMs();
 
   try {
-    const session = await getServerSession(authOptions);
+    const authUser = await getAuthUser(request);
 
-    if (!session?.user?.email) {
+    if (!authUser?.email) {
       return NextResponse.json({ profile: null, error: 'Not logged in' }, { status: 401 });
     }
 
     // Rate limit
-    const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
+    const rateLimitResult = await checkRateLimit(getRateLimitId(authUser.email, request), RATE_LIMITS.light);
     if (rateLimitResult) return rateLimitResult;
 
-    const email = session.user.email;
+    const email = authUser.email;
 
     // If no Google Sheets credentials, return empty for development
     if (!useSupabase) {
@@ -77,19 +76,19 @@ export async function POST(request: NextRequest) {
   const t0 = nowMs();
 
   try {
-    const session = await getServerSession(authOptions);
+    const authUser = await getAuthUser(request);
 
     // Rate limit
-    if (session?.user?.email) {
-      const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
+    if (authUser?.email) {
+      const rateLimitResult = await checkRateLimit(getRateLimitId(authUser.email, request), RATE_LIMITS.light);
       if (rateLimitResult) return rateLimitResult;
     }
 
-    if (!session?.user?.email) {
+    if (!authUser?.email) {
       return NextResponse.json({ success: false, error: 'Not logged in' }, { status: 401 });
     }
 
-    const email = session.user.email;
+    const email = authUser.email;
 
     // Parse and validate request body
     const rawBody = await request.json();

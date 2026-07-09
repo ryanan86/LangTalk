@@ -1,6 +1,5 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthUser } from '@/lib/miniappAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,10 +26,10 @@ function checkRateLimit(userId: string): boolean {
 
 // Creates a temporary scoped Deepgram API key (60s TTL)
 // Requires DEEPGRAM_PROJECT_ID env var. Returns 503 if not configured.
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const authUser = await getAuthUser(request);
+    if (!authUser?.email) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
@@ -40,7 +39,7 @@ export async function GET() {
     }
 
     // Rate limit per user
-    if (!checkRateLimit(session.user.email)) {
+    if (!checkRateLimit(authUser.email)) {
       return NextResponse.json({ error: 'Rate limited. Try again shortly.' }, { status: 429 });
     }
 

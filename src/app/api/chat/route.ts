@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getAuthUser } from '@/lib/miniappAuth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getPersona } from '@/lib/personas';
 import { getAgeGroup, calculateAdaptiveDifficulty } from '@/lib/speechMetrics';
@@ -64,13 +63,13 @@ export async function POST(request: NextRequest) {
 
   try {
     // Auth check
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const authUser = await getAuthUser(request);
+    if (!authUser?.email) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
     // Rate limit
-    const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.ai);
+    const rateLimitResult = await checkRateLimit(getRateLimitId(authUser.email, request), RATE_LIMITS.ai);
     if (rateLimitResult) return rateLimitResult;
 
     const rawBody = await request.json();
@@ -91,8 +90,8 @@ export async function POST(request: NextRequest) {
     let learningData: Awaited<ReturnType<typeof getLearningData>> = null;
     try {
       [userData, learningData] = await Promise.all([
-        getUserData(session.user.email),
-        getLearningData(session.user.email).catch(() => null),
+        getUserData(authUser.email),
+        getLearningData(authUser.email).catch(() => null),
       ]);
       timings['getUserData.ms'] = since(t0);
     } catch (e) {
@@ -1021,8 +1020,8 @@ Keep the total response under 150 words.`;
               lastTopics: mergedTopics.slice(0, MAX_MEMORY_TOPICS),
               updatedAt: new Date().toISOString(),
             };
-            if (session.user.email) {
-              updateUserFields(session.user.email, { profile: { memory: updatedMemory } })
+            if (authUser.email) {
+              updateUserFields(authUser.email, { profile: { memory: updatedMemory } })
                 .catch(e => console.error('memory persist failed (non-blocking):', e));
             }
           }

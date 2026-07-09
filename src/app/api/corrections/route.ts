@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getAuthUser } from '@/lib/miniappAuth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { randomUUID } from 'crypto';
 import {
@@ -18,17 +17,17 @@ export async function GET(request: NextRequest) {
   const t0 = nowMs();
 
   try {
-    const session = await getServerSession(authOptions);
+    const authUser = await getAuthUser(request);
 
-    if (!session?.user?.email) {
+    if (!authUser?.email) {
       return NextResponse.json({ corrections: [], error: 'Not logged in' }, { status: 401 });
     }
 
     // Rate limit
-    const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
+    const rateLimitResult = await checkRateLimit(getRateLimitId(authUser.email, request), RATE_LIMITS.light);
     if (rateLimitResult) return rateLimitResult;
 
-    const email = session.user.email;
+    const email = authUser.email;
     const searchParams = request.nextUrl.searchParams;
     const dueOnly = searchParams.get('due') !== 'false'; // Default: only due corrections
     const limit = parseInt(searchParams.get('limit') || '20', 10);
@@ -128,17 +127,17 @@ export async function POST(request: NextRequest) {
   const t0 = nowMs();
 
   try {
-    const session = await getServerSession(authOptions);
+    const authUser = await getAuthUser(request);
 
-    if (!session?.user?.email) {
+    if (!authUser?.email) {
       return NextResponse.json({ success: false, error: 'Not logged in' }, { status: 401 });
     }
 
     // Rate limit
-    const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
+    const rateLimitResult = await checkRateLimit(getRateLimitId(authUser.email, request), RATE_LIMITS.light);
     if (rateLimitResult) return rateLimitResult;
 
-    const email = session.user.email;
+    const email = authUser.email;
 
     // Parse and validate request body - can be single correction or array
     const rawBody = await request.json();

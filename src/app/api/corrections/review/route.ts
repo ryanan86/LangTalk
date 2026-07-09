@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getAuthUser } from '@/lib/miniappAuth';
 import { updateCorrectionAfterReview } from '@/lib/dataHelper';
 import { makeRid, nowMs, since } from '@/lib/perf';
 import { correctionReviewBodySchema, parseBody } from '@/lib/apiSchemas';
@@ -12,13 +11,13 @@ export async function POST(request: NextRequest) {
   const t0 = nowMs();
 
   try {
-    const session = await getServerSession(authOptions);
+    const authUser = await getAuthUser(request);
 
-    if (!session?.user?.email) {
+    if (!authUser?.email) {
       return NextResponse.json({ success: false, error: 'Not logged in' }, { status: 401 });
     }
 
-    const email = session.user.email;
+    const email = authUser.email;
 
     // Parse and validate request body
     const rawBody = await request.json();

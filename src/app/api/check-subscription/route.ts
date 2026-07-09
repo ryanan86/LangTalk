@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getAuthUser } from '@/lib/miniappAuth';
 import { getUserData, getLearningData } from '@/lib/dataHelper';
 import { useSupabase } from '@/lib/dataBackend';
 import { isFamilyPlan } from '@/lib/plans';
@@ -8,16 +7,15 @@ import { isFamilyPlan } from '@/lib/plans';
 export const dynamic = 'force-dynamic';
 export const preferredRegion = 'icn1'; // Seoul — closest to Korean users
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const authUser = await getAuthUser(request);
 
-    if (!session?.user?.email) {
+    if (!authUser?.email) {
       return NextResponse.json({ subscribed: false, reason: 'Not logged in' }, { status: 401 });
     }
 
-    const email = session.user.email;
+    const email = authUser.email;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
