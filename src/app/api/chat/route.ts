@@ -9,6 +9,7 @@ import { getUserData, updateUserFields, getLearningData } from '@/lib/dataHelper
 import { LearnerMemory, MAX_MEMORY_FACTS, MAX_MEMORY_TOPICS, CorrectionItem } from '@/lib/sheetTypes';
 import { makeRid, nowMs, since, withTimeoutAbort } from '@/lib/perf';
 import { chatBodySchema, parseBody } from '@/lib/apiSchemas';
+import { checkLatestUserMessage, getSafeResponse, logCrisisEvent } from '@/lib/crisisSafety';
 
 export const preferredRegion = 'icn1'; // Seoul — closest to Korean users
 
@@ -80,6 +81,46 @@ export async function POST(request: NextRequest) {
       birthYear, userName, previousGrade, previousLevelDetails, speechMetrics: clientSpeechMetrics,
       studyBlock, studyContext,
     } = parsed.data;
+
+    // ── 자살·자해 안전 프로토콜 (앱인토스 "AI 채팅·상담" 필수 요건) ──
+    // 모든 LLM 호출보다 먼저, 스트리밍/비스트리밍 분기보다 먼저 검사한다.
+    // 감지되면 **모델을 호출하지 않고** 고정 안전 응답을 반환한다 — 위기 상황에서
+    // 생성 모델의 출력은 예측 불가능하므로 LLM 이 응답을 만들게 두지 않는다.
+    // 상세 근거·설계는 src/lib/crisisSafety.ts 주석 참조.
+    const crisis = checkLatestUserMessage(messages);
+    if (crisis.detected) {
+      logCrisisEvent(authUser.email, 'chat', crisis.matched);
+      const safeMessage = getSafeResponse(language);
+
+      // 스트리밍 요청도 동일한 고정 문구를 SSE 형식으로 되돌려준다. 클라이언트가
+      // 스트리밍을 기대하는 상태에서 JSON 을 주면 파싱에 실패해 화면이 비어버리고,
+      // 그러면 안전 응답이 사용자에게 도달하지 못한다.
+      if (useStreaming && mode === 'interview') {
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          start(controller) {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ text: safeMessage })}\n\n`),
+            );
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            controller.close();
+          },
+        });
+        return new Response(stream, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            Connection: 'keep-alive',
+          },
+        });
+      }
+
+      return NextResponse.json({
+        message: safeMessage,
+        safetyIntervention: true,
+        meta: { rid, timings },
+      });
+    }
 
     // Calculate age if birthYear is provided
     const learnerAge = birthYear ? new Date().getFullYear() - birthYear : null;

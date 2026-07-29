@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getAuthUser } from '@/lib/miniappAuth';
+import { checkLatestUserMessage, getSafeResponse, logCrisisEvent } from '@/lib/crisisSafety';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getDebatePersona, moderator } from '@/lib/debatePersonas';
 import { DebateMessage, DebatePhase, DebateTopic, DebateTeam } from '@/lib/debateTypes';
@@ -30,12 +30,12 @@ export async function POST(request: NextRequest) {
   const t0 = nowMs();
 
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const authUser = await getAuthUser(request);
+    if (!authUser?.email) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.ai);
+    const rateLimitResult = await checkRateLimit(getRateLimitId(authUser.email, request), RATE_LIMITS.ai);
     if (rateLimitResult) return rateLimitResult;
 
     const {
@@ -48,6 +48,18 @@ export async function POST(request: NextRequest) {
       userTeam,
       language = 'en',
     }: DebateChatRequest = await request.json();
+
+    // ── 자살·자해 안전 프로토콜 (앱인토스 "AI 채팅·상담" 필수 요건) ──
+    // 토론 모드도 자유 발화를 받으므로 chat 라우트와 동일하게 LLM 호출 전에 막는다.
+    // 근거·설계는 src/lib/crisisSafety.ts 주석 참조.
+    const crisis = checkLatestUserMessage(messages);
+    if (crisis.detected) {
+      logCrisisEvent(authUser.email, 'debate-chat', crisis.matched);
+      return NextResponse.json({
+        message: getSafeResponse(language),
+        safetyIntervention: true,
+      });
+    }
 
     // Allowlist validation to prevent prompt injection
     const VALID_PHASES: readonly string[] = ['opening', 'rebuttal', 'closing', 'qa'];
@@ -261,12 +273,12 @@ export async function PUT(request: NextRequest) {
   const t0 = nowMs();
 
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const authUser = await getAuthUser(request);
+    if (!authUser?.email) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.ai);
+    const rateLimitResult = await checkRateLimit(getRateLimitId(authUser.email, request), RATE_LIMITS.ai);
     if (rateLimitResult) return rateLimitResult;
 
     const {
