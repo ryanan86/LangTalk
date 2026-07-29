@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getAuthUser } from '@/lib/miniappAuth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getUserData, updateUserFields } from '@/lib/dataHelper';
 import { makeRid, nowMs, since, withTimeoutAbort } from '@/lib/perf';
@@ -117,14 +116,14 @@ export async function POST(request: NextRequest) {
 
   try {
     // Auth
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const authUser = await getAuthUser(request);
+    if (!authUser?.email) {
       return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
     }
 
     // Rate limit
     const rateLimitResult = await checkRateLimit(
-      getRateLimitId(session.user.email, request),
+      getRateLimitId(authUser.email, request),
       RATE_LIMITS.ai
     );
     if (rateLimitResult) return rateLimitResult;
@@ -284,12 +283,12 @@ export async function POST(request: NextRequest) {
     };
 
     // Persist + award XP (awaited — required)
-    const userData = await getUserData(session.user.email);
+    const userData = await getUserData(authUser.email);
     const existingHistory: ExamHistoryItem[] = userData?.stats?.examHistory ?? [];
     const newHistory: ExamHistoryItem[] = [gradeResult, ...existingHistory].slice(0, MAX_EXAM_HISTORY);
     const currentXp = userData?.stats?.xp ?? 0;
 
-    await updateUserFields(session.user.email, {
+    await updateUserFields(authUser.email, {
       stats: {
         examHistory: newHistory,
         xp: currentXp + 80,

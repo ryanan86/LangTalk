@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getAuthUser } from '@/lib/miniappAuth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { makeRid, nowMs, since } from '@/lib/perf';
 
@@ -58,13 +57,13 @@ export async function POST(request: NextRequest) {
   const t0 = nowMs();
   try {
     // Auth check
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const authUser = await getAuthUser(request);
+    if (!authUser?.email) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
     // Rate limit
-    const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.ai);
+    const rateLimitResult = await checkRateLimit(getRateLimitId(authUser.email, request), RATE_LIMITS.ai);
     if (rateLimitResult) return rateLimitResult;
 
     const body = await request.json();
@@ -234,8 +233,8 @@ Make topics ENGAGING and DEBATABLE - not one-sided questions.`;
 // GET method for fetching cached/preset trending topics
 export async function GET(request: NextRequest) {
   // Auth check
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
+  const authUser = await getAuthUser(request);
+  if (!authUser?.email) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
 

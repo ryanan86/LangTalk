@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getAuthUser } from '@/lib/miniappAuth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { MIN_SESSIONS_FOR_DEBATE } from '@/lib/debateTypes';
 import { calculateXP, checkLevelUp, checkAchievements } from '@/lib/gamification';
@@ -14,19 +13,19 @@ import { getTodayQuests } from '@/lib/dailyChallenges';
 export const preferredRegion = 'icn1'; // Seoul — closest to Korean users
 
 // GET: Retrieve current session count
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const authUser = await getAuthUser(request);
 
-    if (!session?.user?.email) {
+    if (!authUser?.email) {
       return NextResponse.json({ sessionCount: 0, canDebate: false, reason: 'Not logged in' }, { status: 401 });
     }
 
     // Rate limit
-    const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
+    const rateLimitResult = await checkRateLimit(getRateLimitId(authUser.email, request), RATE_LIMITS.light);
     if (rateLimitResult) return rateLimitResult;
 
-    const email = session.user.email;
+    const email = authUser.email;
 
     if (useSupabase) {
       const data = await getSessionCount(email);
@@ -110,17 +109,17 @@ export async function GET(request: Request) {
 // POST: Increment session count and update evaluated level
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const authUser = await getAuthUser(request);
 
-    if (!session?.user?.email) {
+    if (!authUser?.email) {
       return NextResponse.json({ success: false, error: 'Not logged in' }, { status: 401 });
     }
 
     // Rate limit
-    const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
+    const rateLimitResult = await checkRateLimit(getRateLimitId(authUser.email, request), RATE_LIMITS.light);
     if (rateLimitResult) return rateLimitResult;
 
-    const email = session.user.email;
+    const email = authUser.email;
 
     // Parse request body once for all downstream use
     let evaluatedGrade: string | null = null;

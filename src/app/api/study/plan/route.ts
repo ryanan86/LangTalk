@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getAuthUser } from '@/lib/miniappAuth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getUserData, updateUserFields } from '@/lib/dataHelper';
 import { makeRid, nowMs, since, withTimeoutAbort } from '@/lib/perf';
@@ -21,13 +20,13 @@ export const preferredRegion = 'icn1';
  * GET /api/study/plan — read current study plan + progress stats.
  * Frontend contract: { plan: StudyPlan | null, stats: StudyStats | null }
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const authUser = await getAuthUser(request);
+    if (!authUser?.email) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
-    const userData = await getUserData(session.user.email);
+    const userData = await getUserData(authUser.email);
     return NextResponse.json({
       plan: userData?.profile?.study ?? null,
       stats: userData?.stats?.study ?? null,
@@ -187,13 +186,13 @@ export async function POST(request: NextRequest) {
   const timings: Record<string, number> = {};
 
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const authUser = await getAuthUser(request);
+    if (!authUser?.email) {
       return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
     }
 
     const rateLimitResult = await checkRateLimit(
-      getRateLimitId(session.user.email, request),
+      getRateLimitId(authUser.email, request),
       RATE_LIMITS.ai
     );
     if (rateLimitResult) return rateLimitResult;
@@ -318,7 +317,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Persist to profile.study
-    await updateUserFields(session.user.email, { profile: { study: plan } });
+    await updateUserFields(authUser.email, { profile: { study: plan } });
 
     timings['total.ms'] = since(t0);
 

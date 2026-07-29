@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getAuthUser } from '@/lib/miniappAuth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getLearningData, saveLearningData } from '@/lib/dataHelper';
 import { makeRid, nowMs, since } from '@/lib/perf';
@@ -13,18 +12,18 @@ export async function GET(request: NextRequest) {
   const t0 = nowMs();
 
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const authUser = await getAuthUser(request);
+    if (!authUser?.email) {
       return NextResponse.json({ items: [], total: 0, dueToday: 0, error: 'Not logged in' }, { status: 401 });
     }
 
-    const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
+    const rateLimitResult = await checkRateLimit(getRateLimitId(authUser.email, request), RATE_LIMITS.light);
     if (rateLimitResult) return rateLimitResult;
 
     const scope = request.nextUrl.searchParams.get('scope') || 'today';
     const limit = Math.min(100, Math.max(1, Number(request.nextUrl.searchParams.get('limit') || 20)));
 
-    const learningData = await getLearningData(session.user.email);
+    const learningData = await getLearningData(authUser.email);
     const all = learningData?.vocabBook || [];
     const today = new Date().toISOString().slice(0, 10);
 
@@ -54,12 +53,12 @@ export async function POST(request: NextRequest) {
   const t0 = nowMs();
 
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const authUser = await getAuthUser(request);
+    if (!authUser?.email) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
+    const rateLimitResult = await checkRateLimit(getRateLimitId(authUser.email, request), RATE_LIMITS.light);
     if (rateLimitResult) return rateLimitResult;
 
     const rawBody = await request.json();
@@ -67,7 +66,7 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) return parsed.response;
     const { items } = parsed.data;
 
-    const learningData = await getLearningData(session.user.email);
+    const learningData = await getLearningData(authUser.email);
     const existing = learningData?.vocabBook || [];
 
     // Merge: update existing terms or add new ones

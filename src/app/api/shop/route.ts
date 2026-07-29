@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getAuthUser } from '@/lib/miniappAuth';
 import { getUserData, updateUserFields } from '@/lib/supabaseHelper';
 import { SHOP_ITEMS } from '@/lib/shopItems';
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
+export async function GET(request: NextRequest) {
+  const authUser = await getAuthUser(request);
+  if (!authUser?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const user = await getUserData(session.user.email);
+  const user = await getUserData(authUser.email);
   if (!user) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 });
   }
@@ -19,8 +18,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
+  const authUser = await getAuthUser(req);
+  if (!authUser?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -32,7 +31,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Item not found' }, { status: 404 });
   }
 
-  const user = await getUserData(session.user.email);
+  const user = await getUserData(authUser.email);
   if (!user) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 });
   }
@@ -50,7 +49,7 @@ export async function POST(req: NextRequest) {
     inventory.push({ itemId, quantity: 1, acquiredAt: new Date().toISOString() });
   }
 
-  const success = await updateUserFields(session.user.email, {
+  const success = await updateUserFields(authUser.email, {
     stats: {
       xp: currentXP - item.xpCost,
       inventory,

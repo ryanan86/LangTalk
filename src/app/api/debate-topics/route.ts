@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getAuthUser } from '@/lib/miniappAuth';
 import { getUserData, getLearningData, getDebateTopicsForUser } from '@/lib/dataHelper';
 import { GRADE_TO_AGE_GROUP, AgeGroup, DebateCategory, DebateTopicRow } from '@/lib/sheetTypes';
 import {
@@ -18,13 +17,13 @@ export async function GET(request: NextRequest) {
   const t0 = nowMs();
 
   try {
-    const session = await getServerSession(authOptions);
+    const authUser = await getAuthUser(request);
 
-    if (!session?.user?.email) {
+    if (!authUser?.email) {
       return NextResponse.json({ topics: [], error: 'Not logged in' }, { status: 401 });
     }
 
-    const email = session.user.email;
+    const email = authUser.email;
     const searchParams = request.nextUrl.searchParams;
     const category = searchParams.get('category') as DebateCategory | null;
     const includePersonalized = searchParams.get('personalized') !== 'false';

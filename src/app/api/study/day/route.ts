@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getAuthUser } from '@/lib/miniappAuth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getUserData, updateUserFields } from '@/lib/dataHelper';
 import { makeRid, nowMs, since } from '@/lib/perf';
@@ -47,13 +46,13 @@ export async function POST(request: NextRequest) {
   const timings: Record<string, number> = {};
 
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const authUser = await getAuthUser(request);
+    if (!authUser?.email) {
       return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
     }
 
     const rateLimitResult = await checkRateLimit(
-      getRateLimitId(session.user.email, request),
+      getRateLimitId(authUser.email, request),
       RATE_LIMITS.ai
     );
     if (rateLimitResult) return rateLimitResult;
@@ -65,7 +64,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '필수 학습 결과 데이터가 누락되었습니다.' }, { status: 400 });
     }
 
-    const userData = await getUserData(session.user.email);
+    const userData = await getUserData(authUser.email);
     timings['getUserData.ms'] = since(t0);
 
     const prev = (userData?.stats?.study as StudyStats | undefined) ?? emptyStudyStats();
@@ -138,7 +137,7 @@ export async function POST(request: NextRequest) {
     const prevXp = typeof userData?.stats?.xp === 'number' ? userData.stats.xp : 0;
     const newXp = alreadyCounted ? prevXp : prevXp + xpGain;
 
-    await updateUserFields(session.user.email, {
+    await updateUserFields(authUser.email, {
       stats: {
         study: updated,
         xp: newXp,

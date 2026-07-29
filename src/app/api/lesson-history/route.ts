@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getAuthUser } from '@/lib/miniappAuth';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { randomUUID } from 'crypto';
 import {
@@ -15,22 +14,22 @@ import { lessonHistoryBodySchema, parseBody } from '@/lib/apiSchemas';
 import { useSupabase } from '@/lib/dataBackend';
 
 // GET: Retrieve lesson history for current user
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const rid = makeRid('lhst');
   const t0 = nowMs();
 
   try {
-    const session = await getServerSession(authOptions);
+    const authUser = await getAuthUser(request);
 
-    if (!session?.user?.email) {
+    if (!authUser?.email) {
       return NextResponse.json({ lessons: [], error: 'Not logged in' }, { status: 401 });
     }
 
     // Rate limit
-    const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
+    const rateLimitResult = await checkRateLimit(getRateLimitId(authUser.email, request), RATE_LIMITS.light);
     if (rateLimitResult) return rateLimitResult;
 
-    const email = session.user.email;
+    const email = authUser.email;
 
     // If no Google Sheets credentials, return empty for development
     if (!useSupabase) {
@@ -88,17 +87,17 @@ export async function POST(request: NextRequest) {
   const t0 = nowMs();
 
   try {
-    const session = await getServerSession(authOptions);
+    const authUser = await getAuthUser(request);
 
-    if (!session?.user?.email) {
+    if (!authUser?.email) {
       return NextResponse.json({ success: false, error: 'Not logged in' }, { status: 401 });
     }
 
     // Rate limit
-    const rateLimitResult = await checkRateLimit(getRateLimitId(session.user.email, request), RATE_LIMITS.light);
+    const rateLimitResult = await checkRateLimit(getRateLimitId(authUser.email, request), RATE_LIMITS.light);
     if (rateLimitResult) return rateLimitResult;
 
-    const email = session.user.email;
+    const email = authUser.email;
 
     // Parse and validate request body
     const rawBody = await request.json();

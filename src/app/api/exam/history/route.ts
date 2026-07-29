@@ -1,6 +1,5 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthUser } from '@/lib/miniappAuth';
 import { getUserData } from '@/lib/dataHelper';
 import type { ExamHistoryItem } from '@/lib/examTypes';
 
@@ -9,14 +8,14 @@ export const preferredRegion = 'icn1';
 /**
  * GET /api/exam/history — return exam history for the authenticated user, newest first.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const authUser = await getAuthUser(request);
+    if (!authUser?.email) {
       return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
     }
 
-    const userData = await getUserData(session.user.email);
+    const userData = await getUserData(authUser.email);
     const history: ExamHistoryItem[] = userData?.stats?.examHistory ?? [];
 
     // Ensure newest-first order (already appended newest-first in grade route,
