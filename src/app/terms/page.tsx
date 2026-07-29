@@ -3,9 +3,20 @@ import Link from "next/link";
 
 type Language = 'ko' | 'en' | 'nl' | 'ru' | 'fr' | 'es' | 'zh' | 'de';
 
-export default function TermsPage() {
+export default function TermsPage({
+  searchParams,
+}: {
+  searchParams?: { lang?: string };
+}) {
   const cookieStore = cookies();
-  const language = (cookieStore.get('lang')?.value || 'en') as Language;
+  // 우선순위: ?lang= 쿼리 > lang 쿠키 > 한국어.
+  // 기본값이 'en' 이면 쿠키 없는 방문자(외부 링크로 바로 들어온 경우)에게 영문이
+  // 나간다. 운영 주체가 국내 법인(주식회사 누크랩스)이고 이 페이지는 국내 이용자
+  // 대상 법정 고지이므로 한국어가 기본이어야 한다. 앱인토스 심사에 제출하는 URL
+  // 처럼 외부에 그대로 노출되는 링크가 영문으로 뜨던 문제(2026-07-30).
+  const language = (searchParams?.lang
+    || cookieStore.get('lang')?.value
+    || 'ko') as Language;
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 py-12 px-4">

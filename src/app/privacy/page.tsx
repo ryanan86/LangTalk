@@ -3,9 +3,17 @@ import Link from "next/link";
 
 type Language = 'ko' | 'en' | 'nl' | 'ru' | 'fr' | 'es' | 'zh' | 'de';
 
-export default function PrivacyPage() {
+export default function PrivacyPage({
+  searchParams,
+}: {
+  searchParams?: { lang?: string };
+}) {
   const cookieStore = cookies();
-  const language = (cookieStore.get('lang')?.value || 'en') as Language;
+  // 우선순위: ?lang= 쿼리 > lang 쿠키 > 한국어. 사유는 terms/page.tsx 주석 참조
+  // (외부 링크로 바로 들어온 방문자에게 영문 법정 고지가 나가던 문제).
+  const language = (searchParams?.lang
+    || cookieStore.get('lang')?.value
+    || 'ko') as Language;
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 py-12 px-4">
