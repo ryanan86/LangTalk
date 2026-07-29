@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { getAuthUser } from '@/lib/miniappAuth';
+import { isAiDisabled, getMaintenanceMessage, logAiKillSwitchBlock } from '@/lib/aiKillSwitch';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { makeRid, nowMs, since } from '@/lib/perf';
 
@@ -391,6 +392,13 @@ export async function POST(request: NextRequest) {
   const t0 = nowMs();
 
   try {
+    // 운영 킬 스위치 — 인증보다 먼저. 근거는 src/lib/aiKillSwitch.ts 참조.
+    // 평가 결과를 지어내지 않고 503 으로 알린다.
+    if (isAiDisabled()) {
+      logAiKillSwitchBlock('ai-evaluate', 'POST');
+      return NextResponse.json({ error: getMaintenanceMessage(), aiDisabled: true }, { status: 503 });
+    }
+
     // Auth check
     const authUser = await getAuthUser(request);
     if (!authUser?.email) {

@@ -1,0 +1,12 @@
+# AI 모델/프롬프트 변경 필수 리뷰 경로.
+# 상세 프로세스: docs/AI_SAFETY_REVIEW.md
+# 앱인토스 정책: "AI 모델이나 프롬프트를 변경할 경우, 앱 배포 검토를 사전에 요청해 주세요."
+
+/src/lib/personas.ts        @ryanan86
+/src/lib/debatePersonas.ts  @ryanan86
+/src/lib/safetyFilter.ts    @ryanan86
+/src/lib/crisisSafety.ts    @ryanan86
+/src/lib/aiKillSwitch.ts    @ryanan86
+
+# 프로세스 문서 자체도 오너 승인 없이 바뀌지 않도록 포함.
+/docs/AI_SAFETY_REVIEW.md   @ryanan86

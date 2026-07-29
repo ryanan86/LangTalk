@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/miniappAuth';
+import { isAiDisabled, getMaintenanceMessage, logAiKillSwitchBlock } from '@/lib/aiKillSwitch';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { makeRid, nowMs, since } from '@/lib/perf';
 import {
@@ -194,6 +195,17 @@ export async function POST(request: NextRequest) {
   const t0 = nowMs();
 
   try {
+    // 운영 킬 스위치 — 인증보다 먼저. 근거는 src/lib/aiKillSwitch.ts 참조.
+    // 이 라우트는 현재 알고리즘 평가만 하지만, AI 평가 계열 응답을 한 스위치로
+    // 일괄 차단할 수 있어야 운영이 "AI 응답 정지"를 한 번에 보장할 수 있다.
+    if (isAiDisabled()) {
+      logAiKillSwitchBlock('speaking-evaluate', 'POST');
+      return NextResponse.json(
+        { error: getMaintenanceMessage(), success: false, aiDisabled: true },
+        { status: 503 }
+      );
+    }
+
     // Auth check
     const authUser = await getAuthUser(request);
     if (!authUser?.email) {

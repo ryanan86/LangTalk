@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { getAuthUser } from '@/lib/miniappAuth';
+import { isAiDisabled, getMaintenanceMessage, logAiKillSwitchBlock } from '@/lib/aiKillSwitch';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { makeRid, nowMs, since } from '@/lib/perf';
 
@@ -56,6 +57,16 @@ export async function POST(request: NextRequest) {
   const rid = makeRid('dtpc');
   const t0 = nowMs();
   try {
+    // 운영 킬 스위치 — 인증보다 먼저. 근거는 src/lib/aiKillSwitch.ts 참조.
+    // GET(프리셋 토픽)은 모델을 부르지 않으므로 차단 대상이 아니다.
+    if (isAiDisabled()) {
+      logAiKillSwitchBlock('trending-topics', 'POST');
+      return NextResponse.json(
+        { error: getMaintenanceMessage(), success: false, aiDisabled: true },
+        { status: 503 }
+      );
+    }
+
     // Auth check
     const authUser = await getAuthUser(request);
     if (!authUser?.email) {

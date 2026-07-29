@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getAuthUser } from '@/lib/miniappAuth';
+import { isAiDisabled, getMaintenanceMessage, logAiKillSwitchBlock } from '@/lib/aiKillSwitch';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getUserData, updateUserFields } from '@/lib/dataHelper';
 import { makeRid, nowMs, since, withTimeoutAbort } from '@/lib/perf';
@@ -115,6 +116,14 @@ export async function POST(request: NextRequest) {
   const timings: Record<string, number> = {};
 
   try {
+    // 운영 킬 스위치 — 인증보다 먼저. 근거는 src/lib/aiKillSwitch.ts 참조.
+    // **가짜 채점 결과를 만들지 않는다.** 틀린 등급이 사용자 기록에 남는 편이
+    // 오류 응답보다 훨씬 나쁘므로 503 으로 명시한다.
+    if (isAiDisabled()) {
+      logAiKillSwitchBlock('exam/grade', 'POST');
+      return NextResponse.json({ error: getMaintenanceMessage(), aiDisabled: true }, { status: 503 });
+    }
+
     // Auth
     const authUser = await getAuthUser(request);
     if (!authUser?.email) {

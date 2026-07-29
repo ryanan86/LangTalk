@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { getAuthUser } from '@/lib/miniappAuth';
+import { isAiDisabled, getMaintenanceMessage, logAiKillSwitchBlock } from '@/lib/aiKillSwitch';
 import { checkLatestUserMessage, getSafeResponse, logCrisisEvent } from '@/lib/crisisSafety';
 import { checkLatestUserSafety, getRefusalResponse, logSafetyBlock, withSafetyClause } from '@/lib/safetyFilter';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
@@ -31,6 +32,17 @@ export async function POST(request: NextRequest) {
   const t0 = nowMs();
 
   try {
+    // 운영 킬 스위치 — 인증·필터보다 먼저. 근거는 src/lib/aiKillSwitch.ts 참조.
+    // 응답 형태는 이 라우트의 기존 차단 응답(위기/거절)과 동일하게 맞춘다 —
+    // 클라이언트가 message 를 화면에 그리므로 그래야 안내가 사용자에게 닿는다.
+    if (isAiDisabled()) {
+      logAiKillSwitchBlock('debate-chat', 'POST');
+      return NextResponse.json({
+        message: getMaintenanceMessage(),
+        aiDisabled: true,
+      });
+    }
+
     const authUser = await getAuthUser(request);
     if (!authUser?.email) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
@@ -288,6 +300,13 @@ export async function PUT(request: NextRequest) {
   const t0 = nowMs();
 
   try {
+    // 운영 킬 스위치 — 인증보다 먼저. 채점 결과를 지어내면 잘못된 점수가 사용자에게
+    // 남으므로, 여기서는 메시지가 아니라 503 오류로 반환한다.
+    if (isAiDisabled()) {
+      logAiKillSwitchBlock('debate-chat', 'PUT');
+      return NextResponse.json({ error: getMaintenanceMessage(), aiDisabled: true }, { status: 503 });
+    }
+
     const authUser = await getAuthUser(request);
     if (!authUser?.email) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });

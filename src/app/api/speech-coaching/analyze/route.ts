@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getAuthUser } from '@/lib/miniappAuth';
+import { isAiDisabled, getMaintenanceMessage, logAiKillSwitchBlock } from '@/lib/aiKillSwitch';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getPersona } from '@/lib/personas';
 import { makeRid, nowMs, since, withTimeoutAbort } from '@/lib/perf';
@@ -106,6 +107,12 @@ export async function POST(request: NextRequest) {
   const timings: Record<string, number> = {};
 
   try {
+    // 운영 킬 스위치 — 인증보다 먼저. 근거는 src/lib/aiKillSwitch.ts 참조.
+    if (isAiDisabled()) {
+      logAiKillSwitchBlock('speech-coaching/analyze', 'POST');
+      return NextResponse.json({ error: getMaintenanceMessage(), aiDisabled: true }, { status: 503 });
+    }
+
     const authUser = await getAuthUser(request);
     if (!authUser?.email) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getAuthUser } from '@/lib/miniappAuth';
+import { isAiDisabled, getMaintenanceMessage, logAiKillSwitchBlock } from '@/lib/aiKillSwitch';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getUserData, updateUserFields } from '@/lib/dataHelper';
 import { makeRid, nowMs, since, withTimeoutAbort } from '@/lib/perf';
@@ -186,6 +187,13 @@ export async function POST(request: NextRequest) {
   const timings: Record<string, number> = {};
 
   try {
+    // 운영 킬 스위치 — 인증보다 먼저. 근거는 src/lib/aiKillSwitch.ts 참조.
+    // 12주 학습 플랜은 저장돼 계속 쓰이므로 대체 플랜을 만들지 않고 503 으로 알린다.
+    if (isAiDisabled()) {
+      logAiKillSwitchBlock('study/plan', 'POST');
+      return NextResponse.json({ error: getMaintenanceMessage(), aiDisabled: true }, { status: 503 });
+    }
+
     const authUser = await getAuthUser(request);
     if (!authUser?.email) {
       return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });

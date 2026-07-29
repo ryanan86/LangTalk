@@ -9,6 +9,7 @@ import { getUserData, updateUserFields, getLearningData } from '@/lib/dataHelper
 import { LearnerMemory, MAX_MEMORY_FACTS, MAX_MEMORY_TOPICS, CorrectionItem } from '@/lib/sheetTypes';
 import { makeRid, nowMs, since, withTimeoutAbort } from '@/lib/perf';
 import { chatBodySchema, parseBody } from '@/lib/apiSchemas';
+import { isAiDisabled, getMaintenanceMessage, logAiKillSwitchBlock } from '@/lib/aiKillSwitch';
 import { checkLatestUserMessage, getSafeResponse, logCrisisEvent } from '@/lib/crisisSafety';
 import { checkLatestUserSafety, getRefusalResponse, logSafetyBlock, withSafetyClause } from '@/lib/safetyFilter';
 
@@ -64,6 +65,55 @@ export async function POST(request: NextRequest) {
   const timings: Record<string, number> = {};
 
   try {
+    // ── 운영 킬 스위치 (앱인토스 "즉시 차단 가능한 운영 체계" 요건) ──
+    // 인증·레이트리밋·안전 필터보다도 먼저 검사한다. 차단 상태에서는 이 라우트가
+    // 어떤 경로로도 모델을 호출해선 안 되기 때문이다. 근거는 src/lib/aiKillSwitch.ts 참조.
+    if (isAiDisabled()) {
+      logAiKillSwitchBlock('chat', 'POST');
+
+      // 스트리밍 여부·언어는 본문에만 있으므로 여기서만 방어적으로 읽는다.
+      // 파싱에 실패해도 차단은 그대로 진행한다(기본값 = 비스트리밍·한국어).
+      let useStreaming = false;
+      let mode: string | undefined;
+      let language: string | undefined;
+      try {
+        const body = await request.json();
+        useStreaming = Boolean(body?.stream);
+        mode = body?.mode;
+        language = body?.language;
+      } catch { /* 본문 파싱 실패 — 기본값으로 차단 응답 */ }
+
+      const maintenanceMessage = getMaintenanceMessage(language);
+
+      // 스트리밍 요청에도 SSE 로 되돌려준다 — 위기/거절 응답과 동일한 이유로,
+      // JSON 을 주면 클라이언트 파싱이 실패해 안내가 사용자에게 도달하지 못한다.
+      if (useStreaming && mode === 'interview') {
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          start(controller) {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ text: maintenanceMessage })}\n\n`),
+            );
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            controller.close();
+          },
+        });
+        return new Response(stream, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            Connection: 'keep-alive',
+          },
+        });
+      }
+
+      return NextResponse.json({
+        message: maintenanceMessage,
+        aiDisabled: true,
+        meta: { rid, timings },
+      });
+    }
+
     // Auth check
     const authUser = await getAuthUser(request);
     if (!authUser?.email) {

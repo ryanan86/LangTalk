@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { isAiDisabled } from '@/lib/aiKillSwitch';
 
 const ADMIN_EMAILS = ['ryan@nuklabs.com', 'taewoongan@gmail.com'];
 
@@ -21,6 +22,8 @@ export interface ProviderStatus {
 interface AiStatusResponse {
   providers: ProviderStatus[];
   checkedAt: string;
+  /** AI_KILL_SWITCH 로 AI 응답이 차단된 상태인가 (읽기 전용 표시). */
+  aiKillSwitch: boolean;
 }
 
 // ─── In-module cache (5 min) ──────────────────────────────────────────────────
@@ -383,9 +386,11 @@ export async function GET(request: NextRequest) {
   const now = Date.now();
   const fresh = request.nextUrl.searchParams.get('fresh') === '1';
 
-  // Return cached result if still valid and not bypassed
+  // Return cached result if still valid and not bypassed.
+  // 킬 스위치 상태만은 캐시를 타지 않고 매번 새로 읽는다 — 차단 여부가 5분 늦게
+  // 보이면 운영자가 스위치를 내린 걸 확인할 수 없다.
   if (!fresh && cachedResult && now < cacheExpiry) {
-    return NextResponse.json(cachedResult);
+    return NextResponse.json({ ...cachedResult, aiKillSwitch: isAiDisabled() });
   }
 
   // Run all provider checks in parallel
@@ -415,6 +420,7 @@ export async function GET(request: NextRequest) {
   const response: AiStatusResponse = {
     providers,
     checkedAt: new Date().toISOString(),
+    aiKillSwitch: isAiDisabled(),
   };
 
   cachedResult = response;

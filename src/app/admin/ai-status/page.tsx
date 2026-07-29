@@ -14,6 +14,8 @@ import type { ProviderStatus } from '@/app/api/admin/ai-status/route';
 interface AiStatusResponse {
   providers: ProviderStatus[];
   checkedAt: string;
+  /** AI_KILL_SWITCH 환경변수 상태 (읽기 전용 — 전환은 Vercel 대시보드에서). */
+  aiKillSwitch?: boolean;
 }
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
@@ -329,6 +331,26 @@ export default function AiStatusPage() {
             </button>
           </div>
         </div>
+
+        {/* AI 킬 스위치 상태 — 읽기 전용. 전환은 Vercel 환경변수에서만 한다 */}
+        {data && (
+          <div className={[
+            'mb-5 px-4 py-3 rounded-xl border flex items-center justify-between gap-3 flex-wrap',
+            data.aiKillSwitch
+              ? 'bg-red-500/10 border-red-500/30'
+              : 'bg-white/[0.03] border-white/[0.08]',
+          ].join(' ')}>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="text-sm font-semibold text-white">AI 응답 킬 스위치</span>
+              <Badge variant={data.aiKillSwitch ? 'error' : 'success'} size="md" dot>
+                {data.aiKillSwitch ? 'ON — 전체 차단 중' : 'OFF — 정상 응답'}
+              </Badge>
+            </div>
+            <span className="text-xs text-neutral-400">
+              AI_KILL_SWITCH — 전환은 Vercel 대시보드 환경변수에서
+            </span>
+          </div>
+        )}
 
         {/* Summary bar — shown once data loaded */}
         {data && (lowCount > 0 || errorCount > 0) && (

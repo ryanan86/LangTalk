@@ -1,0 +1,99 @@
+name: AI Safety Review Reminder
+
+# 앱인토스 정책: "AI 모델이나 프롬프트를 변경할 경우, 앱 배포 검토를 사전에 요청해 주세요."
+# 이 워크플로는 하드 게이트가 아니다 — 다른 CI가 없는 상태에서 강제 블록을 걸면
+# 오너 혼자 스턱될 수 있어, 항상 exit 0으로 끝나되 감지 시 눈에 띄는 경고만 남긴다.
+# 상세 프로세스: docs/AI_SAFETY_REVIEW.md
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout with full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect AI-sensitive changes
+        run: |
+          set -uo pipefail
+
+          BASE_REF="${{ github.event.pull_request.base.sha }}"
+          HEAD_REF="${{ github.event.pull_request.head.sha }}"
+
+          # 병합 베이스 기준으로 diff (base 브랜치 이후 변경분만 본다)
+          MERGE_BASE=$(git merge-base "$BASE_REF" "$HEAD_REF" 2>/dev/null || echo "$BASE_REF")
+
+          CHANGED_FILES=$(git diff --name-only "$MERGE_BASE" "$HEAD_REF" || true)
+          DIFF_CONTENT=$(git diff "$MERGE_BASE" "$HEAD_REF" || true)
+
+          echo "변경된 파일:"
+          echo "$CHANGED_FILES"
+          echo ""
+
+          TRIGGERED=0
+          REASONS=()
+
+          # 1) 지정된 민감 경로
+          SENSITIVE_PATHS='src/lib/personas.ts
+          src/lib/debatePersonas.ts
+          src/lib/safetyFilter.ts
+          src/lib/crisisSafety.ts
+          src/lib/aiKillSwitch.ts'
+
+          while IFS= read -r path; do
+            path=$(echo "$path" | xargs)
+            [ -z "$path" ] && continue
+            if echo "$CHANGED_FILES" | grep -qF "$path"; then
+              TRIGGERED=1
+              REASONS+=("민감 경로 변경: $path")
+            fi
+          done <<< "$SENSITIVE_PATHS"
+
+          # 2) systemPrompt 리터럴이 포함된 파일 변경
+          if echo "$CHANGED_FILES" | while read -r f; do [ -f "$f" ] && grep -l "systemPrompt" "$f" 2>/dev/null; done | grep -q .; then
+            TRIGGERED=1
+            REASONS+=("systemPrompt 리터럴을 포함한 파일이 변경됨")
+          fi
+
+          # 3) diff 안에서 AI 모델명 문자열 추가/변경 (gemini-, gpt-, claude-)
+          if echo "$DIFF_CONTENT" | grep -E '^[+-].*(gemini-|gpt-[0-9]|claude-[0-9a-z])' -i | grep -qv '^[+-]\{3\}'; then
+            TRIGGERED=1
+            REASONS+=("AI 모델명 문자열(gemini-/gpt-/claude-) 변경 감지")
+          fi
+
+          if [ "$TRIGGERED" -eq 1 ]; then
+            echo "::warning::AI 모델/프롬프트 변경이 감지되었습니다 — 배포 전 사전 검토가 필요합니다."
+            echo ""
+            echo "=================================================================="
+            echo "  AI 모델/프롬프트 변경 감지 — 배포 전 사전 검토 필요"
+            echo "=================================================================="
+            echo ""
+            echo "감지 사유:"
+            for r in "${REASONS[@]}"; do
+              echo "  - $r"
+            done
+            echo ""
+            echo "앱인토스 정책: \"AI 모델이나 프롬프트를 변경할 경우, 앱 배포 검토를"
+            echo "사전에 요청해 주세요.\""
+            echo ""
+            echo "머지/배포 전에 아래를 확인하세요 (docs/AI_SAFETY_REVIEW.md 참고):"
+            echo "  1) 위험 키워드·문맥 필터링이 유지되는가"
+            echo "  2) 금지 요청에 대한 거절 응답이 일관적인가"
+            echo "  3) 자살·자해 안전 프로토콜이 정상 동작하는가"
+            echo "  4) 이 변경 자체가 사전 배포 검토(리뷰)를 거쳤는가"
+            echo "  5) 문제 발생 시 즉시 차단(롤백 등) 수단이 있는가"
+            echo "  6) 우회 요청(소설/가정/교육 목적 프레이밍)이 여전히 차단되는가"
+            echo ""
+            echo "프로덕션 배포 전, 앱인토스 콘솔 채널톡으로 반드시 사전 통보하세요."
+            echo "=================================================================="
+          else
+            echo "AI 모델/프롬프트 관련 변경이 감지되지 않았습니다."
+          fi
+
+          # 하드 블록 없음 — 항상 성공으로 종료.
+          exit 0
