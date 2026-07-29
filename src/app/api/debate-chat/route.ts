@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { getAuthUser } from '@/lib/miniappAuth';
 import { checkLatestUserMessage, getSafeResponse, logCrisisEvent } from '@/lib/crisisSafety';
+import { checkLatestUserSafety, getRefusalResponse, logSafetyBlock, withSafetyClause } from '@/lib/safetyFilter';
 import { checkRateLimit, getRateLimitId, RATE_LIMITS } from '@/lib/rateLimit';
 import { getDebatePersona, moderator } from '@/lib/debatePersonas';
 import { DebateMessage, DebatePhase, DebateTopic, DebateTeam } from '@/lib/debateTypes';
@@ -61,6 +62,16 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // 위험 요청 필터 — 위기 검사 다음, LLM 호출 전. 근거는 chat 라우트 동일 주석 참조.
+    const safety = await checkLatestUserSafety(messages);
+    if (safety.verdict === 'UNSAFE') {
+      logSafetyBlock(authUser.email, 'debate-chat', safety.category);
+      return NextResponse.json({
+        message: getRefusalResponse(language),
+        safetyIntervention: true,
+      });
+    }
+
     // Allowlist validation to prevent prompt injection
     const VALID_PHASES: readonly string[] = ['opening', 'rebuttal', 'closing', 'qa'];
     const VALID_TEAMS: readonly string[] = ['pro', 'con', 'moderator'];
@@ -88,6 +99,10 @@ export async function POST(request: NextRequest) {
       const actualTeam = speakerTeam === 'moderator' ? userTeam : speakerTeam as DebateTeam;
       systemPrompt = buildDebaterPrompt(persona.systemPrompt, phase, topic, actualTeam, roundIndex, isKorean);
     }
+
+    // 안전 조항 주입 — 사회자/토론자 두 분기 모두 덮도록 분기 밖에서 한 번만.
+    // 근거는 chat 라우트의 동일 주석 및 safetyFilter.SAFETY_CLAUSE 참조.
+    systemPrompt = withSafetyClause(systemPrompt);
 
     // Format conversation history for context
     const openaiMessages = [

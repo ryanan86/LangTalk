@@ -10,6 +10,7 @@ import { LearnerMemory, MAX_MEMORY_FACTS, MAX_MEMORY_TOPICS, CorrectionItem } fr
 import { makeRid, nowMs, since, withTimeoutAbort } from '@/lib/perf';
 import { chatBodySchema, parseBody } from '@/lib/apiSchemas';
 import { checkLatestUserMessage, getSafeResponse, logCrisisEvent } from '@/lib/crisisSafety';
+import { checkLatestUserSafety, getRefusalResponse, logSafetyBlock, withSafetyClause } from '@/lib/safetyFilter';
 
 export const preferredRegion = 'icn1'; // Seoul — closest to Korean users
 
@@ -117,6 +118,44 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         message: safeMessage,
+        safetyIntervention: true,
+        meta: { rid, timings },
+      });
+    }
+
+    // ── 위험 요청 필터 (앱인토스 정책: 키워드 + 문맥 판단, 우회 프레이밍 차단) ──
+    // 위기(자살·자해)를 먼저 처리한 뒤에 검사한다 — 위기는 "거절"이 아니라
+    // "상담 연결"이라 응답 성격이 다르므로 순서가 뒤바뀌면 안 된다.
+    // 명백한 요청은 키워드로 즉시 차단하고, 애매한 것만 저비용 모델로 문맥 판정한다.
+    const safety = await checkLatestUserSafety(messages);
+    if (safety.verdict === 'UNSAFE') {
+      logSafetyBlock(authUser.email, 'chat', safety.category);
+      const refusal = getRefusalResponse(language);
+
+      // 스트리밍 요청에도 SSE 로 되돌려준다(위기 응답과 동일 이유 — JSON 을 주면
+      // 클라이언트 파싱이 실패해 거절 메시지가 사용자에게 도달하지 못한다).
+      if (useStreaming && mode === 'interview') {
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          start(controller) {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ text: refusal })}\n\n`),
+            );
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            controller.close();
+          },
+        });
+        return new Response(stream, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            Connection: 'keep-alive',
+          },
+        });
+      }
+
+      return NextResponse.json({
+        message: refusal,
         safetyIntervention: true,
         meta: { rid, timings },
       });
@@ -711,6 +750,15 @@ Keep the total response under 150 words.`;
     if (weaknessContext && mode !== 'feedback' && mode !== 'study') {
       systemPrompt += weaknessContext;
     }
+
+    // ── 안전 조항 주입 (앱인토스 정책 이중 방어) ──
+    // systemPrompt 는 위에서 모드별로 8곳에서 재할당·누적된다. 각 분기마다 붙이면
+    // 새 모드가 추가될 때 누락되므로, **모든 조립이 끝난 최종 소비 직전 한 곳**에서
+    // 감싼다. 조항은 프롬프트 맨 앞에 붙어 페르소나 말투 지시가 이를 희석하지
+    // 못하게 한다(withSafetyClause 구현 참조).
+    // 필터(위 checkLatestUserSafety)를 통과한 요청이라도 모델 자신이 경계를
+    // 갖도록 하는 2차 방어선이다.
+    systemPrompt = withSafetyClause(systemPrompt);
 
     // Format messages for OpenAI (fallback)
     const openaiMessages = [
