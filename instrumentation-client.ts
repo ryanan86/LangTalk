@@ -40,3 +40,8 @@ Sentry.init({
     return event;
   },
 });
+
+// App Router 내비게이션 계측. 이 훅이 없으면 라우터 전환(<Link> 이동·프리페치)
+// 구간이 트랜잭션으로 잡히지 않아, 전환 도중 터진 오류의 발생 경로가 스택트레이스
+// 밖에서 사라진다. @sentry/nextjs v10 이 빌드 시 ACTION REQUIRED 로 요구한다.
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

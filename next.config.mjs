@@ -69,14 +69,22 @@ export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
 
-  // Only upload source maps in production
+  // 빌드 로그에서 Sentry 플러그인 출력을 숨긴다 (업로드 여부와 무관).
   silent: true,
 
-  // Disable source map upload if no auth token
+  // 이 토큰이 없으면 소스맵 업로드가 통째로 생략되고, 프로덕션 스택트레이스가
+  // 난독화된 채로 남는다(<script>:2:69658 / 함수명 I·xm 형태).
   authToken: process.env.SENTRY_AUTH_TOKEN,
 
-  // Hide source maps from browser devtools
-  hideSourceMaps: true,
+  // App Router 는 공유 청크에 코드가 흩어지므로, 이 옵션 없이는 일부 클라이언트
+  // 번들의 소스맵이 업로드되지 않아 해당 프레임이 계속 해석되지 않는다.
+  widenClientFileUpload: true,
+
+  // 업로드 후 빌드 산출물에서 .map 을 삭제해 공개 배포본에 소스가 노출되지 않게
+  // 한다. 구 옵션 hideSourceMaps 는 @sentry/nextjs v10 에서 제거됐다.
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
 
   // Enable tunneling to avoid ad blockers
   tunnelRoute: "/monitoring",
